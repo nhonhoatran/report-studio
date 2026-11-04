@@ -58,7 +58,7 @@ function MeasureChip({ m, onChange, onRemove }: { m: Measure; onChange: (m: Meas
       <KindIcon kind={m.kind ?? 'number'} size={12} />
       <span className="well-chip__name" title={m.field}>{m.field}</span>
       <Select size="sm" aria-label={t('editor.aggLabel')} value={m.agg} onChange={(e) => onChange({ ...m, agg: e.target.value as Measure['agg'] })}>
-        {AGGREGATIONS.filter((a) => m.kind === 'number' || !['sum', 'avg'].includes(a)).map((a) => <option key={a} value={a}>{t(`agg.${a}`)}</option>)}
+        {AGGREGATIONS.filter((a) => !m.kind || m.kind === 'number' || !['sum', 'avg'].includes(a)).map((a) => <option key={a} value={a}>{t(`agg.${a}`)}</option>)}
       </Select>
       <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
     </div>

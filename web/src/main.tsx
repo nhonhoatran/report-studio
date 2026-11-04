@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/jetbrains-mono';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import '@/styles/tokens.css';

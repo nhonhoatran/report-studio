@@ -77,7 +77,7 @@ The server validates shape and size only, so new widget options never need a mig
 
 | Area | Notes |
 |---|---|
-| `styles/tokens.css` | the only place for colours, spacing (4px base), radii, type sizes, chart palette; light + dark |
+| `styles/tokens.css` | the only place for colours, spacing (4px base), radii, type sizes, chart palette. Dark is the primary theme ("Sổ cái": blue-black surfaces, ivory text, brass accent); light is derived. Fonts are self-hosted via `@fontsource-variable` (Archivo with its width axis for condensed labels, JetBrains Mono for data) |
 | `components/ui/` | Button, Field (Input/Select/Textarea/Checkbox), Panel, Modal (`<dialog>`), Toolbar, Feedback (Spinner/ErrorBox/EmptyState/Toasts), Segmented, KindBadge |
 | `components/editor/` | `FieldsPane` (draggable fields), `Canvas` (react-grid-layout, droppable widgets, 1 column under 640px), `VisualPane` (chart type, wells, filters, options), `WidgetChart` (react-query + states) |
 | `components/charts/ChartRenderer.tsx` | ECharts option builder for cartesian + pie, plus KPI card and table |

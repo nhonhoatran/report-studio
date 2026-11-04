@@ -13,7 +13,7 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 - **Nguồn dữ liệu MariaDB**: thêm nhiều kết nối, kiểm tra kết nối, duyệt bảng/view và cột. Mật khẩu được mã hóa AES-256-GCM khi lưu.
 - **Bộ dữ liệu SQL**: viết câu `SELECT` (JOIN, CTE…) và dùng như một bảng. Server chỉ chấp nhận đúng một câu SELECT; mọi lệnh ghi bị chặn, kết nối đặt `READ ONLY` và có timeout.
 - Đăng nhập, phân quyền `admin / editor / viewer`, đổi mật khẩu, quản lý người dùng.
-- Giao diện tiếng Việt (mặc định) và tiếng Anh, sáng / tối.
+- Giao diện tiếng Việt (mặc định) và tiếng Anh. Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
 - Một container duy nhất: API Express + giao diện React build sẵn. Metadata (bảng điều khiển, kết nối, người dùng) cũng lưu trong MariaDB.
 
 ## Chạy nhanh bằng Docker (khuyến nghị cho server Linux)

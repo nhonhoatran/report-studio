@@ -1,6 +1,5 @@
 .chart-fill { width: 100%; height: 100%; min-height: 0; }
 .kpi { height: 100%; container-type: inline-size; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: var(--space-2) var(--space-4); gap: var(--space-1); }
-.kpi__value { font-size: clamp(var(--text-2xl), 6cqw, 48px); font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--color-text); }
-.kpi__label { font-size: var(--text-sm); color: var(--color-text-muted); }
+.kpi__value { font-size: clamp(var(--text-2xl), 7cqw, 48px); font-weight: 600; font-stretch: var(--label-stretch); line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text); }
 .chart-table { height: 100%; overflow: auto; }
 .chart-table .table { font-size: var(--text-sm); }

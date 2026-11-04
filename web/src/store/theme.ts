@@ -7,7 +7,7 @@ function readStored(): ThemePref {
     const v = localStorage.getItem('rs.theme');
     if (v === 'light' || v === 'dark' || v === 'system') return v;
   } catch { /* ignore */ }
-  return 'system';
+  return 'dark'; // the design is dark-first; "system" and "light" are opt-in
 }
 
 function apply(pref: ThemePref) {

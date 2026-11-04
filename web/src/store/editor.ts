@@ -34,6 +34,24 @@ interface EditorState {
 }
 
 const empty = (): DashboardDefinition => ({ version: 1, widgets: [], filters: [], settings: {} });
+
+/** Definitions may come from API clients that omit optional arrays; fill every field the editor relies on. */
+function normalize(def: Partial<DashboardDefinition> | null | undefined): DashboardDefinition {
+  const widgets = (def?.widgets ?? []).map((w): Widget => ({
+    ...newWidget(),
+    ...w,
+    layout: w.layout ?? { x: 0, y: 0, w: 6, h: 7 },
+    query: {
+      dimensions: w.query?.dimensions ?? [],
+      measures: w.query?.measures ?? [],
+      filters: (w.query?.filters ?? []).map((f, i) => ({ ...f, id: f.id ?? `f_${i}` })),
+      orderBy: w.query?.orderBy ?? [],
+      limit: w.query?.limit,
+    },
+    options: { legend: true, numberFormat: 'auto', ...(w.options ?? {}) },
+  }));
+  return { version: 1, widgets, filters: def?.filters ?? [], settings: def?.settings ?? {} };
+}
 /** First free row below every widget (never Infinity: the document must stay JSON-safe). */
 const bottomOf = (widgets: Widget[]) => widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
 
@@ -49,7 +67,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   activeFields: [],
 
   load: (d) => set({
-    dashboardId: d.id, name: d.name, description: d.description, definition: d.definition,
+    dashboardId: d.id, name: d.name, description: d.description, definition: normalize(d.definition),
     selectedId: null, dirty: false, activeDataset: null, activeFields: [],
   }),
   reset: () => set({ dashboardId: null, name: '', description: '', definition: empty(), selectedId: null, dirty: false, activeDataset: null, activeFields: [] }),

@@ -76,7 +76,7 @@ export function ChartRenderer({ widget, result }: Props) {
     const base: EChartsOption = {
       color: colors,
       animationDuration: ANIMATION_MS,
-      textStyle: { fontFamily: cssVar('--font-sans') },
+      textStyle: { fontFamily: cssVar('--font-sans'), fontSize: 11 },
       tooltip: {
         trigger: widget.type === 'pie' || widget.type === 'donut' ? 'item' : 'axis',
         backgroundColor: surface, borderColor: border, textStyle: { color: cssVar('--color-text') },
@@ -101,7 +101,7 @@ export function ChartRenderer({ widget, result }: Props) {
     }
 
     const categoryAxis = { type: 'category' as const, data: categories, axisLine: { lineStyle: { color: grid } }, axisTick: { show: false }, axisLabel: { color: text, hideOverlap: true } };
-    const valueAxis = { type: 'value' as const, splitLine: { lineStyle: { color: grid } }, axisLabel: { color: text, formatter: (v: number) => formatAxis(v, lang) } };
+    const valueAxis = { type: 'value' as const, splitLine: { lineStyle: { color: grid } }, axisLabel: { color: text, fontFamily: cssVar('--font-mono'), fontSize: 11, formatter: (v: number) => formatAxis(v, lang) } };
     return {
       ...base,
       grid: { left: s2, right: s4, top: s4, bottom: showLegend ? s7 : s2, containLabel: true },
