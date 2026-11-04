@@ -72,7 +72,7 @@ Semantic query body:
 
 Output aliases: dimension → `field` or `field_bucket`; measure → `agg_field` (`count_all` for `*`); duplicates get `_2`, `_3`.
 
-## AI suggestions
+## AI
 | Method | Path | Role | Body / notes |
 |---|---|---|---|
 | GET | `/ai/providers` | any | `{ providers: [{ id, name, kind, model, baseUrl, isDefault }] }` — never includes keys |

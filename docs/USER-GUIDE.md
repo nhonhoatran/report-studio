@@ -42,24 +42,24 @@ Khi cần JOIN nhiều bảng hoặc tính toán trước:
 - Biểu tượng `</>` ở chân mỗi biểu đồ hiển thị câu SQL đã sinh ra — tiện để kiểm tra hoặc copy sang công cụ khác.
 - Kết quả bị cắt ở `QUERY_MAX_ROWS` (mặc định 5.000 dòng); hãy gộp/lọc thay vì vẽ dữ liệu thô.
 
-## 4. Gợi ý biểu đồ bằng AI
-1. (Admin, một lần) **Cài đặt → Nhà cung cấp AI → Thêm nhà cung cấp**: chọn loại key — *Anthropic (Claude)*, *OpenAI*, *Google Gemini* hoặc *Tương thích OpenAI* (Ollama, vLLM, DeepSeek, Groq… — cần nhập địa chỉ API, ví dụ `http://ollama:11434/v1`) — nhập model và API key, nhấn **Kiểm tra** rồi **Lưu**. Có thể thêm nhiều key; đánh dấu một key làm *mặc định*.
+## 4. Người dùng & quyền
+| Vai trò | Quyền |
+|---|---|
+| Chỉ xem (viewer) | mở bảng điều khiển đã lưu |
+| Biên tập (editor) | thêm nguồn dữ liệu, bộ dữ liệu, tạo/sửa bảng điều khiển |
+| Quản trị (admin) | tất cả + quản lý người dùng |
+
+Admin tạo tài khoản ở **Cài đặt → Người dùng**. Mỗi người tự đổi mật khẩu ở **Cài đặt → Tài khoản**.
+
+## 5. Gợi ý biểu đồ bằng AI
+1. (Chỉ admin, một lần) **Cài đặt → Nhà cung cấp AI → Thêm nhà cung cấp**: chọn loại key — *Anthropic (Claude)*, *OpenAI*, *Google Gemini* hoặc *Tương thích OpenAI* (Ollama, vLLM, DeepSeek, Groq… — cần nhập địa chỉ API, ví dụ `http://ollama:11434/v1`) — nhập model và API key, nhấn **Kiểm tra** rồi **Lưu**. Có thể thêm nhiều key; đánh dấu một key làm *mặc định*.
 2. Trong trình chỉnh sửa bảng điều khiển, chọn nguồn dữ liệu và bảng ở cột trái, rồi nhấn **Gợi ý bằng AI** trên thanh công cụ.
 3. Mô tả điều muốn xem (ví dụ *"doanh thu theo tháng của từng khu vực"*, *"top sản phẩm bán chạy"*) hoặc để trống để AI tự đề xuất. Nếu có nhiều nhà cung cấp, chọn một trong hộp thoại.
 4. Mỗi gợi ý hiển thị loại biểu đồ, các trường và phép gộp; nhấn **Thêm vào bảng** cho từng gợi ý hoặc **Thêm tất cả**. Biểu đồ được thêm như bạn tự kéo-thả, nên có thể chỉnh tiếp ở cột phải.
 
 Lưu ý: AI chỉ nhìn thấy **tên và kiểu trường**, không nhìn thấy dữ liệu, và chỉ chọn trường / phép gộp / loại biểu đồ — câu SQL vẫn do máy chủ sinh ra như mọi biểu đồ khác.
 
-## 5. Ngôn ngữ & giao diện
+## 6. Ngôn ngữ & giao diện
 - Ngôn ngữ được nhận theo trình duyệt ở lần đầu; đổi ngay ở màn **Đăng nhập** (góc dưới) hoặc **Cài đặt → Hiển thị**. Lựa chọn được ghi nhớ trên trình duyệt này.
 - Số, ngày giờ và thông báo lỗi từ máy chủ hiển thị theo ngôn ngữ đã chọn.
 - Giao diện tối là mặc định; chọn *Sáng* hoặc *Theo hệ thống* trong **Cài đặt → Hiển thị**.
-
-## 6. Người dùng & quyền
-| Vai trò | Quyền |
-|---|---|
-| Chỉ xem (viewer) | mở bảng điều khiển đã lưu |
-| Biên tập (editor) | thêm nguồn dữ liệu, bộ dữ liệu, tạo/sửa bảng điều khiển |
-| Quản trị (admin) | tất cả + quản lý người dùng và nhà cung cấp AI |
-
-Admin tạo tài khoản ở **Cài đặt → Người dùng**. Mỗi người tự đổi mật khẩu ở **Cài đặt → Tài khoản**.

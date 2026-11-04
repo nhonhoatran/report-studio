@@ -1,21 +1,21 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plug, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { api } from '@/api/client';
-import { AI_PROVIDER_KINDS, type AiProvider, type AiProviderInput, type AiProviderKind, type Role } from '@/api/types';
+import type { Role } from '@/api/types';
 import { useAuth } from '@/store/auth';
 import { useTheme, type ThemePref } from '@/store/theme';
 import { toast } from '@/store/toast';
-import { LANGUAGES, useI18nStore, useT, type TKey } from '@/i18n';
-import { describeError, describeServerError } from '@/lib/errors';
+import { useI18nStore, useT } from '@/i18n';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { Panel } from '@/components/ui/Panel';
 import { Button } from '@/components/ui/Button';
-import { Checkbox, Input, Labelled, Select } from '@/components/ui/Field';
+import { Input, Labelled, Select } from '@/components/ui/Field';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Segmented } from '@/components/ui/Segmented';
-import { EmptyState, ErrorBox, Notice, Spinner } from '@/components/ui/Feedback';
+import { ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
+import { AiProvidersPanel } from '@/components/settings/AiProvidersPanel';
 import '@/components/layout/layout.css';
 
 function ChangePassword() {
@@ -104,128 +104,6 @@ function Users() {
   );
 }
 
-// --- AI providers: one row per API key the editor may use --------------------------------------
-
-const AI_FORM_ID = 'ai-provider-form';
-/** Placeholder only; the admin types the model id the provider documents. */
-const MODEL_PLACEHOLDER: Record<AiProviderKind, string> = { anthropic: 'claude-opus-5-5', openai: 'gpt-4o-mini', gemini: 'gemini-2.5-flash', openai_compatible: 'llama3.1' };
-const kindKey = (k: AiProviderKind): TKey => (k === 'anthropic' ? 'ai.kindAnthropic' : k === 'openai' ? 'ai.kindOpenai' : k === 'gemini' ? 'ai.kindGemini' : 'ai.kindCompatible');
-const blankProvider: AiProviderInput = { name: '', kind: 'anthropic', model: '', baseUrl: '', apiKey: '', isDefault: false };
-
-/** Add / edit dialog; the key is write-only (blank on edit keeps the saved one) and can be tested before saving. */
-function AiProviderModal({ open, initial, onClose }: { open: boolean; initial: AiProvider | null; onClose: () => void }) {
-  const t = useT();
-  const qc = useQueryClient();
-  const [form, setForm] = useState<AiProviderInput>(initial ? { name: initial.name, kind: initial.kind, model: initial.model, baseUrl: initial.baseUrl, apiKey: '', isDefault: initial.isDefault } : blankProvider);
-  const [testResult, setTestResult] = useState<string | null>(null);
-  const [testOk, setTestOk] = useState<boolean | null>(null);
-  const set = <K extends keyof AiProviderInput>(k: K, v: AiProviderInput[K]) => setForm((f) => ({ ...f, [k]: v }));
-  const needsUrl = form.kind === 'openai_compatible';
-
-  const test = useMutation({
-    mutationFn: () => api.ai.testProvider({ kind: form.kind, model: form.model, baseUrl: form.baseUrl || undefined, apiKey: form.apiKey || undefined, id: initial?.id }),
-    onSuccess: (r) => {
-      setTestOk(r.ok);
-      setTestResult(r.ok
-        ? t('ai.testOk', { model: r.model ?? form.model, ms: r.latencyMs ?? 0 })
-        : t('ai.testFail', { error: describeServerError({ code: r.code, message: r.error, details: r.details }, t) }));
-    },
-    onError: (e) => { setTestOk(false); setTestResult(describeError(e, t)); },
-  });
-  const save = useMutation({
-    mutationFn: () => initial
-      ? api.ai.updateProvider(initial.id, { ...form, apiKey: form.apiKey || undefined })
-      : api.ai.createProvider(form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ai-providers'] }); onClose(); },
-  });
-
-  const testable = !!(form.model && (initial || form.apiKey) && (!needsUrl || form.baseUrl));
-  const valid = !!(form.name && testable);
-  const onSubmit = (e: FormEvent) => { e.preventDefault(); if (valid) save.mutate(); };
-
-  return (
-    <Modal
-      open={open}
-      title={initial ? t('ai.editProviderTitle') : t('ai.addProviderTitle')}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="submit" form={AI_FORM_ID} variant="primary" disabled={!valid} loading={save.isPending}>{t('common.save')}</Button>
-        </>
-      }
-    >
-      <form id={AI_FORM_ID} onSubmit={onSubmit} className="stack">
-        <p className="text-sm text-muted">{t('ai.keyHint')}</p>
-        <div className="form-grid">
-          <Input className="span-2" label={t('common.name')} required value={form.name} onChange={(e) => set('name', e.target.value)} autoFocus />
-          <Select label={t('ai.kind')} value={form.kind} onChange={(e) => set('kind', e.target.value as AiProviderKind)}>
-            {AI_PROVIDER_KINDS.map((k) => <option key={k} value={k}>{t(kindKey(k))}</option>)}
-          </Select>
-          <Input label={t('ai.model')} required placeholder={MODEL_PLACEHOLDER[form.kind]} help={t('ai.modelHint')} value={form.model} onChange={(e) => set('model', e.target.value)} />
-          <Input className="span-2" label={t('ai.baseUrl')} type="url" required={needsUrl} hint={needsUrl ? undefined : t('common.optional')}
-            placeholder={needsUrl ? t('ai.baseUrlPlaceholder') : undefined} help={needsUrl ? undefined : t('ai.baseUrlKeep')}
-            value={form.baseUrl ?? ''} onChange={(e) => set('baseUrl', e.target.value)} />
-          <Input className="span-2" label={t('ai.apiKey')} type="password" autoComplete="new-password" required={!initial} hint={initial ? t('common.optional') : undefined}
-            help={initial ? t('ai.apiKeyKeep') : undefined} value={form.apiKey ?? ''} onChange={(e) => set('apiKey', e.target.value)} />
-          <Checkbox className="span-2" label={t('ai.isDefault')} checked={!!form.isDefault} disabled={initial?.isDefault} onChange={(e) => set('isDefault', e.target.checked)} />
-        </div>
-        <div className="row row--wrap">
-          <Button icon={<Plug size={16} />} onClick={() => test.mutate()} loading={test.isPending} disabled={!testable}>{test.isPending ? t('datasources.testing') : t('common.test')}</Button>
-        </div>
-        {testResult && <Notice kind={testOk ? 'success' : 'error'}>{testResult}</Notice>}
-        {save.error && <ErrorBox error={save.error} />}
-      </form>
-    </Modal>
-  );
-}
-
-function AiProviders() {
-  const t = useT();
-  const qc = useQueryClient();
-  const [editing, setEditing] = useState<AiProvider | null | 'new'>(null);
-  const [toDelete, setToDelete] = useState<AiProvider | null>(null);
-  const providers = useQuery({ queryKey: ['ai-providers'], queryFn: () => api.ai.providers().then((r) => r.providers) });
-  const remove = useMutation({
-    mutationFn: (id: number) => api.ai.removeProvider(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ai-providers'] }); setToDelete(null); toast.success(t('common.deleted')); },
-    onError: (e) => toast.error(e),
-  });
-
-  return (
-    <Panel title={t('ai.providers')} actions={<Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setEditing('new')}>{t('ai.addProvider')}</Button>} flush>
-      {providers.isLoading && <Spinner block />}
-      {providers.error && <div className="panel__body"><ErrorBox error={providers.error} /></div>}
-      {providers.data && providers.data.length === 0 && <EmptyState compact title={t('ai.empty')} hint={t('ai.emptyHint')} />}
-      {providers.data && providers.data.length > 0 && (
-        <div className="table-wrap">
-          <table className="table">
-            <thead><tr><th>{t('common.name')}</th><th>{t('ai.kind')}</th><th>{t('ai.model')}</th><th className="num">{t('common.actions')}</th></tr></thead>
-            <tbody>
-              {providers.data.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.name} {p.isDefault && <span className="badge">{t('common.default')}</span>}</td>
-                  <td>{t(kindKey(p.kind))}</td>
-                  <td className="mono">{p.model}</td>
-                  <td className="num">
-                    <div className="row row--end">
-                      <Button variant="ghost" size="sm" iconOnly icon={<Pencil size={15} />} onClick={() => setEditing(p)}>{t('common.edit')}</Button>
-                      <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete(p)}>{t('common.delete')}</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <AiProviderModal key={editing === 'new' ? 'new' : editing?.id ?? 'closed'} open={editing !== null} initial={editing === 'new' || editing === null ? null : editing} onClose={() => setEditing(null)} />
-      <ConfirmDialog open={!!toDelete} title={t('common.delete')} message={t('common.confirmDelete', { name: toDelete?.name ?? '' })} confirmLabel={t('common.delete')}
-        loading={remove.isPending} onConfirm={() => toDelete && remove.mutate(toDelete.id)} onClose={() => setToDelete(null)} />
-    </Panel>
-  );
-}
-
 export function SettingsPage() {
   const t = useT();
   const me = useAuth((s) => s.user);
@@ -243,7 +121,7 @@ export function SettingsPage() {
               ]} />
             </Labelled>
             <Labelled label={t('common.language')}>
-              <Segmented ariaLabel={t('common.language')} value={lang} onChange={setLang} options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))} />
+              <Segmented ariaLabel={t('common.language')} value={lang} onChange={setLang} options={[{ value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]} />
             </Labelled>
           </div>
         </Panel>
@@ -251,7 +129,7 @@ export function SettingsPage() {
           <ChangePassword />
         </Panel>
         {me?.role === 'admin' && <div className="settings-grid__full"><Users /></div>}
-        {me?.role === 'admin' && <div className="settings-grid__full"><AiProviders /></div>}
+        {me?.role === 'admin' && <div className="settings-grid__full"><AiProvidersPanel /></div>}
       </div>
     </>
   );

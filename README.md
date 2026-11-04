@@ -13,10 +13,10 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 - **Nguồn dữ liệu MariaDB**: thêm nhiều kết nối, kiểm tra kết nối, duyệt bảng/view và cột. Mật khẩu được mã hóa AES-256-GCM khi lưu.
 - **Bộ dữ liệu SQL**: viết câu `SELECT` (JOIN, CTE…) và dùng như một bảng. Server chỉ chấp nhận đúng một câu SELECT; mọi lệnh ghi bị chặn, kết nối đặt `READ ONLY` và có timeout.
 - Đăng nhập, phân quyền `admin / editor / viewer`, đổi mật khẩu, quản lý người dùng.
-- **Gợi ý biểu đồ bằng AI**: mô tả điều bạn muốn xem ("doanh thu theo tháng của từng khu vực") hoặc để AI tự đề xuất; mỗi gợi ý thêm thẳng vào khung vẽ. Dùng được **nhiều loại key**: Anthropic (Claude), OpenAI, Google Gemini hoặc bất kỳ máy chủ tương thích OpenAI (Ollama, vLLM, DeepSeek, Groq…). Key mã hóa khi lưu, chỉ máy chủ gọi AI; AI chỉ chọn trường / phép gộp / loại biểu đồ, **không bao giờ sinh SQL**.
-- **Đa ngôn ngữ**: tiếng Việt (mặc định) và tiếng Anh, tự nhận theo ngôn ngữ trình duyệt, đổi được ngay ở màn đăng nhập hoặc trong Cài đặt; số, ngày giờ và cả thông báo lỗi từ máy chủ đều hiển thị theo ngôn ngữ đã chọn. Thêm ngôn ngữ mới = một file từ điển + một dòng đăng ký (xem `docs/ARCHITECTURE.md`).
-- Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
+- Giao diện tiếng Việt (mặc định) và tiếng Anh. Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
 - Một container duy nhất: API Express + giao diện React build sẵn. Metadata (bảng điều khiển, kết nối, người dùng) cũng lưu trong MariaDB.
+- **Gợi ý biểu đồ bằng AI**: mô tả điều bạn muốn xem ("doanh thu theo tháng của từng khu vực") hoặc để AI tự đề xuất; mỗi gợi ý thêm thẳng vào khung vẽ. Dùng được **nhiều loại key**: Anthropic (Claude), OpenAI, Google Gemini hoặc bất kỳ máy chủ tương thích OpenAI (Ollama, vLLM, DeepSeek, Groq…). Key mã hóa khi lưu, chỉ máy chủ gọi AI; AI chỉ chọn trường / phép gộp / loại biểu đồ, **không bao giờ sinh SQL**.
+- **Đa ngôn ngữ hoàn chỉnh**: tự nhận theo ngôn ngữ trình duyệt, đổi được ngay ở màn đăng nhập; số, ngày giờ và cả thông báo lỗi từ máy chủ hiển thị theo ngôn ngữ đã chọn. Thêm ngôn ngữ mới = một file từ điển + một dòng đăng ký (xem `docs/ARCHITECTURE.md`).
 
 ## Chạy nhanh bằng Docker (khuyến nghị cho server Linux)
 
