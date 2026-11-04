@@ -70,7 +70,7 @@ export const en: DeepStringify<typeof vi> = {
     title: 'Settings', account: 'Account', changePassword: 'Change password', currentPassword: 'Current password', newPassword: 'New password',
     passwordChanged: 'Password changed', users: 'Users', addUser: 'Add user', displayName: 'Display name', role: 'Role',
     roleAdmin: 'Admin', roleEditor: 'Editor', roleViewer: 'Viewer', minPassword: 'At least 8 characters', appearance: 'Appearance',
-    loginMethod: 'Sign-in', providerLocal: 'Password', providerEntra: 'Microsoft Entra',
+    loginMethod: 'Sign-in', providerLocal: 'Password', providerEntra: 'Microsoft Entra ID',
     managedByEntra: 'This account signs in with Microsoft Entra ID; its password is managed by your organisation.',
   },
   kinds: { number: 'number', date: 'date/time', string: 'text', boolean: 'boolean', other: 'other' },

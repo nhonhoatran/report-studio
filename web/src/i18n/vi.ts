@@ -66,7 +66,7 @@ export const vi = {
     title: 'Cài đặt', account: 'Tài khoản', changePassword: 'Đổi mật khẩu', currentPassword: 'Mật khẩu hiện tại', newPassword: 'Mật khẩu mới',
     passwordChanged: 'Đã đổi mật khẩu', users: 'Người dùng', addUser: 'Thêm người dùng', displayName: 'Tên hiển thị', role: 'Vai trò',
     roleAdmin: 'Quản trị', roleEditor: 'Biên tập', roleViewer: 'Chỉ xem', minPassword: 'Tối thiểu 8 ký tự', appearance: 'Hiển thị',
-    loginMethod: 'Đăng nhập', providerLocal: 'Mật khẩu', providerEntra: 'Microsoft Entra',
+    loginMethod: 'Đăng nhập', providerLocal: 'Mật khẩu', providerEntra: 'Microsoft Entra ID',
     managedByEntra: 'Tài khoản này đăng nhập bằng Microsoft Entra ID; mật khẩu do tổ chức của bạn quản lý.',
   },
   kinds: { number: 'số', date: 'ngày giờ', string: 'chữ', boolean: 'đúng/sai', other: 'khác' },

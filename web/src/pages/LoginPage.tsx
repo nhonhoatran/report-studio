@@ -74,13 +74,13 @@ export function LoginPage() {
               </form>
             )}
             {local && entra && <div className="login__or" role="separator">{t('login.or')}</div>}
+            {entraErrorKey && <ErrorBox>{t(entraErrorKey)}</ErrorBox>}
             {entra && (
               <a className="btn btn--secondary" href={api.auth.entraLoginUrl(from)}>
                 <MicrosoftMark />
                 {t('login.withMicrosoft')}
               </a>
             )}
-            {entraErrorKey && <ErrorBox>{t(entraErrorKey)}</ErrorBox>}
             {!local && !entra && <ErrorBox>{t('login.noProviders')}</ErrorBox>}
           </div>
         )}
