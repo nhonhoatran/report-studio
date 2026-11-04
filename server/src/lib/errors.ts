@@ -6,7 +6,7 @@
 export type ErrorCode =
   | 'unauthorized' | 'forbidden' | 'not_found' | 'validation_failed' | 'invalid_id' | 'malformed_json' | 'internal'
   | 'invalid_credentials' | 'password_incorrect' | 'username_exists' | 'user_not_found' | 'cannot_delete_self'
-  | 'local_login_disabled' | 'account_has_no_password'
+  | 'local_login_disabled' | 'account_has_no_password' | 'preferences_too_large'
   | 'dashboard_not_found'
   | 'dataset_not_found' | 'dataset_name_exists' | 'dataset_wrong_datasource' | 'adhoc_sql_forbidden'
   | 'datasource_not_found' | 'datasource_name_exists' | 'table_not_found'

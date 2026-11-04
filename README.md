@@ -15,6 +15,7 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 - Đăng nhập, phân quyền `admin / editor / viewer`, đổi mật khẩu, quản lý người dùng.
 - **Đăng nhập bằng Microsoft Entra ID** (SSO, OpenID Connect): tự tạo tài khoản lần đầu, ánh xạ app role / group sang vai trò, giới hạn theo domain e-mail; có thể tắt hẳn đăng nhập bằng mật khẩu.
 - Giao diện tiếng Việt (mặc định) và tiếng Anh. Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
+- **Giao diện của bạn**: mỗi người dùng tự chọn chế độ sáng/tối, màu nhấn (6), bảng màu biểu đồ (5), cỡ chữ, góc bo và ngôn ngữ trong *Cài đặt*. Lựa chọn lưu theo tài khoản, áp dụng ngay khi đăng nhập trên mọi thiết bị.
 - Một container duy nhất: API Express + giao diện React build sẵn. Metadata (bảng điều khiển, kết nối, người dùng) cũng lưu trong MariaDB.
 - **Gợi ý biểu đồ bằng AI**: mô tả điều bạn muốn xem ("doanh thu theo tháng của từng khu vực") hoặc để AI tự đề xuất; mỗi gợi ý thêm thẳng vào khung vẽ. Dùng được **nhiều loại key**: Anthropic (Claude), OpenAI, Google Gemini hoặc bất kỳ máy chủ tương thích OpenAI (Ollama, vLLM, DeepSeek, Groq…). Key mã hóa khi lưu, chỉ máy chủ gọi AI; AI chỉ chọn trường / phép gộp / loại biểu đồ, **không bao giờ sinh SQL**.
 - **Đa ngôn ngữ hoàn chỉnh**: tự nhận theo ngôn ngữ trình duyệt, đổi được ngay ở màn đăng nhập; số, ngày giờ và cả thông báo lỗi từ máy chủ hiển thị theo ngôn ngữ đã chọn. Thêm ngôn ngữ mới = một file từ điển + một dòng đăng ký (xem `docs/ARCHITECTURE.md`).

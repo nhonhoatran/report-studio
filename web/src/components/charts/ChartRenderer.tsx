@@ -56,7 +56,7 @@ function shape(result: QueryResult, widget: Widget, lang: Lang) {
 export function ChartRenderer({ widget, result }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
-  const theme = useTheme((s) => s.resolved);
+  const look = useTheme((s) => s.stamp);
   const fmt = widget.options.numberFormat ?? 'auto';
 
   const option = useMemo<EChartsOption | null>(() => {
@@ -120,9 +120,9 @@ export function ChartRenderer({ widget, result }: Props) {
         label: widget.options.showValues ? { show: true, position: horizontal ? 'right' : 'top', color: text, formatter: (p: { value?: unknown }) => formatAxis(p.value, lang) } : undefined,
       })),
     };
-    // theme is a dependency so colours re-read when it flips
+    // the look stamp is a dependency so colours re-read when the theme, accent or palette changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget, result, fmt, lang, theme]);
+  }, [widget, result, fmt, lang, look]);
 
   if (result.rows.length === 0) return <EmptyState compact title={t('editor.noData')} />;
 

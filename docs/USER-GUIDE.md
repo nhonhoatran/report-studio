@@ -71,7 +71,21 @@ Thông báo lỗi có thể gặp sau khi quay về từ Microsoft:
 
 Lưu ý: AI chỉ nhìn thấy **tên và kiểu trường**, không nhìn thấy dữ liệu, và chỉ chọn trường / phép gộp / loại biểu đồ — câu SQL vẫn do máy chủ sinh ra như mọi biểu đồ khác.
 
-## 6. Ngôn ngữ & giao diện
-- Ngôn ngữ được nhận theo trình duyệt ở lần đầu; đổi ngay ở màn **Đăng nhập** (góc dưới) hoặc **Cài đặt → Hiển thị**. Lựa chọn được ghi nhớ trên trình duyệt này.
+## 6. Ngôn ngữ
+- Ngôn ngữ được nhận theo trình duyệt ở lần đầu; đổi ngay ở màn **Đăng nhập** (góc dưới) hoặc **Cài đặt → Giao diện của bạn**. Lựa chọn được ghi nhớ trên trình duyệt này và, khi đã đăng nhập, lưu theo tài khoản cùng các tùy chọn giao diện (mục 7).
 - Số, ngày giờ và thông báo lỗi từ máy chủ hiển thị theo ngôn ngữ đã chọn.
-- Giao diện tối là mặc định; chọn *Sáng* hoặc *Theo hệ thống* trong **Cài đặt → Hiển thị**.
+
+## 7. Giao diện của bạn
+
+Mỗi người dùng tự chọn cách ứng dụng hiển thị ở **Cài đặt → Giao diện của bạn**; thay đổi áp dụng ngay và lưu theo tài khoản, nên đăng nhập trên máy khác vẫn thấy đúng giao diện của mình.
+
+| Tùy chọn | Lựa chọn |
+|---|---|
+| Chế độ màu | Sáng · Tối · Theo hệ thống |
+| Màu nhấn (nút chính, mục đang chọn, viền focus) | Đồng thau · Biển · Ngọc bích · Tím · Hồng · Rêu |
+| Bảng màu biểu đồ (8 màu cho các chuỗi dữ liệu) | Sổ cái · Rực rỡ · Dịu nhẹ · Đại dương · Hoàng hôn |
+| Cỡ chữ | Nhỏ · Vừa · Lớn |
+| Góc bo | Vuông · Mềm · Tròn |
+| Ngôn ngữ | Tiếng Việt · English |
+
+Khung **xem trước** bên phải vẽ một biểu đồ mẫu và một thẻ số bằng đúng màu đã chọn. Nút **Về mặc định** trả lại giao diện "Sổ cái" gốc (không đổi ngôn ngữ).

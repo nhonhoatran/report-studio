@@ -1,6 +1,6 @@
 import type {
   AiProvider, AiProviderInput, AiSuggestRequest, AiSuggestResponse, Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo,
-  QueryRequest, QueryResult, TableInfo, TestResult, User, AuthProviders,
+  QueryRequest, QueryResult, TableInfo, TestResult, User, AuthProviders, UserPreferences,
 } from './types';
 
 /** `code` is the server's stable error code; `lib/errors.ts` translates it. `message` is the English fallback. */
@@ -43,9 +43,10 @@ export const api = {
     providers: () => request<AuthProviders>('GET', '/auth/providers'),
     /** Full-page navigation target that starts the Microsoft Entra sign-in. */
     entraLoginUrl: (returnTo: string) => `/api/auth/entra/login?returnTo=${encodeURIComponent(returnTo)}`,
-    login: (username: string, password: string) => request<{ user: User }>('POST', '/auth/login', { username, password }),
+    login: (username: string, password: string) => request<{ user: User; preferences: UserPreferences }>('POST', '/auth/login', { username, password }),
     logout: () => request<void>('POST', '/auth/logout'),
-    me: () => request<{ user: User }>('GET', '/auth/me'),
+    me: () => request<{ user: User; preferences: UserPreferences }>('GET', '/auth/me'),
+    updatePreferences: (preferences: UserPreferences) => request<{ preferences: UserPreferences }>('PUT', '/auth/preferences', { preferences }),
     changePassword: (currentPassword: string, newPassword: string) => request<void>('POST', '/auth/change-password', { currentPassword, newPassword }),
     users: () => request<{ users: User[] }>('GET', '/auth/users'),
     createUser: (input: { username: string; displayName: string; password: string; role: string }) => request<{ id: number }>('POST', '/auth/users', input),

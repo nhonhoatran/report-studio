@@ -7,6 +7,8 @@ export interface User {
 }
 /** Sign-in methods the server offers (`GET /auth/providers`). */
 export interface AuthProviders { local: boolean; entra: boolean }
+/** Per-user UI preferences: a flat bag the client owns (see store/theme.ts); the server stores it as is. */
+export type UserPreferences = Record<string, string | number | boolean>;
 
 export interface Datasource {
   id: number; name: string; type: string; host: string; port: number; database: string; username: string; ssl: boolean;
