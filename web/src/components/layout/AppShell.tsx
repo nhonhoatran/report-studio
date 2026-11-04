@@ -75,7 +75,7 @@ export function AppShell() {
               <span className="app__account-name truncate">{user.displayName}</span>
               <span className="app__account-role truncate">{roleLabel}</span>
             </div>
-            <Button variant="ghost" size="sm" iconOnly icon={<LogOut size={16} />} onClick={onLogout}>{t('nav.logout')}</Button>
+            <Button variant="ghost" size="sm" iconOnly icon={<LogOut size={15} />} onClick={onLogout}>{t('nav.logout')}</Button>
           </div>
         )}
       </aside>

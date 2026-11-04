@@ -128,8 +128,8 @@ export function AiSuggestDialog({ open, onClose }: { open: boolean; onClose: () 
                     </div>
                     {s.explanation && <p className="text-sm text-muted">{s.explanation}</p>}
                     <div className="row row--wrap">
-                      {s.dimensions.map((d, j) => <KindBadge key={`d-${j}-${d.field}`} kind={d.kind} label={d.bucket && d.bucket !== 'none' ? `${d.field} · ${t(`bucket.${d.bucket}`)}` : d.field} />)}
-                      {s.measures.map((m, j) => <KindBadge key={`m-${j}-${m.field}`} kind="number" label={`${t(`agg.${m.agg}`)} · ${m.field === '*' ? '' : m.field}`.replace(/ · $/, '')} />)}
+                      {s.dimensions.map((d, j) => <KindBadge key={`d-${j}-${d.field}`} kind={d.kind} label={d.bucket && d.bucket !== 'none' ? `${d.field} (${t(`bucket.${d.bucket}`)})` : d.field} />)}
+                      {s.measures.map((m, j) => <KindBadge key={`m-${j}-${m.field}`} kind="number" label={`${t(`agg.${m.agg}`)} ${m.field === '*' ? '' : m.field}`.trim()} />)}
                     </div>
                     <div className="card__actions">
                       <Button variant={done ? 'secondary' : 'primary'} size="sm" icon={done ? <Check size={14} /> : <Plus size={14} />} disabled={done} onClick={() => addOne(i)}>

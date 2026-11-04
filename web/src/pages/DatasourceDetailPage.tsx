@@ -107,7 +107,7 @@ export function DatasourceDetailPage() {
       {ds.isLoading && <Spinner block />}
       {ds.error && <ErrorBox error={ds.error} />}
       {ds.data && (
-      <div className="settings-grid">
+      <div className="panel-grid">
         <Panel title={t('datasources.tables')} flush>
           {tables.isLoading && <Spinner block />}
           {tables.error && <div className="panel__body"><ErrorBox error={tables.error} /></div>}

@@ -44,7 +44,7 @@
 .login__or::before, .login__or::after { content: ''; flex: 1; border-top: 1px solid var(--color-border); }
 
 /* Card grid for dashboards: one document per card */
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr)); gap: var(--space-4); }
 .card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); transition: border-color 120ms; min-width: 0; }
 .card:hover { border-color: var(--color-border-strong); }
 .card__title { font-weight: 600; font-size: var(--text-lg); }
@@ -53,9 +53,9 @@
 .card__meta { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-1); }
 .card__actions { display: flex; align-items: center; gap: var(--space-1); margin-top: auto; padding-top: var(--space-3); justify-content: flex-end; }
 
-/* Settings */
-.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
-.settings-grid__full { grid-column: 1 / -1; }
+/* A grid of panels (Settings, a data source's detail): as many columns as fit, a full-width row on demand */
+.panel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--panel-min-width), 1fr)); gap: var(--space-4); align-items: start; }
+.panel-grid__full { grid-column: 1 / -1; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .form-grid .span-2 { grid-column: span 2; }
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .form-grid .span-2 { grid-column: span 1; } }

@@ -101,8 +101,11 @@
 
   --sidebar-width: 232px;
   --pane-width: 280px;
+  --pane-width-narrow: 240px; /* the editor's panes under 1100px */
   --header-height: 52px;
-  --header-user-width: 160px;
+  /* the narrowest a dashboard card or a settings panel gets before the grid wraps */
+  --card-min-width: 260px;
+  --panel-min-width: 320px;
 }
 
 /* ---------- light theme: neutral paper, ink text, darkened brass ---------- */

@@ -30,7 +30,7 @@ function WidgetFrame({ widget, editable }: { widget: Widget; editable: boolean }
       onMouseDown={() => editable && select(widget.id)}
       onFocus={() => editable && select(widget.id)}
       tabIndex={editable ? 0 : undefined}
-      aria-label={widget.title || t('editor.widgetDefaultTitle')}
+      aria-label={autoTitle(widget, t)}
     >
       <header className={['widget__header', editable && 'widget__header--draggable'].filter(Boolean).join(' ')}>
         <h3 className={['widget__title', !widget.title && 'widget__title--empty'].filter(Boolean).join(' ')}>{autoTitle(widget, t)}</h3>

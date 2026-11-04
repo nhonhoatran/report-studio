@@ -28,7 +28,8 @@ table { border-collapse: collapse; width: 100%; }
 
 /*
  * Type roles shared by every page. Sentence case throughout: weight and tone carry the
- * hierarchy, never caps, tracking or rules. Mono is reserved for identifiers (.mono).
+ * hierarchy, never caps or tracked-out labels (headings keep a slight tightening above).
+ * Mono is reserved for identifiers (.mono): names, hosts, data types, model ids, SQL.
  */
 /* a label: above a field, on a well, a table header, a KPI caption, a card's meta line */
 .label, .field__label, .well__label, .pane__section-title, .table th, .kpi__label, .card__meta {

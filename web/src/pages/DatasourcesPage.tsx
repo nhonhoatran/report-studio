@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Database, Pencil, Plug, Plus, Trash2 } from 'lucide-react';
+import { ArrowRight, Database, Pencil, Plug, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Datasource, DatasourceInput } from '@/api/types';
 import { useAuth, canEdit } from '@/store/auth';
@@ -125,7 +125,7 @@ export function DatasourcesPage() {
                       <div className="row row--end">
                         {editable && <Button variant="ghost" size="sm" iconOnly icon={<Pencil size={15} />} onClick={() => setEditing(d)}>{t('common.edit')}</Button>}
                         {editable && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete(d)}>{t('common.delete')}</Button>}
-                        <Link className="btn btn--secondary btn--sm" to={`/datasources/${d.id}`}>{t('datasources.detail')}</Link>
+                        <Link className="btn btn--ghost btn--sm btn--icon" to={`/datasources/${d.id}`} aria-label={t('datasources.detail')}><ArrowRight size={15} aria-hidden /></Link>
                       </div>
                     </td>
                   </tr>

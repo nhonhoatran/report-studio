@@ -2,6 +2,7 @@
 /* KPI: the value scales with the widget's width and height, so it never overflows a small card */
 .kpi { height: 100%; container-type: size; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 var(--space-2); gap: var(--space-1); overflow: hidden; }
 .kpi__value { font-size: clamp(var(--text-xl), min(10cqw, 45cqh), var(--text-3xl)); font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi__label { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chart-table { height: 100%; overflow: auto; }
 .chart-table .table { font-size: var(--text-sm); }
 .chart-table .table th, .chart-table .table td { height: var(--space-7); padding: 0 var(--space-3); }

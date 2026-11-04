@@ -20,6 +20,10 @@ function palette(): string[] {
 const BAR_MAX_WIDTH = 48;
 const ANIMATION_MS = 300;
 const PIE_RADIUS = { full: '72%', inner: '45%' };
+const PIE_CENTER_Y = { withLegend: '45%', alone: '50%' };
+const SLICE_BORDER_WIDTH = 2;
+const LINE_SMOOTHNESS = 0.2;
+const AREA_FILL_OPACITY = 0.18;
 
 /** "Tổng revenue" for a measure column, read from the widget's own wells; undefined for anything else. */
 function measureLabel(widget: Widget, alias: string, lang: Lang): string | undefined {
@@ -107,8 +111,8 @@ export function ChartRenderer({ widget, result }: Props) {
         series: [{
           type: 'pie',
           radius: widget.type === 'donut' ? [PIE_RADIUS.inner, PIE_RADIUS.full] : PIE_RADIUS.full,
-          center: ['50%', showLegend ? '45%' : '50%'],
-          itemStyle: { borderColor: surface, borderWidth: 2, borderRadius: radiusSm },
+          center: ['50%', showLegend ? PIE_CENTER_Y.withLegend : PIE_CENTER_Y.alone],
+          itemStyle: { borderColor: surface, borderWidth: SLICE_BORDER_WIDTH, borderRadius: radiusSm },
           // labels only when asked for: the legend and the tooltip already name every slice
           label: { show: widget.options.showValues === true, color: text, formatter: (p) => `${p.name}\n${formatNumber(p.value as number, fmt, lang)}` },
           data: categories.map((c, i) => ({ name: c, value: m ? Number(result.rows[i]?.[m] ?? 0) : 0 })),
@@ -127,8 +131,8 @@ export function ChartRenderer({ widget, result }: Props) {
         name: s.name,
         type: widget.type === 'line' || widget.type === 'area' ? 'line' : 'bar',
         data: s.data,
-        smooth: widget.type === 'line' || widget.type === 'area' ? 0.2 : undefined,
-        areaStyle: widget.type === 'area' ? { opacity: 0.18 } : undefined,
+        smooth: widget.type === 'line' || widget.type === 'area' ? LINE_SMOOTHNESS : undefined,
+        areaStyle: widget.type === 'area' ? { opacity: AREA_FILL_OPACITY } : undefined,
         stack: widget.options.stacked ? 'total' : undefined,
         barMaxWidth: BAR_MAX_WIDTH,
         itemStyle: widget.type === 'column' || widget.type === 'bar' ? { borderRadius: horizontal ? [0, radiusSm, radiusSm, 0] : [radiusSm, radiusSm, 0, 0] } : undefined,
@@ -145,11 +149,10 @@ export function ChartRenderer({ widget, result }: Props) {
   if (widget.type === 'kpi') {
     const m = result.columns.find((c) => c.role === 'measure')?.alias ?? result.columns[0]?.alias;
     const value = m ? result.rows[0]?.[m] : undefined;
-    const measure = widget.query.measures[0];
     return (
       <div className="kpi">
         <div className="kpi__value">{formatNumber(value, fmt, lang)}</div>
-        <div className="kpi__label">{measure ? `${t(`agg.${measure.agg}`)} ${measure.field === '*' ? '' : measure.field}`.trim() : m}</div>
+        <div className="kpi__label">{(m && measureLabel(widget, m, lang)) ?? m}</div>
       </div>
     );
   }

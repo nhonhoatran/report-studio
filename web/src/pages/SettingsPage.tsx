@@ -67,7 +67,7 @@ function Users() {
       {users.data && (
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>{t('login.username')}</th><th>{t('settings.displayName')}</th><th>{t('settings.loginMethod')}</th><th>{t('settings.role')}</th><th></th></tr></thead>
+            <thead><tr><th>{t('login.username')}</th><th>{t('settings.displayName')}</th><th>{t('settings.loginMethod')}</th><th>{t('settings.role')}</th><th className="num">{t('common.actions')}</th></tr></thead>
             <tbody>
               {users.data.map((u) => (
                 <tr key={u.id}>
@@ -79,7 +79,7 @@ function Users() {
                       {roles.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
                     </Select>
                   </td>
-                  <td className="num">{u.id !== me?.id && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete({ id: u.id, username: u.username })}>{t('common.delete')}</Button>}</td>
+                  <td className="num"><div className="row row--end">{u.id !== me?.id && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete({ id: u.id, username: u.username })}>{t('common.delete')}</Button>}</div></td>
                 </tr>
               ))}
             </tbody>
@@ -87,7 +87,7 @@ function Users() {
         </div>
       )}
       <Modal open={open} title={t('settings.addUser')} onClose={() => setOpen(false)}
-        footer={<><Button variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button type="submit" form="user-form" variant="primary" loading={create.isPending} disabled={!form.username || !form.displayName || form.password.length < 8}>{t('common.create')}</Button></>}>
+        footer={<><Button variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button type="submit" form="user-form" variant="primary" loading={create.isPending} disabled={!form.username || !form.displayName || form.password.length < 8}>{t('common.save')}</Button></>}>
         <form id="user-form" className="stack" onSubmit={(e: FormEvent) => { e.preventDefault(); create.mutate(); }}>
           <Input label={t('login.username')} required autoComplete="off" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           <Input label={t('settings.displayName')} required value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
@@ -110,13 +110,13 @@ export function SettingsPage() {
   return (
     <>
       <Toolbar title={t('settings.title')} />
-      <div className="settings-grid">
-        <div className="settings-grid__full"><AppearancePanel /></div>
+      <div className="panel-grid">
+        <div className="panel-grid__full"><AppearancePanel /></div>
         <Panel title={t('settings.account')} actions={<span className="text-sm text-muted mono">{me?.username}</span>}>
           {me?.hasPassword === false ? <p className="text-sm text-muted">{t('settings.managedByEntra')}</p> : <ChangePassword />}
         </Panel>
-        {me?.role === 'admin' && <div className="settings-grid__full"><Users /></div>}
-        {me?.role === 'admin' && <div className="settings-grid__full"><AiProvidersPanel /></div>}
+        {me?.role === 'admin' && <div className="panel-grid__full"><Users /></div>}
+        {me?.role === 'admin' && <div className="panel-grid__full"><AiProvidersPanel /></div>}
       </div>
     </>
   );

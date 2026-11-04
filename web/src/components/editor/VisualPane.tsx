@@ -154,7 +154,7 @@ export function VisualPane() {
         </Well>
 
         <div className="row-between">
-          <span className="pane__section-title">{t('editor.filters')}</span>
+          <div className="pane__section-title">{t('editor.filters')}</div>
           <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={() => setQuery({ filters: [...q.filters, { id: newId('f'), field: fieldNames[0] ?? '', op: 'eq' }] })}>{t('editor.addFilter')}</Button>
         </div>
         {q.filters.map((f) => (
