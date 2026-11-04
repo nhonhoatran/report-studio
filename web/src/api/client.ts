@@ -1,5 +1,5 @@
 import type {
-  Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo, QueryRequest, QueryResult, TableInfo, User,
+  Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo, QueryRequest, QueryResult, TableInfo, User, UserPreferences,
 } from './types';
 
 export class ApiError extends Error {
@@ -38,9 +38,10 @@ async function request<T>(method: string, url: string, body?: unknown, init?: Re
 
 export const api = {
   auth: {
-    login: (username: string, password: string) => request<{ user: User }>('POST', '/auth/login', { username, password }),
+    login: (username: string, password: string) => request<{ user: User; preferences: UserPreferences }>('POST', '/auth/login', { username, password }),
     logout: () => request<void>('POST', '/auth/logout'),
-    me: () => request<{ user: User }>('GET', '/auth/me'),
+    me: () => request<{ user: User; preferences: UserPreferences }>('GET', '/auth/me'),
+    updatePreferences: (preferences: UserPreferences) => request<{ preferences: UserPreferences }>('PUT', '/auth/preferences', { preferences }),
     changePassword: (currentPassword: string, newPassword: string) => request<void>('POST', '/auth/change-password', { currentPassword, newPassword }),
     users: () => request<{ users: User[] }>('GET', '/auth/users'),
     createUser: (input: { username: string; displayName: string; password: string; role: string }) => request<{ id: number }>('POST', '/auth/users', input),

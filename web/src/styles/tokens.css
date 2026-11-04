@@ -3,6 +3,12 @@
  * Direction "Sổ cái": a dark data room. Deep blue-black surfaces, warm ivory text, one brass
  * accent for the primary action and the current selection. Dark is the primary theme; the
  * light theme is derived from the same hues (ivory paper, ink text, darkened brass).
+ *
+ * Personal looks: store/theme.ts writes five attributes on <html> from the signed-in user's
+ * preferences — data-theme (the resolved light|dark), data-accent, data-palette, data-text and
+ * data-radius — and each block below overrides tokens for one choice. The accent and palette
+ * blocks match the attribute on any element, not only the root, so a swatch in Settings
+ * previews a preset by carrying the same attribute.
  */
 :root {
   color-scheme: dark;
@@ -54,6 +60,7 @@
   --color-text-faint: #5f7280;
   --color-backdrop: rgb(4 9 14 / 0.7);
 
+  /* accent (brass by default; see the data-accent blocks) */
   --color-primary: #d9a441;
   --color-primary-hover: #e6b65a;
   --color-primary-soft: #2b2a1c;
@@ -69,14 +76,15 @@
   --color-warning: #d9a441;
   --color-warning-soft: #2b2a1c;
 
-  --color-focus: #d9a441;
-  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px rgb(217 164 65 / 0.7);
+  --color-focus: var(--color-primary);
+  --focus-ring-alpha: 70%;
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px color-mix(in srgb, var(--color-focus) var(--focus-ring-alpha), transparent);
 
   --color-measure: #3fb7a8;
   --color-dimension: #ecc46b;
   --color-date: #e36f5a;
 
-  /* categorical palette for charts, read by ChartRenderer */
+  /* categorical palette for charts, read by ChartRenderer ("ledger" by default; see data-palette) */
   --chart-1: #d9a441;
   --chart-2: #3fb7a8;
   --chart-3: #e36f5a;
@@ -125,8 +133,7 @@
   --color-success-soft: #dcefec;
   --color-warning: #a9781d;
   --color-warning-soft: #f1e6c8;
-  --color-focus: #8f6513;
-  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px rgb(143 101 19 / 0.55);
+  --focus-ring-alpha: 55%;
   --color-measure: #1f8a7e;
   --color-dimension: #8f6513;
   --color-date: #c2543f;
@@ -142,51 +149,40 @@
   --chart-axis: #5b6b76;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]):not([data-theme="light"]) {
-    color-scheme: light;
-    --shadow-sm: 0 1px 2px rgb(20 30 40 / 0.06);
-    --shadow-md: 0 6px 18px rgb(20 30 40 / 0.12);
-    --shadow-lg: 0 16px 40px rgb(20 30 40 / 0.2);
-    --color-bg: #efeadf;
-    --color-canvas: #ebe5d8;
-    --color-side: #f5f1e8;
-    --color-surface: #fbf9f4;
-    --color-surface-2: #f1ece1;
-    --color-raised: #ffffff;
-    --color-border: #ddd5c5;
-    --color-border-strong: #b4ab98;
-    --color-text: #10202b;
-    --color-text-muted: #5b6b76;
-    --color-text-faint: #8a97a0;
-    --color-backdrop: rgb(16 32 43 / 0.5);
-    --color-primary: #8f6513;
-    --color-primary-hover: #a9781d;
-    --color-primary-soft: #f1e6c8;
-    --color-primary-text: #7a5610;
-    --color-on-primary: #ffffff;
-    --color-danger: #c2543f;
-    --color-danger-hover: #d8604a;
-    --color-danger-soft: #f6e2dd;
-    --color-on-danger: #ffffff;
-    --color-success: #1f8a7e;
-    --color-success-soft: #dcefec;
-    --color-warning: #a9781d;
-    --color-warning-soft: #f1e6c8;
-    --color-focus: #8f6513;
-    --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px rgb(143 101 19 / 0.55);
-    --color-measure: #1f8a7e;
-    --color-dimension: #8f6513;
-    --color-date: #c2543f;
-    --chart-1: #b98a2a;
-    --chart-2: #2a9d91;
-    --chart-3: #d8604a;
-    --chart-4: #7f6fc9;
-    --chart-5: #a08c5a;
-    --chart-6: #3f8fc4;
-    --chart-7: #6e9a3a;
-    --chart-8: #c2608a;
-    --chart-grid: #ddd5c5;
-    --chart-axis: #5b6b76;
-  }
-}
+/* ---------- accent presets: the primary action, selection and focus colour ----------
+ * Dark values first ([data-accent]), light values after ([data-theme="light"] … [data-accent]).
+ * The brass block repeats the defaults so a brass swatch previews brass under any root accent. */
+[data-accent="brass"] { --color-primary: #d9a441; --color-primary-hover: #e6b65a; --color-primary-soft: #2b2a1c; --color-primary-text: #ecc46b; --color-on-primary: #10161c; }
+[data-accent="sea"]   { --color-primary: #6fb3e0; --color-primary-hover: #8ac4ea; --color-primary-soft: #172a3a; --color-primary-text: #8ec8ee; --color-on-primary: #10161c; }
+[data-accent="jade"]  { --color-primary: #3fb7a8; --color-primary-hover: #5ac9bb; --color-primary-soft: #14302f; --color-primary-text: #6fd3c6; --color-on-primary: #10161c; }
+[data-accent="violet"] { --color-primary: #9b8bd9; --color-primary-hover: #ae9fe3; --color-primary-soft: #262238; --color-primary-text: #b9ace8; --color-on-primary: #10161c; }
+[data-accent="rose"]  { --color-primary: #d77ba1; --color-primary-hover: #e294b5; --color-primary-soft: #3a2230; --color-primary-text: #eaa9c4; --color-on-primary: #10161c; }
+[data-accent="moss"]  { --color-primary: #8fb55a; --color-primary-hover: #a3c572; --color-primary-soft: #22301a; --color-primary-text: #b1d07f; --color-on-primary: #10161c; }
+
+:root[data-theme="light"][data-accent="brass"], :root[data-theme="light"] [data-accent="brass"] { --color-primary: #8f6513; --color-primary-hover: #a9781d; --color-primary-soft: #f1e6c8; --color-primary-text: #7a5610; --color-on-primary: #ffffff; }
+:root[data-theme="light"][data-accent="sea"], :root[data-theme="light"] [data-accent="sea"] { --color-primary: #2a6f9e; --color-primary-hover: #3580b3; --color-primary-soft: #dce9f3; --color-primary-text: #225b82; --color-on-primary: #ffffff; }
+:root[data-theme="light"][data-accent="jade"], :root[data-theme="light"] [data-accent="jade"] { --color-primary: #176f66; --color-primary-hover: #1e7c72; --color-primary-soft: #dcefec; --color-primary-text: #176e65; --color-on-primary: #ffffff; }
+:root[data-theme="light"][data-accent="violet"], :root[data-theme="light"] [data-accent="violet"] { --color-primary: #6a5bb8; --color-primary-hover: #7a6bc7; --color-primary-soft: #e6e2f5; --color-primary-text: #58499e; --color-on-primary: #ffffff; }
+:root[data-theme="light"][data-accent="rose"], :root[data-theme="light"] [data-accent="rose"] { --color-primary: #a8477a; --color-primary-hover: #ba5589; --color-primary-soft: #f4dfe9; --color-primary-text: #8c3a65; --color-on-primary: #ffffff; }
+:root[data-theme="light"][data-accent="moss"], :root[data-theme="light"] [data-accent="moss"] { --color-primary: #4a751c; --color-primary-hover: #527f22; --color-primary-soft: #e3eed6; --color-primary-text: #4c7322; --color-on-primary: #ffffff; }
+
+/* ---------- chart palette presets: the eight categorical colours ---------- */
+[data-palette="ledger"] { --chart-1: #d9a441; --chart-2: #3fb7a8; --chart-3: #e36f5a; --chart-4: #9b8bd9; --chart-5: #c9b58b; --chart-6: #6fb3e0; --chart-7: #8fb55a; --chart-8: #d77ba1; }
+[data-palette="vivid"]  { --chart-1: #ffb020; --chart-2: #22c7b8; --chart-3: #ff6b5b; --chart-4: #a78bfa; --chart-5: #f472b6; --chart-6: #38bdf8; --chart-7: #a3e635; --chart-8: #fb923c; }
+[data-palette="soft"]   { --chart-1: #e3c88a; --chart-2: #8fd1c8; --chart-3: #efa497; --chart-4: #bfb4ea; --chart-5: #d9c9a8; --chart-6: #a7cfe9; --chart-7: #bdd49a; --chart-8: #e3a9c3; }
+[data-palette="ocean"]  { --chart-1: #6fb3e0; --chart-2: #3fb7a8; --chart-3: #9b8bd9; --chart-4: #4f8fd1; --chart-5: #7fd3c4; --chart-6: #b9c7e8; --chart-7: #3b7fb8; --chart-8: #a0e0f0; }
+[data-palette="sunset"] { --chart-1: #e36f5a; --chart-2: #d9a441; --chart-3: #d77ba1; --chart-4: #f0b27a; --chart-5: #c25a5a; --chart-6: #ecc46b; --chart-7: #a85e8a; --chart-8: #f08a6e; }
+
+:root[data-theme="light"][data-palette="ledger"], :root[data-theme="light"] [data-palette="ledger"] { --chart-1: #b98a2a; --chart-2: #2a9d91; --chart-3: #d8604a; --chart-4: #7f6fc9; --chart-5: #a08c5a; --chart-6: #3f8fc4; --chart-7: #6e9a3a; --chart-8: #c2608a; }
+:root[data-theme="light"][data-palette="vivid"], :root[data-theme="light"] [data-palette="vivid"] { --chart-1: #d98f00; --chart-2: #0f9f92; --chart-3: #e04e3c; --chart-4: #7c5cdb; --chart-5: #d1407f; --chart-6: #0e8fcf; --chart-7: #6aa41a; --chart-8: #e3741a; }
+:root[data-theme="light"][data-palette="soft"], :root[data-theme="light"] [data-palette="soft"] { --chart-1: #b89450; --chart-2: #4d9c92; --chart-3: #d07868; --chart-4: #8e80c7; --chart-5: #a2905f; --chart-6: #5f98c2; --chart-7: #83a04f; --chart-8: #c37a9c; }
+:root[data-theme="light"][data-palette="ocean"], :root[data-theme="light"] [data-palette="ocean"] { --chart-1: #2a6f9e; --chart-2: #1f8a7e; --chart-3: #6a5bb8; --chart-4: #2f5fa8; --chart-5: #2a9d91; --chart-6: #6f86c2; --chart-7: #1d4f7a; --chart-8: #3f9fc4; }
+:root[data-theme="light"][data-palette="sunset"], :root[data-theme="light"] [data-palette="sunset"] { --chart-1: #c2543f; --chart-2: #b98a2a; --chart-3: #a8477a; --chart-4: #d9832f; --chart-5: #a03a3a; --chart-6: #c9a233; --chart-7: #8b4a72; --chart-8: #d8604a; }
+
+/* ---------- text size: the whole type scale moves together; "md" is the scale above ---------- */
+:root[data-text="sm"] { --text-xs: 10px; --text-sm: 11px; --text-md: 12px; --text-lg: 14px; --text-xl: 18px; --text-2xl: 24px; --text-3xl: 32px; }
+:root[data-text="lg"] { --text-xs: 12px; --text-sm: 13px; --text-md: 14px; --text-lg: 16px; --text-xl: 22px; --text-2xl: 28px; --text-3xl: 40px; }
+
+/* ---------- corners: "soft" is the scale above ---------- */
+:root[data-radius="sharp"] { --radius-sm: 0; --radius-md: 0; --radius-lg: 0; }
+:root[data-radius="round"] { --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; }

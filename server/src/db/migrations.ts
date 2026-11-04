@@ -59,4 +59,13 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
       ) ENGINE=InnoDB`,
     ],
   },
+  {
+    version: 2,
+    name: 'user_preferences',
+    sql: [
+      // Per-user appearance settings (theme mode, accent, chart palette, text size, corners,
+      // language). Client-owned JSON like dashboards.definition; the server checks shape and size.
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences TEXT NULL`,
+    ],
+  },
 ];

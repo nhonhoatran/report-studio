@@ -5,14 +5,17 @@ All endpoints live under `/api`, speak JSON, and (except login/health) require t
 ## Auth
 | Method | Path | Role | Body / notes |
 |---|---|---|---|
-| POST | `/auth/login` | – | `{ username, password }` → `{ user }`, sets `rs_session` cookie (httpOnly, SameSite=Lax) |
+| POST | `/auth/login` | – | `{ username, password }` → `{ user, preferences }`, sets `rs_session` cookie (httpOnly, SameSite=Lax) |
 | POST | `/auth/logout` | – | clears the cookie |
-| GET | `/auth/me` | any | `{ user }` |
+| GET | `/auth/me` | any | `{ user, preferences }` — preferences are read fresh from the user's row |
+| PUT | `/auth/preferences` | any | `{ preferences }` → `{ preferences }`; replaces the caller's own bag |
 | POST | `/auth/change-password` | any | `{ currentPassword, newPassword }` |
 | GET | `/auth/users` | admin | `{ users }` |
 | POST | `/auth/users` | admin | `{ username, displayName, password, role }` |
 | PUT | `/auth/users/:id` | admin | `{ displayName?, password?, role? }` |
 | DELETE | `/auth/users/:id` | admin | cannot delete yourself |
+
+`preferences` is the signed-in user's UI look, owned by the web client: a flat object of up to 32 identifier keys with string (≤ 60 chars), number or boolean values, at most 4 KB as JSON. The client currently stores `{ theme: 'light'|'dark'|'system', accent, palette, text, radius, lang }` — the preset names are listed in `web/src/store/theme.ts`; unknown values fall back to the defaults on the client.
 
 ## Data sources
 | Method | Path | Role | Body / notes |

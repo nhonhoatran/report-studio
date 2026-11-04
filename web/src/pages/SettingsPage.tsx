@@ -1,21 +1,24 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Role } from '@/api/types';
 import { useAuth } from '@/store/auth';
-import { useTheme, type ThemePref } from '@/store/theme';
+import { ACCENTS, PALETTES, RADII, TEXT_SCALES, isDefaultAppearance, useTheme, type Accent, type Palette, type Radius, type TextScale, type ThemePref } from '@/store/theme';
 import { toast } from '@/store/toast';
-import { useI18nStore, useT } from '@/i18n';
+import { useI18nStore, useT, type Lang } from '@/i18n';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { Panel } from '@/components/ui/Panel';
 import { Button } from '@/components/ui/Button';
 import { Input, Labelled, Select } from '@/components/ui/Field';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Segmented } from '@/components/ui/Segmented';
+import { Swatches } from '@/components/ui/Swatches';
 import { ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
+import { formatNumber } from '@/lib/format';
 import '@/components/layout/layout.css';
+import '@/components/charts/charts.css';
 
 function ChangePassword() {
   const t = useT();
@@ -32,6 +35,76 @@ function ChangePassword() {
       {m.error && <ErrorBox error={m.error} />}
       <div><Button type="submit" variant="primary" loading={m.isPending} disabled={!current || next.length < 8}>{t('settings.changePassword')}</Button></div>
     </form>
+  );
+}
+
+// Sample values for the preview bars (data, like a chart's rows; the colours come from the tokens).
+const PREVIEW_BARS = [42, 68, 55, 80, 61, 73, 49, 88];
+const PREVIEW_TOTAL = 1_284_500_000;
+
+/** A sample widget and KPI so a chosen accent and palette can be seen without opening a dashboard. */
+function LookPreview() {
+  const t = useT();
+  const lang = useI18nStore((s) => s.lang);
+  return (
+    <div className="look__preview" aria-hidden>
+      <div className="look__widget">
+        <span className="widget__title">{t('settings.previewWidget')}</span>
+        <div className="look__bars">
+          {PREVIEW_BARS.map((v, i) => <span key={i} className="look__bar" style={{ height: `${v}%` }} />)}
+        </div>
+      </div>
+      <div className="look__widget">
+        <div className="kpi">
+          <span className="kpi__label">{t('settings.previewKpi')}</span>
+          <span className="kpi__value">{formatNumber(PREVIEW_TOTAL, 'compact', lang)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Every choice applies at once and is saved to the user's account shortly after (store/theme.ts). */
+function Look() {
+  const t = useT();
+  const appearance = useTheme((s) => s.appearance);
+  const update = useTheme((s) => s.update);
+  const reset = useTheme((s) => s.reset);
+  const lang = useI18nStore((s) => s.lang);
+  return (
+    <Panel title={t('settings.appearance')}
+      actions={<Button size="sm" icon={<RotateCcw size={14} />} disabled={isDefaultAppearance(appearance)} onClick={reset}>{t('settings.lookReset')}</Button>}>
+      <div className="look">
+        <div className="stack">
+          <Labelled label={t('common.theme')}>
+            <Segmented<ThemePref> ariaLabel={t('common.theme')} value={appearance.theme} onChange={(theme) => update({ theme })} options={[
+              { value: 'light', label: t('common.themeLight') }, { value: 'dark', label: t('common.themeDark') }, { value: 'system', label: t('common.themeSystem') },
+            ]} />
+          </Labelled>
+          <Labelled label={t('settings.accent')}>
+            <Swatches<Accent> kind="accent" ariaLabel={t('settings.accent')} value={appearance.accent} onChange={(accent) => update({ accent })}
+              options={ACCENTS.map((a) => ({ value: a, label: t(`accent.${a}`) }))} />
+          </Labelled>
+          <Labelled label={t('settings.palette')}>
+            <Swatches<Palette> kind="palette" ariaLabel={t('settings.palette')} value={appearance.palette} onChange={(palette) => update({ palette })}
+              options={PALETTES.map((p) => ({ value: p, label: t(`palette.${p}`) }))} />
+          </Labelled>
+          <Labelled label={t('settings.textSize')}>
+            <Segmented<TextScale> ariaLabel={t('settings.textSize')} value={appearance.text} onChange={(text) => update({ text })}
+              options={TEXT_SCALES.map((v) => ({ value: v, label: t(`textSize.${v}`) }))} />
+          </Labelled>
+          <Labelled label={t('settings.corners')}>
+            <Segmented<Radius> ariaLabel={t('settings.corners')} value={appearance.radius} onChange={(radius) => update({ radius })}
+              options={RADII.map((v) => ({ value: v, label: t(`corners.${v}`) }))} />
+          </Labelled>
+          <Labelled label={t('common.language')}>
+            <Segmented<Lang> ariaLabel={t('common.language')} value={lang} onChange={(l) => update({ lang: l })} options={[{ value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]} />
+          </Labelled>
+          <p className="text-sm text-muted">{t('settings.lookHint')}</p>
+        </div>
+        <LookPreview />
+      </div>
+    </Panel>
   );
 }
 
@@ -106,24 +179,11 @@ function Users() {
 export function SettingsPage() {
   const t = useT();
   const me = useAuth((s) => s.user);
-  const { pref, setPref } = useTheme();
-  const { lang, setLang } = useI18nStore();
   return (
     <>
       <Toolbar title={t('settings.title')} />
       <div className="settings-grid">
-        <Panel title={t('settings.appearance')}>
-          <div className="stack">
-            <Labelled label={t('common.theme')}>
-              <Segmented<ThemePref> ariaLabel={t('common.theme')} value={pref} onChange={setPref} options={[
-                { value: 'light', label: t('common.themeLight') }, { value: 'dark', label: t('common.themeDark') }, { value: 'system', label: t('common.themeSystem') },
-              ]} />
-            </Labelled>
-            <Labelled label={t('common.language')}>
-              <Segmented ariaLabel={t('common.language')} value={lang} onChange={setLang} options={[{ value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]} />
-            </Labelled>
-          </div>
-        </Panel>
+        <div className="settings-grid__full"><Look /></div>
         <Panel title={`${t('settings.account')} · ${me?.username}`}>
           <ChangePassword />
         </Panel>

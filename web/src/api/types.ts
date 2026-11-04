@@ -1,5 +1,7 @@
 export type Role = 'admin' | 'editor' | 'viewer';
 export interface User { id: number; username: string; displayName: string; role: Role; createdAt?: string }
+/** Per-user UI preferences: a flat bag the client owns (see store/theme.ts); the server stores it as is. */
+export type UserPreferences = Record<string, string | number | boolean>;
 
 export interface Datasource {
   id: number; name: string; type: string; host: string; port: number; database: string; username: string; ssl: boolean;

@@ -62,8 +62,15 @@ export const en: DeepStringify<typeof vi> = {
   settings: {
     title: 'Settings', account: 'Account', changePassword: 'Change password', currentPassword: 'Current password', newPassword: 'New password',
     passwordChanged: 'Password changed', users: 'Users', addUser: 'Add user', displayName: 'Display name', role: 'Role',
-    roleAdmin: 'Admin', roleEditor: 'Editor', roleViewer: 'Viewer', minPassword: 'At least 8 characters', appearance: 'Appearance',
+    roleAdmin: 'Admin', roleEditor: 'Editor', roleViewer: 'Viewer', minPassword: 'At least 8 characters', appearance: 'Your look',
+    accent: 'Accent', palette: 'Chart palette', textSize: 'Text size', corners: 'Corners', lookReset: 'Reset to default',
+    lookHint: 'Saved to your account and applied on every device you sign in from.', lookSaveFailed: 'Could not save your appearance settings',
+    previewWidget: 'Revenue by month', previewKpi: 'Total revenue',
   },
+  accent: { brass: 'Brass', sea: 'Sea', jade: 'Jade', violet: 'Violet', rose: 'Rose', moss: 'Moss' },
+  palette: { ledger: 'Ledger', vivid: 'Vivid', soft: 'Soft', ocean: 'Ocean', sunset: 'Sunset' },
+  textSize: { sm: 'Small', md: 'Medium', lg: 'Large' },
+  corners: { sharp: 'Sharp', soft: 'Soft', round: 'Round' },
   kinds: { number: 'number', date: 'date/time', string: 'text', boolean: 'boolean', other: 'other' },
   notFound: { title: 'Page not found', back: 'Back to dashboards' },
 };

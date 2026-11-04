@@ -7,7 +7,7 @@ export const vi = {
     required: 'Trường này là bắt buộc', retry: 'Thử lại', duplicate: 'Nhân bản', optional: 'không bắt buộc',
     confirmDelete: 'Bạn chắc chắn muốn xóa "{name}"? Hành động này không thể hoàn tác.', deleted: 'Đã xóa',
     errorGeneric: 'Đã xảy ra lỗi. Vui lòng thử lại.', unauthorized: 'Phiên đăng nhập đã hết hạn.',
-    language: 'Ngôn ngữ', theme: 'Giao diện', themeLight: 'Sáng', themeDark: 'Tối', themeSystem: 'Theo hệ thống',
+    language: 'Ngôn ngữ', theme: 'Chế độ màu', themeLight: 'Sáng', themeDark: 'Tối', themeSystem: 'Theo hệ thống',
   },
   nav: { dashboards: 'Bảng điều khiển', datasources: 'Nguồn dữ liệu', settings: 'Cài đặt', logout: 'Đăng xuất', menu: 'Menu' },
   login: {
@@ -58,8 +58,15 @@ export const vi = {
   settings: {
     title: 'Cài đặt', account: 'Tài khoản', changePassword: 'Đổi mật khẩu', currentPassword: 'Mật khẩu hiện tại', newPassword: 'Mật khẩu mới',
     passwordChanged: 'Đã đổi mật khẩu', users: 'Người dùng', addUser: 'Thêm người dùng', displayName: 'Tên hiển thị', role: 'Vai trò',
-    roleAdmin: 'Quản trị', roleEditor: 'Biên tập', roleViewer: 'Chỉ xem', minPassword: 'Tối thiểu 8 ký tự', appearance: 'Hiển thị',
+    roleAdmin: 'Quản trị', roleEditor: 'Biên tập', roleViewer: 'Chỉ xem', minPassword: 'Tối thiểu 8 ký tự', appearance: 'Giao diện của bạn',
+    accent: 'Màu nhấn', palette: 'Bảng màu biểu đồ', textSize: 'Cỡ chữ', corners: 'Góc bo', lookReset: 'Về mặc định',
+    lookHint: 'Lưu cho tài khoản của bạn và áp dụng trên mọi thiết bị khi đăng nhập.', lookSaveFailed: 'Không lưu được tùy chọn giao diện',
+    previewWidget: 'Doanh thu theo tháng', previewKpi: 'Tổng doanh thu',
   },
+  accent: { brass: 'Đồng thau', sea: 'Biển', jade: 'Ngọc bích', violet: 'Tím', rose: 'Hồng', moss: 'Rêu' },
+  palette: { ledger: 'Sổ cái', vivid: 'Rực rỡ', soft: 'Dịu nhẹ', ocean: 'Đại dương', sunset: 'Hoàng hôn' },
+  textSize: { sm: 'Nhỏ', md: 'Vừa', lg: 'Lớn' },
+  corners: { sharp: 'Vuông', soft: 'Mềm', round: 'Tròn' },
   kinds: { number: 'số', date: 'ngày giờ', string: 'chữ', boolean: 'đúng/sai', other: 'khác' },
   notFound: { title: 'Không tìm thấy trang', back: 'Về trang bảng điều khiển' },
 } as const;

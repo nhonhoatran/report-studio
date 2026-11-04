@@ -50,3 +50,18 @@ Khi cần JOIN nhiều bảng hoặc tính toán trước:
 | Quản trị (admin) | tất cả + quản lý người dùng |
 
 Admin tạo tài khoản ở **Cài đặt → Người dùng**. Mỗi người tự đổi mật khẩu ở **Cài đặt → Tài khoản**.
+
+## 5. Giao diện của bạn
+
+Mỗi người dùng tự chọn cách ứng dụng hiển thị ở **Cài đặt → Giao diện của bạn**; thay đổi áp dụng ngay và lưu theo tài khoản, nên đăng nhập trên máy khác vẫn thấy đúng giao diện của mình.
+
+| Tùy chọn | Lựa chọn |
+|---|---|
+| Chế độ màu | Sáng · Tối · Theo hệ thống |
+| Màu nhấn (nút chính, mục đang chọn, viền focus) | Đồng thau · Biển · Ngọc bích · Tím · Hồng · Rêu |
+| Bảng màu biểu đồ (8 màu cho các chuỗi dữ liệu) | Sổ cái · Rực rỡ · Dịu nhẹ · Đại dương · Hoàng hôn |
+| Cỡ chữ | Nhỏ · Vừa · Lớn |
+| Góc bo | Vuông · Mềm · Tròn |
+| Ngôn ngữ | Tiếng Việt · English |
+
+Khung **xem trước** bên phải vẽ một biểu đồ mẫu và một thẻ số bằng đúng màu đã chọn. Nút **Về mặc định** trả lại giao diện "Sổ cái" gốc (không đổi ngôn ngữ).
