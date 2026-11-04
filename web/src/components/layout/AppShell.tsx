@@ -8,6 +8,15 @@ import { useT } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import './layout.css';
 
+/** Up to two letters for the avatar disc: the first letters of the first and last words of the name. */
+function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  const first = words[0]![0] ?? '';
+  const last = words.length > 1 ? words[words.length - 1]![0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
 export function AppShell() {
   const t = useT();
   const user = useAuth((s) => s.user);
@@ -34,12 +43,13 @@ export function AppShell() {
     { to: '/datasources', icon: <Database size={18} />, label: t('nav.datasources') },
     { to: '/settings', icon: <Settings size={18} />, label: t('nav.settings') },
   ];
+  const roleLabel = user ? t(user.role === 'admin' ? 'settings.roleAdmin' : user.role === 'editor' ? 'settings.roleEditor' : 'settings.roleViewer') : '';
 
   const onLogout = async () => {
     try {
       await logout();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.errorGeneric'));
+      toast.error(err);
     }
     navigate('/login');
   };
@@ -48,7 +58,7 @@ export function AppShell() {
     <div className="app">
       {open && <div className="app__scrim" role="presentation" onClick={() => setOpen(false)} />}
       <aside className={['app__sidebar', open && 'app__sidebar--open'].filter(Boolean).join(' ')}>
-        <div className="app__brand"><span className="app__brand-mark"><BarChart3 size={16} /></span>{t('app.name')}</div>
+        <div className="app__brand"><span className="app__brand-mark"><BarChart3 size={18} /></span>{t('app.name')}</div>
         <nav className="app__nav" aria-label={t('nav.menu')}>
           <ul>
             {nav.map((n) => (
@@ -58,15 +68,21 @@ export function AppShell() {
             ))}
           </ul>
         </nav>
+        {user && (
+          <div className="app__account">
+            <span className="app__avatar" aria-hidden>{initials(user.displayName)}</span>
+            <div className="app__account-text">
+              <span className="app__account-name truncate">{user.displayName}</span>
+              <span className="app__account-role truncate">{roleLabel}</span>
+            </div>
+            <Button variant="ghost" size="sm" iconOnly icon={<LogOut size={16} />} onClick={onLogout}>{t('nav.logout')}</Button>
+          </div>
+        )}
       </aside>
+      {/* narrow screens only: the menu button that opens the drawer */}
       <header className="app__header">
-        <div className="row">
-          <Button className="app__menu-btn" variant="ghost" iconOnly icon={<Menu size={18} />} onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t('nav.menu')}</Button>
-        </div>
-        <div className="row">
-          <span className="app__user text-sm text-muted truncate">{user?.displayName}</span>
-          <Button variant="ghost" size="sm" icon={<LogOut size={16} />} onClick={onLogout}>{t('nav.logout')}</Button>
-        </div>
+        <Button className="app__menu-btn" variant="ghost" iconOnly icon={<Menu size={18} />} onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t('nav.menu')}</Button>
+        <div className="app__brand"><span className="app__brand-mark"><BarChart3 size={18} /></span>{t('app.name')}</div>
       </header>
       <main className={['app__main', flush && 'app__main--flush'].filter(Boolean).join(' ')}>
         <Outlet />

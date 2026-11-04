@@ -2,7 +2,9 @@
  * Design tokens: the single place for shared values. Pages never write literals.
  * Direction "Sổ cái": a dark data room. Deep blue-black surfaces, warm ivory text, one brass
  * accent for the primary action and the current selection. Dark is the primary theme; the
- * light theme is derived from the same hues (ivory paper, ink text, darkened brass).
+ * light theme is neutral paper (warm white surfaces, ink text, darkened brass).
+ * Hierarchy comes from weight and tone, not from caps or rules: labels are sentence case,
+ * surfaces are layered with quiet borders and soft corners, mono is for identifiers only.
  *
  * Personal looks: store/theme.ts writes five attributes on <html> from the signed-in user's
  * preferences — data-theme (the resolved light|dark), data-accent, data-palette, data-text and
@@ -15,10 +17,6 @@
 
   --font-sans: "Archivo Variable", "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  /* condensed labels (uppercase, tracked) use the width axis of the same family */
-  --label-stretch: 87.5%;
-  --label-tracking: 0.1em;
-
   --text-xs: 11px;
   --text-sm: 12px;
   --text-md: 13px;
@@ -38,27 +36,32 @@
   --space-7: 32px;
   --space-8: 40px;
 
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
-  --shadow-sm: inset 0 1px 0 rgb(255 255 255 / 0.03);
-  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.35);
-  --shadow-lg: 0 20px 48px rgb(0 0 0 / 0.55);
+  /* control heights: fields, buttons, segmented items; the login form uses the large one */
+  --control-h: 36px;
+  --control-h-sm: 30px;
+  --control-h-lg: 40px;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 24px 56px rgb(0 0 0 / 0.55);
 
   /* surfaces, darkest to lightest */
-  --color-bg: #0a131c;
-  --color-canvas: #0a131c;
-  --color-side: #0f1b26;
-  --color-surface: #132330;
-  --color-surface-2: #0f1b26;
-  --color-raised: #182c3b;
-  --color-border: #1f3240;
-  --color-border-strong: #345064;
-  --color-text: #f1ebdf;
-  --color-text-muted: #93a1ab;
-  --color-text-faint: #5f7280;
-  --color-backdrop: rgb(4 9 14 / 0.7);
+  --color-bg: #0b1117;
+  --color-canvas: #0b1117;
+  --color-side: #0f161e;
+  --color-surface: #141c25;
+  --color-surface-2: #10181f;
+  --color-raised: #1b2531;
+  --color-border: #22303d;
+  --color-border-strong: #3a4c5c;
+  --color-text: #f3efe6;
+  --color-text-muted: #9aa7b2;
+  --color-text-faint: #66747f;
+  --color-backdrop: rgb(5 9 14 / 0.7);
 
   /* accent (brass by default; see the data-accent blocks) */
   --color-primary: #d9a441;
@@ -93,33 +96,33 @@
   --chart-6: #6fb3e0;
   --chart-7: #8fb55a;
   --chart-8: #d77ba1;
-  --chart-grid: #1f3240;
-  --chart-axis: #93a1ab;
+  --chart-grid: #22303d;
+  --chart-axis: #9aa7b2;
 
-  --sidebar-width: 220px;
+  --sidebar-width: 232px;
   --pane-width: 280px;
   --header-height: 52px;
   --header-user-width: 160px;
 }
 
-/* ---------- light theme: ivory paper, ink text, darkened brass ---------- */
+/* ---------- light theme: neutral paper, ink text, darkened brass ---------- */
 :root[data-theme="light"] {
   color-scheme: light;
-  --shadow-sm: 0 1px 2px rgb(20 30 40 / 0.06);
-  --shadow-md: 0 6px 18px rgb(20 30 40 / 0.12);
-  --shadow-lg: 0 16px 40px rgb(20 30 40 / 0.2);
-  --color-bg: #efeadf;
-  --color-canvas: #ebe5d8;
-  --color-side: #f5f1e8;
-  --color-surface: #fbf9f4;
-  --color-surface-2: #f1ece1;
+  --shadow-sm: 0 1px 2px rgb(18 28 38 / 0.06);
+  --shadow-md: 0 8px 24px rgb(18 28 38 / 0.1);
+  --shadow-lg: 0 24px 56px rgb(18 28 38 / 0.18);
+  --color-bg: #f4f3ef;
+  --color-canvas: #efeee9;
+  --color-side: #f8f7f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f3ef;
   --color-raised: #ffffff;
-  --color-border: #ddd5c5;
-  --color-border-strong: #b4ab98;
-  --color-text: #10202b;
-  --color-text-muted: #5b6b76;
-  --color-text-faint: #8a97a0;
-  --color-backdrop: rgb(16 32 43 / 0.5);
+  --color-border: #e4e1da;
+  --color-border-strong: #c7c2b6;
+  --color-text: #121c26;
+  --color-text-muted: #5d6b76;
+  --color-text-faint: #8a949c;
+  --color-backdrop: rgb(18 28 38 / 0.45);
   --color-primary: #8f6513;
   --color-primary-hover: #a9781d;
   --color-primary-soft: #f1e6c8;
@@ -145,8 +148,8 @@
   --chart-6: #3f8fc4;
   --chart-7: #6e9a3a;
   --chart-8: #c2608a;
-  --chart-grid: #ddd5c5;
-  --chart-axis: #5b6b76;
+  --chart-grid: #e4e1da;
+  --chart-axis: #5d6b76;
 }
 
 /* ---------- accent presets: the primary action, selection and focus colour ----------
@@ -184,5 +187,5 @@
 :root[data-text="lg"] { --text-xs: 12px; --text-sm: 13px; --text-md: 14px; --text-lg: 16px; --text-xl: 22px; --text-2xl: 28px; --text-3xl: 40px; }
 
 /* ---------- corners: "soft" is the scale above ---------- */
-:root[data-radius="sharp"] { --radius-sm: 0; --radius-md: 0; --radius-lg: 0; }
-:root[data-radius="round"] { --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; }
+:root[data-radius="sharp"] { --radius-sm: 0; --radius-md: 2px; --radius-lg: 4px; }
+:root[data-radius="round"] { --radius-sm: 10px; --radius-md: 14px; --radius-lg: 18px; }

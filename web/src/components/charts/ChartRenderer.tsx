@@ -2,11 +2,11 @@ import { useMemo } from 'react';
 import ReactEChartsCore from 'echarts-for-react/lib/core';
 import type { EChartsOption } from 'echarts';
 import { echarts } from './echarts';
-import type { QueryResult, Widget } from '@/api/types';
+import type { QueryResult, QueryResultColumn, Widget } from '@/api/types';
 import { formatAxis, formatCell, formatNumber } from '@/lib/format';
 import { cssPx, cssVar, useTheme } from '@/store/theme';
 import { translate, useI18nStore, useT, type Lang } from '@/i18n';
-import { CARTESIAN } from '@/lib/widget';
+import { CARTESIAN, dimensionAlias, measureAlias } from '@/lib/widget';
 import { EmptyState } from '@/components/ui/Feedback';
 import './charts.css';
 
@@ -21,6 +21,24 @@ const BAR_MAX_WIDTH = 48;
 const ANIMATION_MS = 300;
 const PIE_RADIUS = { full: '72%', inner: '45%' };
 
+/** "Tổng revenue" for a measure column, read from the widget's own wells; undefined for anything else. */
+function measureLabel(widget: Widget, alias: string, lang: Lang): string | undefined {
+  const m = widget.query.measures.find((mm) => measureAlias(mm) === alias);
+  if (!m) return undefined;
+  return `${translate(lang, `agg.${m.agg}`)} ${m.field === '*' ? '' : m.field}`.trim();
+}
+
+/** A column header a reader understands: the field (with its date bucket) or the measure label, never the SQL alias. */
+function columnLabel(widget: Widget, c: QueryResultColumn, lang: Lang): string {
+  if (c.role === 'measure') return measureLabel(widget, c.alias, lang) ?? c.alias;
+  if (c.role === 'dimension') {
+    const d = widget.query.dimensions.find((dd) => dimensionAlias(dd) === c.alias);
+    if (!d) return c.alias;
+    return d.bucket && d.bucket !== 'none' ? `${d.field} (${translate(lang, `bucket.${d.bucket}`)})` : d.field;
+  }
+  return c.alias;
+}
+
 /** rows -> { categories, series[] } honouring axis (dim 0) and legend (dim 1). */
 function shape(result: QueryResult, widget: Widget, lang: Lang) {
   const dims = result.columns.filter((c) => c.role === 'dimension').map((c) => c.alias);
@@ -28,10 +46,7 @@ function shape(result: QueryResult, widget: Widget, lang: Lang) {
   const axis = dims[0];
   const legend = dims[1];
   const categories = axis ? Array.from(new Set(result.rows.map((r) => String(r[axis] ?? '')))) : [''];
-  const labelOf = (alias: string) => {
-    const m = widget.query.measures.find((mm) => (mm.alias ?? `${mm.agg}_${mm.field === '*' ? 'all' : mm.field}`) === alias);
-    return m ? `${translate(lang, `agg.${m.agg}`)} · ${m.field === '*' ? '' : m.field}`.trim() : alias;
-  };
+  const labelOf = (alias: string) => measureLabel(widget, alias, lang) ?? alias;
   const series: { name: string; data: (number | null)[] }[] = [];
   if (legend && measures[0]) {
     const legendValues = Array.from(new Set(result.rows.map((r) => String(r[legend] ?? ''))));
@@ -94,14 +109,15 @@ export function ChartRenderer({ widget, result }: Props) {
           radius: widget.type === 'donut' ? [PIE_RADIUS.inner, PIE_RADIUS.full] : PIE_RADIUS.full,
           center: ['50%', showLegend ? '45%' : '50%'],
           itemStyle: { borderColor: surface, borderWidth: 2, borderRadius: radiusSm },
-          label: { show: widget.options.showValues !== false, color: text, formatter: (p) => `${p.name}\n${formatNumber(p.value as number, fmt, lang)}` },
+          // labels only when asked for: the legend and the tooltip already name every slice
+          label: { show: widget.options.showValues === true, color: text, formatter: (p) => `${p.name}\n${formatNumber(p.value as number, fmt, lang)}` },
           data: categories.map((c, i) => ({ name: c, value: m ? Number(result.rows[i]?.[m] ?? 0) : 0 })),
         }],
       };
     }
 
     const categoryAxis = { type: 'category' as const, data: categories, axisLine: { lineStyle: { color: grid } }, axisTick: { show: false }, axisLabel: { color: text, hideOverlap: true } };
-    const valueAxis = { type: 'value' as const, splitLine: { lineStyle: { color: grid } }, axisLabel: { color: text, fontFamily: cssVar('--font-mono'), fontSize: 11, formatter: (v: number) => formatAxis(v, lang) } };
+    const valueAxis = { type: 'value' as const, splitLine: { lineStyle: { color: grid } }, axisLabel: { color: text, formatter: (v: number) => formatAxis(v, lang) } };
     return {
       ...base,
       grid: { left: s2, right: s4, top: s4, bottom: showLegend ? s7 : s2, containLabel: true },
@@ -133,7 +149,7 @@ export function ChartRenderer({ widget, result }: Props) {
     return (
       <div className="kpi">
         <div className="kpi__value">{formatNumber(value, fmt, lang)}</div>
-        <div className="kpi__label">{measure ? `${t(`agg.${measure.agg}`)} · ${measure.field}` : m}</div>
+        <div className="kpi__label">{measure ? `${t(`agg.${measure.agg}`)} ${measure.field === '*' ? '' : measure.field}`.trim() : m}</div>
       </div>
     );
   }
@@ -143,7 +159,7 @@ export function ChartRenderer({ widget, result }: Props) {
     return (
       <div className="chart-table">
         <table className="table">
-          <thead><tr>{result.columns.map((c) => <th key={c.alias} className={numeric.has(c.alias) ? 'num' : undefined}>{c.alias}</th>)}</tr></thead>
+          <thead><tr>{result.columns.map((c) => <th key={c.alias} className={numeric.has(c.alias) ? 'num' : undefined}>{columnLabel(widget, c, lang)}</th>)}</tr></thead>
           <tbody>
             {result.rows.map((r, i) => (
               <tr key={i}>{result.columns.map((c) => <td key={c.alias} className={numeric.has(c.alias) ? 'num' : undefined}>{numeric.has(c.alias) ? formatNumber(r[c.alias], fmt, lang) : formatCell(r[c.alias], lang)}</td>)}</tr>

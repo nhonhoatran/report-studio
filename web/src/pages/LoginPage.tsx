@@ -60,11 +60,12 @@ export function LoginPage() {
     <main className="login">
       <section className="panel login__card" aria-labelledby="login-title">
         <div className="login__brand">
-          <span className="app__brand-mark"><BarChart3 size={16} /></span>
-          <div>
-            <h1 id="login-title">{t('login.title')}</h1>
-            <p className="text-sm text-muted">{t('app.name')} · {t('app.tagline')}</p>
-          </div>
+          <span className="app__brand-mark"><BarChart3 size={18} /></span>
+          <span>{t('app.name')}</span>
+        </div>
+        <div className="login__heading">
+          <h1 id="login-title">{t('login.title')}</h1>
+          <p className="text-sm text-muted">{t('app.tagline')}</p>
         </div>
         {providers.isPending ? <Spinner block /> : (
           <div className="stack">

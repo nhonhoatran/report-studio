@@ -112,7 +112,7 @@ export function SettingsPage() {
       <Toolbar title={t('settings.title')} />
       <div className="settings-grid">
         <div className="settings-grid__full"><AppearancePanel /></div>
-        <Panel title={`${t('settings.account')} · ${me?.username}`}>
+        <Panel title={t('settings.account')} actions={<span className="text-sm text-muted mono">{me?.username}</span>}>
           {me?.hasPassword === false ? <p className="text-sm text-muted">{t('settings.managedByEntra')}</p> : <ChangePassword />}
         </Panel>
         {me?.role === 'admin' && <div className="settings-grid__full"><Users /></div>}

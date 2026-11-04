@@ -10,8 +10,8 @@ body {
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
 }
-h1, h2, h3, h4 { margin: 0; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; text-wrap: balance; }
-h1 { font-size: var(--text-xl); }
+h1, h2, h3, h4 { margin: 0; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; text-wrap: balance; }
+h1 { font-size: var(--text-xl); letter-spacing: -0.015em; }
 h2 { font-size: var(--text-lg); }
 h3 { font-size: var(--text-md); }
 p { margin: 0; }
@@ -26,15 +26,23 @@ code, pre { font-family: var(--font-mono); font-size: var(--text-sm); }
 table { border-collapse: collapse; width: 100%; }
 ::selection { background: var(--color-primary); color: var(--color-on-primary); }
 
-/* A ledger label: uppercase, condensed, tracked. Panel and widget titles, table headers, wells. */
-.label, .panel__title, .pane__title, .pane__section-title, .well__label, .widget__title, .badge, .table th, .kpi__label, .card__meta, .field__label {
-  font-family: var(--font-sans);
-  font-stretch: var(--label-stretch);
-  text-transform: uppercase;
-  letter-spacing: var(--label-tracking);
-  font-size: var(--text-xs);
+/*
+ * Type roles shared by every page. Sentence case throughout: weight and tone carry the
+ * hierarchy, never caps, tracking or rules. Mono is reserved for identifiers (.mono).
+ */
+/* a label: above a field, on a well, a table header, a KPI caption, a card's meta line */
+.label, .field__label, .well__label, .pane__section-title, .table th, .kpi__label, .card__meta {
+  font-size: var(--text-sm);
   font-weight: 500;
+  line-height: 1.4;
   color: var(--color-text-muted);
+}
+/* a section title: a panel, a pane, a widget */
+.panel__title, .pane__title, .widget__title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text);
 }
 
 .sr-only {
@@ -42,7 +50,9 @@ table { border-collapse: collapse; width: 100%; }
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 .text-muted { color: var(--color-text-muted); }
+.text-faint { color: var(--color-text-faint); }
 .text-sm { font-size: var(--text-sm); }
+.text-xs { font-size: var(--text-xs); }
 .mono { font-family: var(--font-mono); font-size: var(--text-sm); }
 .stack { display: flex; flex-direction: column; gap: var(--space-3); }
 .row { display: flex; align-items: center; gap: var(--space-2); }

@@ -35,8 +35,9 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
         <ChartRenderer widget={widget} result={result} />
       </div>
       {showMeta && (
-        <div className="widget__footer">
-          <span>{result.truncated ? t('editor.truncated', { count: result.rowCount }) : t('editor.rows', { count: result.rowCount })} · {t('editor.ms', { ms: result.durationMs })}</span>
+        // editors only: row count, duration and the SQL, in a chip that appears on hover
+        <div className="widget__meta">
+          <span>{result.truncated ? t('editor.truncated', { count: result.rowCount }) : t('editor.rows', { count: result.rowCount })}, {t('editor.ms', { ms: result.durationMs })}</span>
           <Button variant="ghost" size="sm" iconOnly icon={<Code2 size={13} />} onClick={() => setSqlOpen(true)}>{t('editor.showSql')}</Button>
         </div>
       )}
