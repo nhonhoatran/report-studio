@@ -62,6 +62,6 @@ Mỗi người dùng tự chọn cách ứng dụng hiển thị ở **Cài đ�
 | Bảng màu biểu đồ (8 màu cho các chuỗi dữ liệu) | Sổ cái · Rực rỡ · Dịu nhẹ · Đại dương · Hoàng hôn |
 | Cỡ chữ | Nhỏ · Vừa · Lớn |
 | Góc bo | Vuông · Mềm · Tròn |
-| Ngôn ngữ | Tiếng Việt · English |
+| Ngôn ngữ (lưu theo trình duyệt, không theo tài khoản) | Tiếng Việt · English |
 
 Khung **xem trước** bên phải vẽ một biểu đồ mẫu và một thẻ số bằng đúng màu đã chọn. Nút **Về mặc định** trả lại giao diện "Sổ cái" gốc (không đổi ngôn ngữ).

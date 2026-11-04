@@ -38,15 +38,18 @@ async function request<T>(method: string, url: string, body?: unknown, init?: Re
 
 export const api = {
   auth: {
-    login: (username: string, password: string) => request<{ user: User; preferences: UserPreferences }>('POST', '/auth/login', { username, password }),
+    login: (username: string, password: string) => request<{ user: User }>('POST', '/auth/login', { username, password }),
     logout: () => request<void>('POST', '/auth/logout'),
-    me: () => request<{ user: User; preferences: UserPreferences }>('GET', '/auth/me'),
-    updatePreferences: (preferences: UserPreferences) => request<{ preferences: UserPreferences }>('PUT', '/auth/preferences', { preferences }),
+    me: () => request<{ user: User }>('GET', '/auth/me'),
     changePassword: (currentPassword: string, newPassword: string) => request<void>('POST', '/auth/change-password', { currentPassword, newPassword }),
     users: () => request<{ users: User[] }>('GET', '/auth/users'),
     createUser: (input: { username: string; displayName: string; password: string; role: string }) => request<{ id: number }>('POST', '/auth/users', input),
     updateUser: (id: number, input: { displayName?: string; password?: string; role?: string }) => request<void>('PUT', `/auth/users/${id}`, input),
     deleteUser: (id: number) => request<void>('DELETE', `/auth/users/${id}`),
+  },
+  preferences: {
+    get: () => request<{ preferences: UserPreferences }>('GET', '/preferences'),
+    update: (preferences: UserPreferences) => request<{ preferences: UserPreferences }>('PUT', '/preferences', { preferences }),
   },
   datasources: {
     list: () => request<{ datasources: Datasource[] }>('GET', '/datasources'),

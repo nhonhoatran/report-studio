@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { api } from '@/api/client';
-import { translate, useI18nStore, type Lang } from '@/i18n';
+import { translate, useI18nStore } from '@/i18n';
 import { toast } from '@/store/toast';
 
 /*
  * The look of the app for the signed-in user. Every choice is a preset named in tokens.css;
  * this store writes the matching attributes on <html>, mirrors the choice in localStorage so
- * the first paint already has it, and saves it to the user's row on the server so it follows
- * them to every device.
+ * the first paint already has it, and keeps it on the server (GET/PUT /preferences) so it
+ * follows the user to every device. The language is not part of it: it stays with the i18n store.
  */
 export type ThemePref = 'light' | 'dark' | 'system';
 export const THEME_PREFS = ['light', 'dark', 'system'] as const;
@@ -80,9 +80,8 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleSave(a: Appearance) {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    const lang = useI18nStore.getState().lang;
-    api.auth.updatePreferences({ ...a, lang }).catch(() => {
-      toast.error(translate(useI18nStore.getState().lang, 'settings.lookSaveFailed'));
+    api.preferences.update({ ...a }).catch(() => {
+      toast.error(translate(useI18nStore.getState().lang, 'appearance.saveFailed'));
     });
   }, SAVE_DELAY_MS);
 }
@@ -95,12 +94,14 @@ interface ThemeState {
   /** bumps whenever the look is applied; charts re-read the tokens on it */
   stamp: number;
   setPref: (p: ThemePref) => void;
-  /** change one or more choices (and optionally the language); applies at once, saves shortly after */
-  update: (patch: Partial<Appearance> & { lang?: Lang }) => void;
-  /** back to the project's default look; the language is left alone */
+  /** change one or more choices; applies at once, saves shortly after */
+  update: (patch: Partial<Appearance>) => void;
+  /** back to the project's default look */
   reset: () => void;
-  /** take the preferences the server returned at login / boot; an empty bag adopts this browser's look */
+  /** take the bag the server holds; an empty bag adopts this browser's look and saves it */
   hydrate: (prefs: Record<string, unknown> | undefined) => void;
+  /** fetch the bag once the user is signed in (called by the shell); a failure keeps the local look */
+  load: () => Promise<void>;
 }
 
 export const useTheme = create<ThemeState>((set, get) => {
@@ -126,10 +127,7 @@ export const useTheme = create<ThemeState>((set, get) => {
     resolved: resolve(initial.theme),
     stamp: 0,
     setPref: (p) => get().update({ theme: p }),
-    update: ({ lang, ...patch }) => {
-      if (lang) useI18nStore.getState().setLang(lang);
-      commit({ ...get().appearance, ...patch }, true);
-    },
+    update: (patch) => commit({ ...get().appearance, ...patch }, true),
     reset: () => commit(DEFAULT_APPEARANCE, true),
     hydrate: (prefs) => {
       if (!prefs) return;
@@ -138,8 +136,15 @@ export const useTheme = create<ThemeState>((set, get) => {
         scheduleSave(get().appearance);
         return;
       }
-      if (prefs.lang === 'vi' || prefs.lang === 'en') useI18nStore.getState().setLang(prefs.lang);
       commit(normalizeAppearance(prefs), false);
+    },
+    load: async () => {
+      try {
+        const { preferences } = await api.preferences.get();
+        get().hydrate(preferences);
+      } catch (err) {
+        console.error(err);
+      }
     },
   };
 });

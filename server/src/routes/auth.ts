@@ -7,12 +7,11 @@ import { requireAuth, requireRole } from '../auth/middleware.js';
 import { badRequest, conflict, notFound, unauthorized } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
 import { config } from '../config.js';
-import { parsePreferencesColumn, preferencesSchema, serializePreferences } from '../auth/preferences.js';
 
 export const authRouter = Router();
 
 interface UserRow extends Row {
-  id: number; username: string; display_name: string; password_hash: string; role: Role; created_at: string; preferences: string | null;
+  id: number; username: string; display_name: string; password_hash: string; role: Role; created_at: string;
 }
 
 const loginSchema = z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(200) });
@@ -39,7 +38,7 @@ authRouter.post('/login', async (req, res) => {
   if (!user || !ok) throw unauthorized('Invalid username or password');
   const session = toSession(user);
   res.cookie(COOKIE_NAME, signSession(session), cookieOptions());
-  res.json({ user: session, preferences: parsePreferencesColumn(user.preferences) });
+  res.json({ user: session });
 });
 
 authRouter.post('/logout', (_req, res) => {
@@ -47,20 +46,8 @@ authRouter.post('/logout', (_req, res) => {
   res.status(204).end();
 });
 
-authRouter.get('/me', requireAuth, async (req, res) => {
-  // the session comes from the JWT; preferences are read fresh so a change on another device shows up
-  const row = await queryOne<Row & { preferences: string | null }>('SELECT preferences FROM users WHERE id = ?', [req.user!.id]);
-  res.json({ user: req.user, preferences: parsePreferencesColumn(row?.preferences) });
-});
-
-// --- per-user UI preferences (any signed-in user, own row only) ---
-const preferencesBodySchema = z.object({ preferences: preferencesSchema });
-
-authRouter.put('/preferences', requireAuth, async (req, res) => {
-  const body = parse(preferencesBodySchema, req.body);
-  const result = await execute('UPDATE users SET preferences = ? WHERE id = ?', [serializePreferences(body.preferences), req.user!.id]);
-  if (result.affectedRows === 0) throw notFound('User not found');
-  res.json({ preferences: body.preferences });
+authRouter.get('/me', requireAuth, (req, res) => {
+  res.json({ user: req.user });
 });
 
 const changePasswordSchema = z.object({ currentPassword: z.string().min(1), newPassword: z.string().min(8).max(200) });

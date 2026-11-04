@@ -23,7 +23,7 @@ Report Studio is a two-package npm workspace that ships as one container.
 |---|---|
 | `config.ts` | env parsing with safe defaults; refuses to boot in production without `APP_SECRET` / `ADMIN_PASSWORD` |
 | `db/metadata.ts`, `db/migrations.ts` | pool to the metadata DB, ordered migrations recorded in `schema_migrations`, first-admin seed |
-| `auth/` | bcrypt passwords, HS256 JWT in an `httpOnly` cookie (`rs_session`), `requireAuth` / `requireRole`; `preferences.ts` validates the per-user UI bag stored in `users.preferences` (flat scalars, ≤ 4 KB, client-owned like a dashboard definition) |
+| `auth/` | bcrypt passwords, HS256 JWT in an `httpOnly` cookie (`rs_session`), `requireAuth` / `requireRole` |
 | `routes/datasources.ts` | CRUD, connection test, table & column introspection (`information_schema`) |
 | `routes/datasets.ts` | saved SQL datasets; SQL validated by `sqlGuard` and described with `SELECT … LIMIT 0` |
 | `routes/dashboards.ts` | dashboard documents (name + JSON `definition`), duplicate |
@@ -78,11 +78,11 @@ The server validates shape and size only, so new widget options never need a mig
 | Area | Notes |
 |---|---|
 | `styles/tokens.css` | the only place for colours, spacing (4px base), radii, type sizes, chart palette. Dark is the primary theme ("Sổ cái": blue-black surfaces, ivory text, brass accent); light is derived. Presets override tokens per attribute on `<html>`: `data-theme` (resolved `light`/`dark`), `data-accent` (6 accents), `data-palette` (5 chart palettes), `data-text` (3 type scales), `data-radius` (3 corner scales). Accent and palette blocks also match the attribute on any element, which is how a swatch previews a preset. Fonts are self-hosted via `@fontsource-variable` (Archivo with its width axis for condensed labels, JetBrains Mono for data) |
-| `components/ui/` | Button, Field (Input/Select/Textarea/Checkbox), Panel, Modal (`<dialog>`), Toolbar, Feedback (Spinner/ErrorBox/EmptyState/Toasts), Segmented, Swatches (colour presets, same group shape as Segmented), KindBadge |
+| `components/ui/` | Button, Field (Input/Select/Textarea/Checkbox), Panel, Modal (`<dialog>`), Toolbar, Feedback (Spinner/ErrorBox/EmptyState/Toasts), Segmented, KindBadge |
 | `components/editor/` | `FieldsPane` (draggable fields), `Canvas` (react-grid-layout, droppable widgets, 1 column under 640px), `VisualPane` (chart type, wells, filters, options), `WidgetChart` (react-query + states) |
 | `components/charts/ChartRenderer.tsx` | ECharts option builder for cartesian + pie, plus KPI card and table |
 | `store/editor.ts` | zustand store: definition, selection, dirty flag, drop logic (`autoPlace`: numbers → measures) |
-| `store/theme.ts` | the user's look: writes the preset attributes on `<html>`, mirrors them in `localStorage` (`rs.appearance`) for first paint, and saves them to `PUT /auth/preferences` (debounced) so they follow the user across devices. `useAuth` hydrates it from `/auth/me` and login; an empty server bag adopts the browser's current look. Charts re-read tokens on its `stamp` |
+| `store/theme.ts` | the user's look: writes the preset attributes on `<html>`, mirrors them in `localStorage` (`rs.appearance`) for first paint, loads them from `GET /preferences` once the shell mounts and saves changes with a debounced `PUT` (table `user_preferences`), so they follow the user across devices; an empty server bag adopts the browser's current look. Charts re-read tokens on its `stamp` |
 | `i18n/` | `vi` (default) and `en` dictionaries; `useT()` is typed over the dictionary keys |
 | `api/client.ts` | fetch wrapper; a 401 anywhere clears the session |
 
