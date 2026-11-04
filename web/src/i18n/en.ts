@@ -44,10 +44,27 @@ export const en: Dictionary = {
     widgetDefaultTitle: 'New visual', by: 'by', unsavedLeave: 'You have unsaved changes. Leave anyway?', leave: 'Leave', canvas: 'Canvas',
     bucketLabel: 'Date grouping', aggLabel: 'Aggregation', sortDesc: 'Value, high to low', sortAsc: 'Value, low to high',
     filterField: 'Field', filterOp: 'Condition', filterValue: 'Value', filterValues: 'Values (comma separated)',
+    // wells per chart type
+    wellAxisLegend: 'Axis / Legend', wellComboValues: 'Values (columns & line)', wellDetailLegend: 'Details / Legend', wellScatterValues: 'X axis · Y axis · Size',
+    wellStage: 'Stage', wellGroupDetail: 'Group / Details', wellXY: 'X axis / Y axis', wellValueTarget: 'Value / Target', wellTrendAxis: 'Trend axis', wellRowsColumns: 'Rows / Columns',
+    slotAxis: 'Axis', slotLegend: 'Legend', slotDetail: 'Details', slotX: 'X', slotY: 'Y', slotSize: 'Size', slotGroup: 'Group', slotRows: 'Rows', slotColumns: 'Columns', slotValue: 'Value', slotTarget: 'Target',
+    needsDimension: 'Drop a text or date field into Category / Axis', needsTwoDimensions: 'This chart needs two fields in X axis / Y axis', needsTwoMeasures: 'Drop two numeric fields into Values (X and Y)',
+    comboAsLine: 'Draw as a line', comboAsColumn: 'Draw as columns',
+    // options per chart type
+    stacking: 'Stacking', stackingStacked: 'Stacked', stackingPercent: '100%', legendPosition: 'Legend position', legendBottom: 'Bottom', legendTop: 'Top', legendRight: 'Right',
+    showTotals: 'Show totals', dataBars: 'Data bars in cells', gaugeMin: 'Minimum', gaugeMax: 'Maximum', target: 'Target', showTarget: 'Show target',
+    analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line',
+    // inside the visuals
+    total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',
   },
   agg: { sum: 'Sum', avg: 'Average', count: 'Count', count_distinct: 'Distinct count', min: 'Min', max: 'Max' },
   bucket: { none: 'Raw', year: 'Year', quarter: 'Quarter', month: 'Month', week: 'Week', day: 'Day', hour: 'Hour' },
-  chart: { column: 'Column', bar: 'Bar', line: 'Line', area: 'Area', pie: 'Pie', donut: 'Donut', kpi: 'KPI card', table: 'Table' },
+  chart: {
+    column: 'Column', bar: 'Bar', line: 'Line', area: 'Area', combo: 'Line & column', scatter: 'Scatter', waterfall: 'Waterfall', funnel: 'Funnel',
+    pie: 'Pie', donut: 'Donut', treemap: 'Treemap', heatmap: 'Heat map', radar: 'Radar',
+    gauge: 'Gauge', kpi: 'Card', trend: 'KPI with trend', multirow: 'Multi-row card',
+    table: 'Table', matrix: 'Matrix',
+  },
   filterOp: {
     eq: 'equals', neq: 'not equals', gt: 'greater than', gte: 'at least', lt: 'less than', lte: 'at most',
     in: 'in list', not_in: 'not in list', contains: 'contains', starts_with: 'starts with', between: 'between',

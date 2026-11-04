@@ -81,6 +81,9 @@ Stored as JSON in `dashboards.definition` and owned by the web client:
 ```ts
 { version: 1, widgets: Widget[], filters: [], settings: {} }
 Widget = { id, type, title, layout: {x,y,w,h}, datasourceId, source, query: {dimensions, measures, filters, orderBy, limit}, options }
+// options: legend, legendPosition, stacking (none|stacked|percent; the old `stacked: true` is read as `stacked`), showValues,
+//          numberFormat, sortBy, showTotals, dataBars, gaugeMin, gaugeMax, target, referenceLine, averageLine
+// a measure may carry `series: 'column' | 'line'` for the combo chart; the server never sees it
 ```
 
 The server validates shape and size only, so new widget options never need a migration.
@@ -92,7 +95,8 @@ The server validates shape and size only, so new widget options never need a mig
 | `styles/tokens.css` | the only place for colours, spacing (4px base), radii, control heights (`--control-h`, `-sm`, `-lg`), type sizes, chart palette. Dark is the primary theme ("Sổ cái": blue-black surfaces, ivory text, brass accent); light is neutral paper (warm white surfaces, ink text). Hierarchy comes from weight and tone — `base.css` sets the shared type roles (sentence-case labels, section titles), and mono (`.mono`) is reserved for identifiers and SQL. Presets override tokens per attribute on `<html>`: `data-theme` (resolved `light`/`dark`), `data-accent` (6 accents), `data-palette` (5 chart palettes), `data-text` (3 type scales), `data-radius` (3 corner scales). Accent and palette blocks also match the attribute on any element, which is how a swatch previews a preset. Fonts are self-hosted via `@fontsource-variable` (Archivo, JetBrains Mono) |
 | `components/ui/` | Button, Field (Input/Select/Textarea/Checkbox), Panel, Modal (`<dialog>`), Toolbar, Feedback (Spinner/ErrorBox/EmptyState/Toasts), Segmented, Swatches (colour presets, same group shape as Segmented), KindBadge |
 | `components/editor/` | `FieldsPane` (draggable fields), `Canvas` (react-grid-layout, droppable widgets, 1 column under 640px), `VisualPane` (chart type, wells, filters, options), `WidgetChart` (react-query + states) |
-| `components/charts/ChartRenderer.tsx` | ECharts option builder for cartesian + pie, plus KPI card and table |
+| `components/charts/` | `ChartRenderer.tsx` dispatches a widget to its visual; `options.ts` builds one ECharts option per type (column / bar / line / area with stacking and 100 %, combo, scatter / bubble, waterfall, funnel, pie / donut, treemap, heat map, radar, gauge), `Cards.tsx` draws the card, the KPI with trend and the multi-row card, `Tables.tsx` the sortable table and the matrix; `shape.ts` is the pure rows → categories / series / pivot layer they share. Colours, type and spacing are read from the tokens at render time |
+| `lib/widget.ts` | `CHART_SPECS`: one row per visual type — how many fields each well takes (min / max), what each slot means (X / Y / Size, Rows / Columns, Value / Target), which options apply; `missingWells()` names the well still short, `comboRole()` decides which measures the combo chart draws as lines |
 | `store/editor.ts` | zustand store: definition, selection, dirty flag, drop logic (`autoPlace`: numbers → measures) |
 | `store/theme.ts` | the user's look: writes the preset attributes on `<html>`, mirrors them in `localStorage` (`rs.appearance`) for first paint, loads them from `GET /preferences` once the shell mounts and saves changes with a debounced `PUT` (table `user_preferences`), so they follow the user across devices; an empty server bag adopts the browser's current look. The language is not part of it: it stays with the i18n store. Charts re-read tokens on its `stamp` |
 | `i18n/` | `LANGUAGES` registry (code, label, locale), `vi` (default) and `en` dictionaries; `useT()` is typed over the dictionary keys; plural forms via `Intl.PluralRules`; language = stored choice → browser language → `vi` |
@@ -121,10 +125,11 @@ Drag and drop: dnd-kit for *field → widget / well* (`DndContext` in `Dashboard
 
 ## Adding a new chart type
 
-1. Add the type to `WidgetType` / `WIDGET_TYPES` in `web/src/api/types.ts` and a label in both dictionaries (`chart.<type>`).
-2. Decide its wells in `lib/widget.ts` (`maxDimensions`, `maxMeasures`).
-3. Render it in `ChartRenderer.tsx`.
+1. Add the type to `WidgetType` / `WIDGET_TYPES` in `web/src/api/types.ts` (the array is the gallery order) and a label in both dictionaries (`chart.<type>`).
+2. Describe it in `lib/widget.ts` (`CHART_SPECS`): how many dimensions and measures it takes, the labels of its wells and slots, which options (`features`) the visual pane shows, its default row limit.
+3. Render it: an ECharts type gets a builder in `components/charts/options.ts` (register any new series or component in `echarts.ts`) and joins `ECHARTS_TYPES`; an HTML visual gets a component and a case in `ChartRenderer.tsx`.
 4. Pick an icon in `VisualPane.tsx` (`typeIcons`).
+5. Mirror its wells in `server/src/ai/suggest.ts` (`WIDGET_TYPES`, `SHAPES`) so the AI can propose it and the validator trims it.
 
 ## Adding another database engine
 

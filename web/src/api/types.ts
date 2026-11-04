@@ -32,7 +32,11 @@ export const DATE_BUCKETS: DateBucket[] = ['none', 'year', 'quarter', 'month', '
 export const FILTER_OPS: FilterOp[] = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in', 'contains', 'starts_with', 'between', 'is_null', 'not_null'];
 
 export interface Dimension { field: string; bucket?: DateBucket; alias?: string; kind?: FieldKind }
-export interface Measure { field: string; agg: Aggregation; alias?: string; kind?: FieldKind }
+export interface Measure {
+  field: string; agg: Aggregation; alias?: string; kind?: FieldKind;
+  /** combo chart only: drawn as a line on the secondary axis instead of a column */
+  series?: 'column' | 'line';
+}
 export interface Filter { id: string; field: string; op: FilterOp; value?: string | number | boolean | null; values?: (string | number)[] }
 export interface OrderBy { alias: string; direction: 'asc' | 'desc' }
 
@@ -42,7 +46,7 @@ export interface QueryRequest {
   datasourceId: number;
   source: QuerySource;
   dimensions: Omit<Dimension, 'kind'>[];
-  measures: Omit<Measure, 'kind'>[];
+  measures: Omit<Measure, 'kind' | 'series'>[];
   filters: Omit<Filter, 'id'>[];
   orderBy: OrderBy[];
   limit?: number;
@@ -52,13 +56,41 @@ export interface QueryResult {
   columns: QueryResultColumn[]; rows: Record<string, unknown>[]; rowCount: number; truncated: boolean; durationMs: number; sql: string;
 }
 
-export type WidgetType = 'column' | 'bar' | 'line' | 'area' | 'pie' | 'donut' | 'kpi' | 'table';
-export const WIDGET_TYPES: WidgetType[] = ['column', 'bar', 'line', 'area', 'pie', 'donut', 'kpi', 'table'];
+/**
+ * Visual types, in the order the gallery shows them: compare, trend, part-to-whole, relation,
+ * single value, tables. Their wells and options live in `lib/widget.ts` (`CHART_SPECS`).
+ */
+export type WidgetType =
+  | 'column' | 'bar' | 'line' | 'area' | 'combo' | 'scatter' | 'waterfall' | 'funnel'
+  | 'pie' | 'donut' | 'treemap' | 'heatmap' | 'radar'
+  | 'gauge' | 'kpi' | 'trend' | 'multirow'
+  | 'table' | 'matrix';
+export const WIDGET_TYPES: WidgetType[] = [
+  'column', 'bar', 'line', 'area', 'combo', 'scatter', 'waterfall', 'funnel',
+  'pie', 'donut', 'treemap', 'heatmap', 'radar',
+  'gauge', 'kpi', 'trend', 'multirow',
+  'table', 'matrix',
+];
 export type NumberFormat = 'auto' | 'compact' | 'integer' | 'percent' | 'currency';
+export type Stacking = 'none' | 'stacked' | 'percent';
+export const STACKINGS: Stacking[] = ['none', 'stacked', 'percent'];
+export type LegendPosition = 'bottom' | 'top' | 'right';
+export const LEGEND_POSITIONS: LegendPosition[] = ['bottom', 'top', 'right'];
 
 export interface WidgetOptions {
-  legend?: boolean; stacked?: boolean; showValues?: boolean; numberFormat?: NumberFormat;
+  legend?: boolean; legendPosition?: LegendPosition;
+  /** before 0.2 a boolean; `stacking` supersedes it (the store normalizes old documents) */
+  stacked?: boolean; stacking?: Stacking;
+  showValues?: boolean; numberFormat?: NumberFormat;
   sortBy?: 'none' | 'measure_desc' | 'measure_asc';
+  /** table / matrix: a totals row (and column) */
+  showTotals?: boolean;
+  /** table: a bar behind each numeric cell, proportional to the column's maximum */
+  dataBars?: boolean;
+  /** gauge: scale and target; a second measure overrides `target` */
+  gaugeMin?: number; gaugeMax?: number; target?: number;
+  /** cartesian analytics: a constant line and the series average */
+  referenceLine?: number; averageLine?: boolean;
 }
 export interface WidgetQuery { dimensions: Dimension[]; measures: Measure[]; filters: Filter[]; orderBy: OrderBy[]; limit?: number }
 export interface Widget {

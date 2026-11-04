@@ -15,6 +15,8 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 .pane--right { border-right: 0; border-left: 1px solid var(--color-border); }
 .pane__header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); min-height: calc(var(--space-8) + var(--space-1)); }
 .pane__body { padding: var(--space-4); overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); }
+/* a well has an explicit min-height, so without this it would shrink over its chips once the body scrolls */
+.pane__body > * { flex: none; }
 .pane__section-title { margin-top: var(--space-1); }
 
 /* Fields list: identifiers, so the names are mono */
@@ -55,6 +57,9 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 .well__empty { font-size: var(--text-sm); color: var(--color-text-faint); padding: var(--space-1) 0; }
 .well-chip { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-1) var(--space-1) var(--space-2); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: var(--text-sm); }
 .well-chip__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+/* what this slot means for the chart type (X, Rows, Target…) */
+.well-chip__slot { flex: none; font-size: var(--text-xs); font-weight: 500; color: var(--color-text-faint); }
+.well-chip .btn[aria-pressed="true"] { color: var(--color-primary-text); }
 .well-chip .field { flex: none; }
 .well-chip .field__control { height: calc(var(--space-6) + var(--space-1)); padding: 0 var(--space-1); font-size: var(--text-xs); max-width: 96px; }
 
@@ -63,10 +68,14 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 .filter-row__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1); }
 .filter-row__grid .span-2 { grid-column: span 2; }
 
-.chart-type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-1); }
-.chart-type { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-1); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-muted); font-size: var(--text-xs); transition: border-color 120ms, color 120ms, background-color 120ms; }
+/* Chart gallery: icon-only like Power BI's, the name on hover and beside the section title */
+.chart-type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-1); }
+.chart-type { display: flex; align-items: center; justify-content: center; height: var(--control-h); padding: 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-muted); transition: border-color 120ms, color 120ms, background-color 120ms; }
 .chart-type:hover { border-color: var(--color-border-strong); color: var(--color-text); }
 .chart-type[aria-pressed="true"] { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-text); }
+
+/* two short options side by side (a gauge's min and max) */
+.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
 
 .sql-box { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; white-space: pre-wrap; word-break: break-all; background: var(--color-side); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); max-height: 240px; overflow: auto; }
 

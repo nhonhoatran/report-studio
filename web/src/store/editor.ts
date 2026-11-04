@@ -48,9 +48,14 @@ function normalize(def: Partial<DashboardDefinition> | null | undefined): Dashbo
       orderBy: w.query?.orderBy ?? [],
       limit: w.query?.limit,
     },
-    options: { legend: true, numberFormat: 'auto', ...(w.options ?? {}) },
+    options: normalizeOptions(w.options),
   }));
   return { version: 1, widgets, filters: def?.filters ?? [], settings: def?.settings ?? {} };
+}
+/** Defaults, plus the pre-0.2 `stacked: true` read as the `stacking` choice it meant. */
+function normalizeOptions(o: Partial<Widget['options']> | undefined): Widget['options'] {
+  const { stacked, ...rest } = o ?? {};
+  return { legend: true, numberFormat: 'auto', ...rest, ...(stacked && !rest.stacking ? { stacking: 'stacked' as const } : {}) };
 }
 /** First free row below every widget (never Infinity: the document must stay JSON-safe). */
 const bottomOf = (widgets: Widget[]) => widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);

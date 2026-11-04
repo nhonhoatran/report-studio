@@ -1,8 +1,40 @@
 .chart-fill { width: 100%; height: 100%; min-height: 0; }
+
 /* KPI: the value scales with the widget's width and height, so it never overflows a small card */
 .kpi { height: 100%; container-type: size; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 var(--space-2); gap: var(--space-1); overflow: hidden; }
 .kpi__value { font-size: clamp(var(--text-xl), min(10cqw, 45cqh), var(--text-3xl)); font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kpi__label { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* KPI with trend: the headline block above, the sparkline filling what is left */
+.kpi--trend { justify-content: flex-start; gap: var(--space-2); padding-bottom: var(--space-1); }
+.kpi--trend .kpi__value { font-size: clamp(var(--text-xl), min(10cqw, 30cqh), var(--text-3xl)); }
+.kpi__head { display: flex; flex-direction: column; gap: var(--space-1); max-width: 100%; }
+.kpi__delta { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); font-weight: 500; white-space: nowrap; }
+.kpi__delta--good { color: var(--color-success); }
+.kpi__delta--bad { color: var(--color-danger); }
+.kpi__spark { flex: 1 1 0; min-height: var(--space-8); width: 100%; }
+
+/* Multi-row card: a small card per category, the accent bar the toasts also use */
+.cards { height: 100%; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 4), 1fr)); gap: var(--space-2); align-content: start; padding: 0 var(--space-1); }
+.cards__item { padding: var(--space-2) var(--space-3); background: var(--color-surface-2); border: 1px solid var(--color-border); border-left: 3px solid var(--color-primary); border-radius: var(--radius-md); min-width: 0; }
+.cards__title { font-weight: 600; color: var(--color-text); margin-bottom: var(--space-1); }
+.cards__rows { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.cards__row { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); }
+.cards__row dt { color: var(--color-text-muted); min-width: 0; }
+.cards__row dd { margin: 0; font-weight: 500; white-space: nowrap; }
+
+/* Table and matrix */
 .chart-table { height: 100%; overflow: auto; }
 .chart-table .table { font-size: var(--text-sm); }
 .chart-table .table th, .chart-table .table td { height: var(--space-7); padding: 0 var(--space-3); }
+/* a header is a button: sorting by the column, the arrow showing the current direction */
+.chart-table__sort { display: inline-flex; align-items: center; gap: var(--space-1); max-width: 100%; padding: 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: inherit; }
+.chart-table__sort:hover, .chart-table__sort--active { color: var(--color-text); }
+.chart-table .table th.num .chart-table__sort { flex-direction: row-reverse; }
+/* data bars: a tinted bar behind the number, as wide as its share of the column's maximum */
+.chart-table .table td.bar { background-image: linear-gradient(var(--color-primary-soft), var(--color-primary-soft)); background-repeat: no-repeat; background-size: var(--bar, 0%) 100%; }
+/* totals: a strong rule above, labels weighted like a header */
+.chart-table .table tfoot td, .chart-table .table tfoot th { border-top: 1px solid var(--color-border-strong); border-bottom: 0; font-weight: 600; color: var(--color-text); background: var(--color-side); position: sticky; bottom: 0; }
+/* matrix: row headers stay put while the columns scroll */
+.chart-table .matrix th[scope="row"] { position: sticky; left: 0; background: var(--color-side); text-align: left; font-weight: 500; color: var(--color-text); z-index: 1; }
+.chart-table .matrix thead th:first-child { left: 0; z-index: 2; }

@@ -35,8 +35,32 @@ Khi cần JOIN nhiều bảng hoặc tính toán trước:
 6. Kéo tiêu đề biểu đồ để di chuyển, kéo góc dưới-phải để đổi kích thước.
 7. **Lưu** (hoặc `Ctrl+S`). Nhấn **Xem** để mở chế độ chỉ đọc.
 
+### Các loại biểu đồ
+Bảng chọn loại biểu đồ (cột phải) là một lưới biểu tượng như Power BI; rê chuột để xem tên, tên loại đang chọn hiện cạnh tiêu đề mục. Mỗi loại đọc các ô theo cách riêng — nhãn ô và nhãn nhỏ trên từng trường (X, Y, Hàng, Cột, Mục tiêu…) cho biết trường đó đóng vai trò gì:
+
+| Nhóm | Loại | Ô nhận trường |
+|---|---|---|
+| So sánh | Cột, Thanh ngang, Đường, Vùng | Trục (+ Chú giải) · Giá trị; tùy chọn *Xếp chồng*: Không / Xếp chồng / 100% |
+| | Cột & đường | Trục · Giá trị — mỗi giá trị vẽ dạng cột hoặc đường (nút cạnh trường), đường dùng trục phải |
+| | Thác nước | Nhóm · 1 Giá trị — tăng/giảm theo màu, cột *Tổng cộng* ở cuối |
+| Tỉ trọng | Tròn, Vành khuyên, Phễu | Nhóm / Giai đoạn · 1 Giá trị |
+| | Sơ đồ cây | Nhóm (+ Chi tiết) · 1 Giá trị |
+| Tương quan | Phân tán | Chi tiết (+ Chú giải) · X, Y (+ Kích cỡ = bong bóng) |
+| | Bản đồ nhiệt | Trục X, Trục Y · 1 Giá trị |
+| | Radar | Trục (+ Chú giải) · Giá trị |
+| Một con số | Thẻ số | 1 Giá trị |
+| | Đồng hồ đo | Giá trị (+ Mục tiêu); nhỏ nhất / lớn nhất / mục tiêu đặt ở Tùy chọn khi không kéo trường |
+| | KPI xu hướng | Trục thời gian · Giá trị (+ Mục tiêu) — số mới nhất, chênh lệch so với kỳ trước, sparkline |
+| | Thẻ nhiều dòng | Nhóm · Giá trị — một thẻ nhỏ cho mỗi nhóm |
+| Bảng | Bảng | Cột · Giá trị — nhấn tiêu đề cột để sắp xếp; tùy chọn *Hiện dòng tổng*, *Thanh dữ liệu trong ô* |
+| | Ma trận | Hàng, Cột · Giá trị — bảng chéo có tổng hàng / cột |
+
+Khi đổi loại, các trường thừa so với ô của loại mới bị bỏ bớt; nếu còn thiếu, biểu đồ nhắc ô nào cần thêm.
+
 ### Mẹo
-- Trục + Chú giải = 2 trường chữ: biểu đồ cột/đường sẽ tách thành nhiều chuỗi (bật *Xếp chồng* nếu muốn cộng dồn).
+- Trục + Chú giải = 2 trường chữ: biểu đồ cột/đường sẽ tách thành nhiều chuỗi (đặt *Xếp chồng* nếu muốn cộng dồn, *100%* để so tỉ trọng).
+- Mục *Phân tích* của biểu đồ cột/đường: *Đường tham chiếu* (một hằng số) và *Đường trung bình* của chuỗi đầu tiên.
+- Dòng tổng của bảng / ma trận chỉ cộng các giá trị cộng được (Tổng, Số lượng); Trung bình / Nhỏ nhất / Lớn nhất hiện "–".
 - Thẻ số (KPI) chỉ nhận một *Giá trị*.
 - Bảng nhận nhiều cột tuỳ ý; nếu không có *Giá trị* thì hiển thị các dòng duy nhất.
 - Biểu tượng `</>` ở chân mỗi biểu đồ hiển thị câu SQL đã sinh ra — tiện để kiểm tra hoặc copy sang công cụ khác.

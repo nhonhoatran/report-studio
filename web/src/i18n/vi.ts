@@ -41,10 +41,27 @@ export const vi = {
     widgetDefaultTitle: 'Biểu đồ mới', by: 'theo', unsavedLeave: 'Bạn có thay đổi chưa lưu. Rời trang?', leave: 'Rời trang', canvas: 'Khung vẽ',
     bucketLabel: 'Nhóm theo thời gian', aggLabel: 'Phép gộp', sortDesc: 'Giá trị giảm dần', sortAsc: 'Giá trị tăng dần',
     filterField: 'Trường', filterOp: 'Điều kiện', filterValue: 'Giá trị', filterValues: 'Giá trị (phân cách bằng dấu phẩy)',
+    // wells per chart type
+    wellAxisLegend: 'Trục / Chú giải', wellComboValues: 'Giá trị (cột & đường)', wellDetailLegend: 'Chi tiết / Chú giải', wellScatterValues: 'Trục X · Trục Y · Kích cỡ',
+    wellStage: 'Giai đoạn', wellGroupDetail: 'Nhóm / Chi tiết', wellXY: 'Trục X / Trục Y', wellValueTarget: 'Giá trị / Mục tiêu', wellTrendAxis: 'Trục thời gian', wellRowsColumns: 'Hàng / Cột',
+    slotAxis: 'Trục', slotLegend: 'Chú giải', slotDetail: 'Chi tiết', slotX: 'X', slotY: 'Y', slotSize: 'Kích cỡ', slotGroup: 'Nhóm', slotRows: 'Hàng', slotColumns: 'Cột', slotValue: 'Giá trị', slotTarget: 'Mục tiêu',
+    needsDimension: 'Kéo một trường chữ hoặc ngày vào ô Nhóm / Trục', needsTwoDimensions: 'Biểu đồ này cần hai trường ở ô Trục X / Trục Y', needsTwoMeasures: 'Kéo hai trường số vào ô Giá trị (X và Y)',
+    comboAsLine: 'Vẽ dạng đường', comboAsColumn: 'Vẽ dạng cột',
+    // options per chart type
+    stacking: 'Xếp chồng', stackingStacked: 'Xếp chồng', stackingPercent: '100%', legendPosition: 'Vị trí chú giải', legendBottom: 'Dưới', legendTop: 'Trên', legendRight: 'Phải',
+    showTotals: 'Hiện dòng tổng', dataBars: 'Thanh dữ liệu trong ô', gaugeMin: 'Nhỏ nhất', gaugeMax: 'Lớn nhất', target: 'Mục tiêu', showTarget: 'Hiện mục tiêu',
+    analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình',
+    // inside the visuals
+    total: 'Tổng cộng', increase: 'Tăng', decrease: 'Giảm', vsPrevious: 'so với kỳ trước', targetLabel: 'Mục tiêu {value}', sortColumn: 'Sắp xếp theo cột này',
   },
   agg: { sum: 'Tổng', avg: 'Trung bình', count: 'Số lượng', count_distinct: 'Số lượng khác nhau', min: 'Nhỏ nhất', max: 'Lớn nhất' },
   bucket: { none: 'Nguyên gốc', year: 'Năm', quarter: 'Quý', month: 'Tháng', week: 'Tuần', day: 'Ngày', hour: 'Giờ' },
-  chart: { column: 'Cột', bar: 'Thanh ngang', line: 'Đường', area: 'Vùng', pie: 'Tròn', donut: 'Vành khuyên', kpi: 'Thẻ số', table: 'Bảng' },
+  chart: {
+    column: 'Cột', bar: 'Thanh ngang', line: 'Đường', area: 'Vùng', combo: 'Cột & đường', scatter: 'Phân tán', waterfall: 'Thác nước', funnel: 'Phễu',
+    pie: 'Tròn', donut: 'Vành khuyên', treemap: 'Sơ đồ cây', heatmap: 'Bản đồ nhiệt', radar: 'Radar',
+    gauge: 'Đồng hồ đo', kpi: 'Thẻ số', trend: 'KPI xu hướng', multirow: 'Thẻ nhiều dòng',
+    table: 'Bảng', matrix: 'Ma trận',
+  },
   filterOp: {
     eq: 'bằng', neq: 'khác', gt: 'lớn hơn', gte: 'lớn hơn hoặc bằng', lt: 'nhỏ hơn', lte: 'nhỏ hơn hoặc bằng',
     in: 'thuộc danh sách', not_in: 'không thuộc', contains: 'chứa', starts_with: 'bắt đầu bằng', between: 'trong khoảng',

@@ -4,7 +4,7 @@ import { Code2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Widget } from '@/api/types';
 import { useT } from '@/i18n';
-import { isRunnable, toQueryRequest, widgetQueryKey } from '@/lib/widget';
+import { isRunnable, missingWells, toQueryRequest, widgetQueryKey } from '@/lib/widget';
 import { ChartRenderer } from '@/components/charts/ChartRenderer';
 import { EmptyState, ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { Button } from '@/components/ui/Button';
@@ -15,17 +15,18 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
   const t = useT();
   const [sqlOpen, setSqlOpen] = useState(false);
   const runnable = isRunnable(widget);
+  const missing = missingWells(widget);
   const query = useQuery({
     queryKey: widgetQueryKey(widget),
     queryFn: ({ signal }) => api.query.run(toQueryRequest(widget)!, signal),
-    enabled: runnable && (widget.type === 'table' || widget.query.measures.length > 0),
+    enabled: runnable && !missing,
     staleTime: 30_000,
     retry: false,
     placeholderData: (prev) => prev,
   });
 
   if (!runnable) return <div className="widget__center"><EmptyState compact title={t('editor.needsFields')} /></div>;
-  if (widget.type !== 'table' && widget.query.measures.length === 0) return <div className="widget__center"><EmptyState compact title={t('editor.needsMeasure')} /></div>;
+  if (missing) return <div className="widget__center"><EmptyState compact title={t(missing)} /></div>;
   if (query.isPending) return <div className="widget__center"><Spinner /></div>;
   if (query.error) return <div className="widget__body"><ErrorBox error={query.error} /></div>;
   const result = query.data!;

@@ -1,8 +1,15 @@
 import * as echarts from 'echarts/core';
-import { BarChart, LineChart, PieChart } from 'echarts/charts';
-import { DatasetComponent, GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
+import { BarChart, FunnelChart, GaugeChart, HeatmapChart, LineChart, PieChart, RadarChart, ScatterChart, TreemapChart } from 'echarts/charts';
+import {
+  DatasetComponent, GridComponent, LegendComponent, MarkLineComponent, RadarComponent, TooltipComponent, VisualMapComponent,
+} from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 
-echarts.use([BarChart, LineChart, PieChart, DatasetComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer]);
+// Only the series and components the renderer uses are bundled (see options.ts).
+echarts.use([
+  BarChart, LineChart, PieChart, ScatterChart, FunnelChart, TreemapChart, HeatmapChart, RadarChart, GaugeChart,
+  DatasetComponent, GridComponent, LegendComponent, TooltipComponent, VisualMapComponent, MarkLineComponent, RadarComponent,
+  CanvasRenderer,
+]);
 
 export { echarts };

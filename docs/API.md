@@ -102,7 +102,7 @@ A suggestion:
 
 ```jsonc
 {
-  "type": "line",                                   // column|bar|line|area|pie|donut|kpi|table
+  "type": "line",                                   // column|bar|line|area|combo|scatter|waterfall|funnel|pie|donut|treemap|heatmap|radar|gauge|kpi|trend|multirow|table|matrix
   "title": "Doanh thu theo tháng",
   "explanation": "…",
   "dimensions": [{ "field": "order_date", "kind": "date", "bucket": "month" }],

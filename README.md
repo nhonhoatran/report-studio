@@ -8,7 +8,8 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 
 - **Kéo-thả xây dựng biểu đồ** kiểu Power BI: kéo trường vào biểu đồ (tự xếp số → *Giá trị*, chữ/ngày → *Trục*), hoặc thả vào ô *Trục / Chú giải / Giá trị*.
 - **Khung vẽ dạng lưới**: kéo để sắp xếp, kéo góc để đổi kích thước; tự xếp 1 cột trên điện thoại.
-- 8 loại hiển thị: cột, thanh ngang, đường, vùng, tròn, vành khuyên, thẻ số (KPI), bảng.
+- **19 loại hiển thị** theo bộ biểu đồ của Power BI: cột, thanh ngang, đường, vùng (xếp chồng / 100%), cột & đường (2 trục), phân tán / bong bóng, thác nước, phễu, tròn, vành khuyên, sơ đồ cây, bản đồ nhiệt, radar, đồng hồ đo (có mục tiêu), thẻ số, KPI xu hướng (so với kỳ trước, mục tiêu, sparkline), thẻ nhiều dòng, bảng (sắp xếp theo cột, dòng tổng, thanh dữ liệu), ma trận (pivot hàng × cột, tổng).
+- Tùy chọn từng biểu đồ: vị trí chú giải, nhãn giá trị, đường tham chiếu và đường trung bình, định dạng số, sắp xếp, giới hạn dòng.
 - Gộp dữ liệu phía server: `SUM / AVG / COUNT / COUNT DISTINCT / MIN / MAX`, nhóm theo ngày (năm / quý / tháng / tuần / ngày / giờ), bộ lọc, sắp xếp, giới hạn dòng.
 - **Nguồn dữ liệu MariaDB**: thêm nhiều kết nối, kiểm tra kết nối, duyệt bảng/view và cột. Mật khẩu được mã hóa AES-256-GCM khi lưu.
 - **Bộ dữ liệu SQL**: viết câu `SELECT` (JOIN, CTE…) và dùng như một bảng. Server chỉ chấp nhận đúng một câu SELECT; mọi lệnh ghi bị chặn, kết nối đặt `READ ONLY` và có timeout.

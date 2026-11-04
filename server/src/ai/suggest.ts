@@ -8,8 +8,40 @@ import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, type Aggregation, type DateBuck
  * SQL. Everything it returns is checked against the real field list before it reaches the
  * client, so a hallucinated column is dropped rather than executed.
  */
-export const WIDGET_TYPES = ['column', 'bar', 'line', 'area', 'pie', 'donut', 'kpi', 'table'] as const;
+export const WIDGET_TYPES = [
+  'column', 'bar', 'line', 'area', 'combo', 'scatter', 'waterfall', 'funnel',
+  'pie', 'donut', 'treemap', 'heatmap', 'radar',
+  'gauge', 'kpi', 'trend', 'multirow',
+  'table', 'matrix',
+] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
+
+/**
+ * How many fields each well of a type takes: [min, max] dimensions and [min, max] measures.
+ * Mirrors `CHART_SPECS` in `web/src/lib/widget.ts`; a suggestion outside these bounds is trimmed
+ * or dropped so the editor can always run what the model proposed.
+ */
+export const SHAPES: Record<WidgetType, { dimensions: [number, number]; measures: [number, number] }> = {
+  column: { dimensions: [0, 2], measures: [1, 20] },
+  bar: { dimensions: [0, 2], measures: [1, 20] },
+  line: { dimensions: [0, 2], measures: [1, 20] },
+  area: { dimensions: [0, 2], measures: [1, 20] },
+  combo: { dimensions: [0, 1], measures: [1, 20] },
+  scatter: { dimensions: [1, 2], measures: [2, 3] },
+  waterfall: { dimensions: [1, 1], measures: [1, 1] },
+  funnel: { dimensions: [1, 1], measures: [1, 1] },
+  pie: { dimensions: [1, 1], measures: [1, 1] },
+  donut: { dimensions: [1, 1], measures: [1, 1] },
+  treemap: { dimensions: [1, 2], measures: [1, 1] },
+  heatmap: { dimensions: [2, 2], measures: [1, 1] },
+  radar: { dimensions: [1, 2], measures: [1, 20] },
+  gauge: { dimensions: [0, 0], measures: [1, 2] },
+  kpi: { dimensions: [0, 0], measures: [1, 1] },
+  trend: { dimensions: [1, 1], measures: [1, 2] },
+  multirow: { dimensions: [1, 1], measures: [1, 20] },
+  table: { dimensions: [0, 10], measures: [0, 20] },
+  matrix: { dimensions: [1, 2], measures: [1, 20] },
+};
 const SORTS = ['none', 'measure_desc', 'measure_asc'] as const;
 
 export interface SuggestField { name: string; kind: FieldKind; dataType?: string }
@@ -98,8 +130,13 @@ export function buildPrompt(input: PromptInput): { system: string; user: string 
     `aggregations (measures[].agg): ${AGGREGATIONS.join(', ')}. sum/avg only on number fields; use count or count_distinct for text, date and boolean fields. field "*" with count means row count.`,
     `date buckets (dimensions[].bucket, date fields only): ${DATE_BUCKETS.join(', ')}.`,
     `filter ops: ${FILTER_OPS.join(', ')}. Only add a filter when the request asks for one.`,
-    'Shape rules: kpi has 0 dimensions and 1 measure; pie/donut have 1 dimension and 1 measure; column/bar/line/area have 1-2 dimensions (axis, then legend) and at least 1 measure; table has up to 10 dimensions and any measures.',
-    'Use field names exactly as listed; never invent fields. Prefer time series on a date field for trends, bar/column for comparisons, kpi for a single headline number.',
+    'Shape rules (dimensions, then measures):',
+    '- column/bar/line/area: 1-2 dimensions (axis, then legend), 1+ measures. combo: 1 dimension, 2+ measures (columns and a line).',
+    '- scatter: 1-2 dimensions (detail, then legend), 2-3 measures (x, y, optional bubble size).',
+    '- waterfall, funnel, pie, donut: 1 dimension, 1 measure. treemap: 1-2 dimensions (group, then detail), 1 measure. heatmap: exactly 2 dimensions (x, y), 1 measure. radar: 1 dimension, 1+ measures.',
+    '- kpi: 0 dimensions, 1 measure. gauge: 0 dimensions, 1-2 measures (value, optional target). trend: 1 date dimension, 1-2 measures (value, optional target): a KPI with its sparkline.',
+    '- multirow: 1 dimension, 1+ measures. table: up to 10 dimensions, any measures. matrix: 2 dimensions (rows, columns), 1+ measures.',
+    'Use field names exactly as listed; never invent fields. Prefer line/area or trend on a date field for trends, column/bar for comparisons, pie/donut/treemap for shares, scatter for two numeric measures, heatmap for two categories, kpi/gauge for a single headline number, matrix for a cross-tab.',
     `Write title and explanation in ${language}. Keep titles under 60 characters and explanations to one sentence.`,
     'Make the suggestions diverse: different chart types and different questions about the data.',
   ].join('\n');
@@ -145,8 +182,8 @@ export function parseSuggestions(text: string): RawSuggestion[] {
 
 // --- validation against the real fields ---------------------------------------------------------
 
-const maxDimensions = (t: WidgetType) => (t === 'kpi' ? 0 : t === 'table' ? 10 : t === 'pie' || t === 'donut' ? 1 : 2);
-const maxMeasures = (t: WidgetType) => (t === 'kpi' || t === 'pie' || t === 'donut' ? 1 : 20);
+const maxDimensions = (t: WidgetType) => SHAPES[t].dimensions[1];
+const maxMeasures = (t: WidgetType) => SHAPES[t].measures[1];
 const isIn = <T extends readonly string[]>(list: T, v: unknown): v is T[number] => typeof v === 'string' && (list as readonly string[]).includes(v);
 
 export function sanitizeSuggestions(raw: RawSuggestion[], fields: SuggestField[]): Suggestion[] {
@@ -184,8 +221,10 @@ export function sanitizeSuggestions(raw: RawSuggestion[], fields: SuggestField[]
       filters.push({ field: f.name, op: fl.op, ...(fl.value !== undefined ? { value: fl.value } : {}), ...(fl.values ? { values: fl.values.slice(0, 50) } : {}) });
     }
     // a visual the editor could not run is not a suggestion
-    if (measures.length === 0 && !(type === 'table' && dimensions.length > 0)) continue;
-    if ((type === 'pie' || type === 'donut') && dimensions.length === 0) continue;
+    if (measures.length === 0 && dimensions.length === 0) continue;
+    if (dimensions.length < SHAPES[type].dimensions[0] || measures.length < SHAPES[type].measures[0]) continue;
+    // a trend needs time along its axis
+    if (type === 'trend' && dimensions[0]?.kind !== 'date') continue;
     const key = `${type}|${dimensions.map((d) => `${d.field}:${d.bucket ?? ''}`).join(',')}|${measures.map((m) => `${m.agg}:${m.field}`).join(',')}`;
     if (seen.has(key)) continue;
     seen.add(key);

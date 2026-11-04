@@ -82,6 +82,48 @@ describe('sanitizeSuggestions', () => {
     expect(out.find((s) => s.title === 'No dim')).toBeUndefined();
     expect(out.length).toBeLessThanOrEqual(8);
   });
+  it('keeps the new visual types within their wells and drops the unrunnable ones', () => {
+    const out = sanitizeSuggestions([
+      // scatter: two measures stay, a third one is kept as the bubble size, a fourth is dropped
+      { type: 'scatter', title: 'Scatter', dimensions: [{ field: 'region' }], measures: [{ field: 'revenue', agg: 'sum' }, { field: '*', agg: 'count' }, { field: 'status', agg: 'count_distinct' }, { field: 'order_date', agg: 'max' }] },
+      // scatter with one measure cannot run
+      { type: 'scatter', title: 'Half scatter', dimensions: [{ field: 'region' }], measures: [{ field: 'revenue', agg: 'sum' }] },
+      // heatmap needs two dimensions
+      { type: 'heatmap', title: 'Heat', dimensions: [{ field: 'region' }], measures: [{ field: 'revenue', agg: 'sum' }] },
+      { type: 'heatmap', title: 'Heat ok', dimensions: [{ field: 'region' }, { field: 'status' }, { field: 'order_date' }], measures: [{ field: 'revenue', agg: 'sum' }, { field: '*', agg: 'count' }] },
+      // gauge: value + target, no dimensions
+      { type: 'gauge', title: 'Gauge', dimensions: [{ field: 'region' }], measures: [{ field: 'revenue', agg: 'sum' }, { field: '*', agg: 'count' }, { field: 'status', agg: 'count_distinct' }] },
+      // trend needs a date on its axis
+      { type: 'trend', title: 'Trend', dimensions: [{ field: 'order_date' }], measures: [{ field: 'revenue', agg: 'sum' }] },
+      { type: 'trend', title: 'Trend on text', dimensions: [{ field: 'region' }], measures: [{ field: 'revenue', agg: 'sum' }] },
+      // matrix: rows and columns
+      { type: 'matrix', title: 'Matrix', dimensions: [{ field: 'region' }, { field: 'status' }], measures: [{ field: 'revenue', agg: 'sum' }] },
+      { type: 'matrix', title: 'Matrix without rows', dimensions: [], measures: [{ field: 'revenue', agg: 'sum' }] },
+      // waterfall and funnel take one of each
+      { type: 'waterfall', title: 'Waterfall', dimensions: [{ field: 'order_date', bucket: 'quarter' }, { field: 'region' }], measures: [{ field: 'revenue', agg: 'sum' }, { field: '*', agg: 'count' }] },
+      { type: 'funnel', title: 'Funnel', dimensions: [], measures: [{ field: 'revenue', agg: 'sum' }] },
+    ], fields);
+    const byTitle = (title: string) => out.find((s) => s.title === title);
+    expect(byTitle('Scatter')!.measures).toHaveLength(3);
+    expect(byTitle('Half scatter')).toBeUndefined();
+    expect(byTitle('Heat')).toBeUndefined();
+    expect(byTitle('Heat ok')!.dimensions.map((d) => d.field)).toEqual(['region', 'status']);
+    expect(byTitle('Heat ok')!.measures).toHaveLength(1);
+    expect(byTitle('Gauge')!.dimensions).toHaveLength(0);
+    expect(byTitle('Gauge')!.measures).toHaveLength(2);
+    expect(byTitle('Trend')!.dimensions).toEqual([{ field: 'order_date', kind: 'date', bucket: 'month' }]);
+    expect(byTitle('Trend on text')).toBeUndefined();
+    expect(byTitle('Matrix')!.dimensions).toHaveLength(2);
+    expect(byTitle('Matrix without rows')).toBeUndefined();
+    expect(byTitle('Waterfall')!.dimensions).toEqual([{ field: 'order_date', kind: 'date', bucket: 'quarter' }]);
+    expect(byTitle('Waterfall')!.measures).toHaveLength(1);
+    expect(byTitle('Funnel')).toBeUndefined();
+  });
+  it('tells the model every type and the wells each one reads', () => {
+    const { system } = buildPrompt({ sourceLabel: 'v_sales', fields });
+    expect(system).toContain('type: one of column, bar, line, area, combo, scatter, waterfall, funnel, pie, donut, treemap, heatmap, radar, gauge, kpi, trend, multirow, table, matrix.');
+    expect(system).toContain('heatmap: exactly 2 dimensions');
+  });
   it('invents a title when the model left it blank and keeps only known filters', () => {
     const out = sanitizeSuggestions([{
       type: 'column', dimensions: [{ field: 'region' }], measures: [{ field: 'revenue', agg: 'sum' }],
