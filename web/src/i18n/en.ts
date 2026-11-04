@@ -1,0 +1,66 @@
+import type { vi } from './vi';
+
+type DeepStringify<T> = { [K in keyof T]: T[K] extends string ? string : DeepStringify<T[K]> };
+
+export const en: DeepStringify<typeof vi> = {
+  app: { name: 'Report Studio', tagline: 'Self-hosted drag-and-drop reporting for MariaDB' },
+  common: {
+    save: 'Save', saving: 'Saving…', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', create: 'Create', add: 'Add',
+    close: 'Close', confirm: 'Confirm', back: 'Back', search: 'Search', loading: 'Loading…', refresh: 'Refresh',
+    name: 'Name', description: 'Description', actions: 'Actions', updatedAt: 'Updated', none: 'None', yes: 'Yes', no: 'No',
+    required: 'This field is required', retry: 'Retry', duplicate: 'Duplicate', optional: 'optional',
+    confirmDelete: 'Delete "{name}"? This cannot be undone.',
+    errorGeneric: 'Something went wrong. Please try again.', unauthorized: 'Your session has expired.',
+    language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeSystem: 'System',
+  },
+  nav: { dashboards: 'Dashboards', datasources: 'Data sources', settings: 'Settings', logout: 'Log out', menu: 'Menu' },
+  login: {
+    title: 'Sign in', username: 'Username', password: 'Password', submit: 'Sign in', submitting: 'Signing in…',
+    failed: 'Invalid username or password',
+  },
+  dashboards: {
+    title: 'Dashboards', new: 'New dashboard', empty: 'No dashboards yet', emptyHint: 'Create your first dashboard to start dragging charts around.',
+    widgets: '{count} visuals', untitled: 'Untitled dashboard', open: 'Open', deleted: 'Dashboard deleted',
+  },
+  editor: {
+    view: 'View', edit: 'Edit', addVisual: 'Add visual', saved: 'Saved', unsaved: 'Unsaved changes',
+    nameLabel: 'Dashboard name', fields: 'Fields', visual: 'Visual properties', dataset: 'Dataset',
+    chooseDatasource: 'Choose a data source', chooseTable: 'Choose a table or dataset', tables: 'Tables & views', datasets: 'SQL datasets',
+    noFields: 'Pick a dataset to see its fields', dragHint: 'Drag a field onto a visual or into a well on the right',
+    selectWidget: 'Select a visual on the canvas to configure it', emptyCanvas: 'Empty canvas', emptyCanvasHint: 'Click "Add visual", then drag fields from the left.',
+    widgetTitle: 'Title', chartType: 'Chart type', wellAxis: 'Axis', wellLegend: 'Legend', wellCategory: 'Category', wellColumns: 'Columns',
+    wellValues: 'Values', wellDrop: 'Drop a field here', filters: 'Filters', addFilter: 'Add filter', limit: 'Row limit', sort: 'Sort',
+    options: 'Options', showLegend: 'Show legend', stacked: 'Stacked', showValues: 'Show values', numberFormat: 'Number format',
+    formatAuto: 'Auto', formatCompact: 'Compact (1.2M)', formatInteger: 'Integer', formatPercent: 'Percent', formatCurrency: 'Currency (₫)',
+    removeWidget: 'Remove visual', duplicateWidget: 'Duplicate', configure: 'Configure', noData: 'No data', needsFields: 'Drag at least one field onto this visual', needsMeasure: 'Drop a numeric field into Values to draw the chart',
+    truncated: 'Result truncated at {count} rows', rows: '{count} rows', ms: '{ms} ms', showSql: 'Show SQL', sqlTitle: 'Generated SQL',
+    widgetDefaultTitle: 'New visual', by: 'by', unsavedLeave: 'You have unsaved changes. Leave anyway?', deleteDashboard: 'Delete dashboard',
+    filterField: 'Field', filterOp: 'Condition', filterValue: 'Value', filterValues: 'Values (comma separated)',
+  },
+  agg: { sum: 'Sum', avg: 'Average', count: 'Count', count_distinct: 'Distinct count', min: 'Min', max: 'Max' },
+  bucket: { none: 'Raw', year: 'Year', quarter: 'Quarter', month: 'Month', week: 'Week', day: 'Day', hour: 'Hour' },
+  chart: { column: 'Column', bar: 'Bar', line: 'Line', area: 'Area', pie: 'Pie', donut: 'Donut', kpi: 'KPI card', table: 'Table' },
+  filterOp: {
+    eq: 'equals', neq: 'not equals', gt: 'greater than', gte: 'at least', lt: 'less than', lte: 'at most',
+    in: 'in list', not_in: 'not in list', contains: 'contains', starts_with: 'starts with', between: 'between',
+    is_null: 'is empty', not_null: 'is not empty',
+  },
+  datasources: {
+    title: 'Data sources', add: 'Add source', empty: 'No data sources yet', emptyHint: 'Connect your first MariaDB database to get started.',
+    host: 'Host', port: 'Port', database: 'Database', username: 'Username', password: 'Password', passwordKeep: 'Leave blank to keep the current password',
+    ssl: 'Use SSL', test: 'Test connection', testing: 'Testing…', testOk: 'Connected · {version} · {ms} ms', testFail: 'Connection failed: {error}',
+    editTitle: 'Edit data source', addTitle: 'Add MariaDB data source', readonlyHint: 'Use an account with SELECT privileges only. The password is encrypted at rest.',
+    tables: 'Tables & views', rowsEst: '~{count} rows', rowsHeader: 'Rows (estimate)', columns: 'Columns', view: 'view', table: 'table', detail: 'Details', typeMaria: 'MariaDB',
+  },
+  datasets: {
+    title: 'SQL datasets', add: 'Add dataset', empty: 'No SQL datasets yet', emptyHint: 'Write a SELECT (joins welcome) to use it like a table in visuals.',
+    sql: 'SQL (SELECT only)', preview: 'Validate & show columns', fields: 'Output columns', editTitle: 'Edit dataset', addTitle: 'Add SQL dataset',
+    sqlHint: 'A single SELECT statement. Writes are rejected by the server.',
+  },
+  settings: {
+    title: 'Settings', account: 'Account', changePassword: 'Change password', currentPassword: 'Current password', newPassword: 'New password',
+    passwordChanged: 'Password changed', users: 'Users', addUser: 'Add user', displayName: 'Display name', role: 'Role',
+    roleAdmin: 'Admin', roleEditor: 'Editor', roleViewer: 'Viewer', minPassword: 'At least 8 characters', appearance: 'Appearance',
+  },
+  kinds: { number: 'number', date: 'date/time', string: 'text', boolean: 'boolean', other: 'other' },
+};

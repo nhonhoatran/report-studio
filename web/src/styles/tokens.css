@@ -1,0 +1,162 @@
+/* Design tokens: the single place for shared values. Pages never write literals. */
+:root {
+  color-scheme: light;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --leading: 1.5;
+
+  /* spacing base 4px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06);
+  --shadow-md: 0 4px 12px rgb(16 24 40 / 0.10);
+  --shadow-lg: 0 12px 32px rgb(16 24 40 / 0.18);
+
+  --color-bg: #f4f6f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-border: #e3e7ee;
+  --color-border-strong: #c9d0db;
+  --color-text: #171d2a;
+  --color-text-muted: #5c6678;
+  --color-text-faint: #8a93a3;
+
+  --color-primary: #2f6fed;
+  --color-primary-hover: #245bd0;
+  --color-primary-soft: #e8efff;
+  --color-on-primary: #ffffff;
+
+  --color-danger: #d6453d;
+  --color-danger-hover: #b8352e;
+  --color-danger-soft: #fdecea;
+  --color-success: #1f9d61;
+  --color-success-soft: #e6f6ee;
+  --color-warning: #c77a0a;
+  --color-warning-soft: #fff4e0;
+
+  --color-focus: #2f6fed;
+  --focus-ring: 0 0 0 3px rgb(47 111 237 / 0.35);
+
+  --color-measure: #1f9d61;
+  --color-dimension: #2f6fed;
+  --color-date: #c77a0a;
+
+  /* categorical palette for charts, read by ChartRenderer */
+  --chart-1: #2f6fed;
+  --chart-2: #f0883e;
+  --chart-3: #1f9d61;
+  --chart-4: #d6453d;
+  --chart-5: #8b5cf6;
+  --chart-6: #0ea5b7;
+  --chart-7: #e0a21b;
+  --chart-8: #ec4899;
+  --chart-grid: #e9edf3;
+  --chart-axis: #5c6678;
+
+  --sidebar-width: 220px;
+  --pane-width: 280px;
+  --header-height: 52px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #0f141c;
+  --color-surface: #171d28;
+  --color-surface-2: #1d2432;
+  --color-border: #2a3344;
+  --color-border-strong: #3b4659;
+  --color-text: #e8ecf3;
+  --color-text-muted: #a3adbf;
+  --color-text-faint: #717c91;
+  --color-primary: #5b8cff;
+  --color-primary-hover: #7aa1ff;
+  --color-primary-soft: #1d2b4d;
+  --color-on-primary: #0b1020;
+  --color-danger: #ef6b63;
+  --color-danger-hover: #f4857e;
+  --color-danger-soft: #3a1f1f;
+  --color-success: #3dc382;
+  --color-success-soft: #1a3328;
+  --color-warning: #e7a23a;
+  --color-warning-soft: #3a2d14;
+  --color-focus: #5b8cff;
+  --focus-ring: 0 0 0 3px rgb(91 140 255 / 0.45);
+  --color-measure: #3dc382;
+  --color-dimension: #5b8cff;
+  --color-date: #e7a23a;
+  --chart-1: #5b8cff;
+  --chart-2: #f59e5b;
+  --chart-3: #3dc382;
+  --chart-4: #ef6b63;
+  --chart-5: #a78bfa;
+  --chart-6: #2dd4bf;
+  --chart-7: #facc15;
+  --chart-8: #f472b6;
+  --chart-grid: #2a3344;
+  --chart-axis: #a3adbf;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #0f141c;
+    --color-surface: #171d28;
+    --color-surface-2: #1d2432;
+    --color-border: #2a3344;
+    --color-border-strong: #3b4659;
+    --color-text: #e8ecf3;
+    --color-text-muted: #a3adbf;
+    --color-text-faint: #717c91;
+    --color-primary: #5b8cff;
+    --color-primary-hover: #7aa1ff;
+    --color-primary-soft: #1d2b4d;
+    --color-on-primary: #0b1020;
+    --color-danger: #ef6b63;
+    --color-danger-hover: #f4857e;
+    --color-danger-soft: #3a1f1f;
+    --color-success: #3dc382;
+    --color-success-soft: #1a3328;
+    --color-warning: #e7a23a;
+    --color-warning-soft: #3a2d14;
+    --color-focus: #5b8cff;
+    --focus-ring: 0 0 0 3px rgb(91 140 255 / 0.45);
+    --color-measure: #3dc382;
+    --color-dimension: #5b8cff;
+    --color-date: #e7a23a;
+    --chart-1: #5b8cff;
+    --chart-2: #f59e5b;
+    --chart-3: #3dc382;
+    --chart-4: #ef6b63;
+    --chart-5: #a78bfa;
+    --chart-6: #2dd4bf;
+    --chart-7: #facc15;
+    --chart-8: #f472b6;
+    --chart-grid: #2a3344;
+    --chart-axis: #a3adbf;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 12px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.6);
+  }
+}

@@ -1,0 +1,52 @@
+# Self-hosted stack: Report Studio + MariaDB (metadata + demo data).
+# Copy .env.example to .env and change APP_SECRET / passwords before exposing this.
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root_pw_change_me}
+      MARIADB_AUTO_UPGRADE: "1"
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max-connections=200
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      # runs once on first start: creates report_studio + demo_sales and their users
+      - ./docker/mariadb-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "${MARIADB_PORT:-3306}:3306"
+
+  app:
+    build: .
+    image: report-studio:latest
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      APP_SECRET: ${APP_SECRET:?set APP_SECRET in .env (>= 32 chars)}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      META_DB_HOST: mariadb
+      META_DB_PORT: "3306"
+      META_DB_USER: ${META_DB_USER:-studio}
+      META_DB_PASSWORD: ${META_DB_PASSWORD:-studio_pw}
+      META_DB_NAME: ${META_DB_NAME:-report_studio}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      QUERY_MAX_ROWS: ${QUERY_MAX_ROWS:-5000}
+      QUERY_TIMEOUT_SECONDS: ${QUERY_TIMEOUT_SECONDS:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${APP_PORT:-8080}:4000"
+
+volumes:
+  mariadb_data:
