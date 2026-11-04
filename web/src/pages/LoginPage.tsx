@@ -3,11 +3,13 @@ import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-route
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3 } from 'lucide-react';
 import { useAuth } from '@/store/auth';
-import { useT, type TKey } from '@/i18n';
-import { api, ApiError } from '@/api/client';
+import { LANGUAGES, useI18nStore, useT, type TKey } from '@/i18n';
+import { api } from '@/api/client';
+import { describeError } from '@/lib/errors';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { ErrorBox, Spinner } from '@/components/ui/Feedback';
+import { Segmented } from '@/components/ui/Segmented';
 import '@/components/layout/layout.css';
 
 /** `?error=` codes the server sends back after a failed Microsoft Entra sign-in. */
@@ -21,6 +23,7 @@ const ENTRA_ERRORS: Record<string, TKey> = {
 
 export function LoginPage() {
   const t = useT();
+  const { lang, setLang } = useI18nStore();
   const user = useAuth((s) => s.user);
   const login = useAuth((s) => s.login);
   const navigate = useNavigate();
@@ -47,7 +50,7 @@ export function LoginPage() {
       await login(username, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401 ? t('login.failed') : err instanceof Error ? err.message : t('common.errorGeneric'));
+      setError(describeError(err, t));
     } finally {
       setPending(false);
     }
@@ -84,6 +87,9 @@ export function LoginPage() {
             {!local && !entra && <ErrorBox>{t('login.noProviders')}</ErrorBox>}
           </div>
         )}
+        <div className="row row--end">
+          <Segmented ariaLabel={t('common.language')} value={lang} onChange={setLang} options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))} />
+        </div>
       </section>
     </main>
   );

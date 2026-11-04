@@ -1,8 +1,7 @@
-import type { vi } from './vi';
+import type { Dictionary } from './index';
 
-type DeepStringify<T> = { [K in keyof T]: T[K] extends string ? string : DeepStringify<T[K]> };
-
-export const en: DeepStringify<typeof vi> = {
+/** Same keys as `vi`; a string may become plural forms (`{ one, other }`) where English needs them. */
+export const en: Dictionary = {
   app: { name: 'Report Studio', tagline: 'Self-hosted drag-and-drop reporting for MariaDB' },
   common: {
     save: 'Save', saving: 'Saving…', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', create: 'Create', add: 'Add',
@@ -12,6 +11,7 @@ export const en: DeepStringify<typeof vi> = {
     confirmDelete: 'Delete "{name}"? This cannot be undone.', deleted: 'Deleted',
     errorGeneric: 'Something went wrong. Please try again.', unauthorized: 'Your session has expired.',
     language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeSystem: 'System',
+    default: 'Default', test: 'Test', openSettings: 'Open Settings',
   },
   nav: { dashboards: 'Dashboards', datasources: 'Data sources', settings: 'Settings', logout: 'Log out', menu: 'Menu' },
   login: {
@@ -27,7 +27,7 @@ export const en: DeepStringify<typeof vi> = {
   },
   dashboards: {
     title: 'Dashboards', new: 'New dashboard', empty: 'No dashboards yet', emptyHint: 'Create your first dashboard to start dragging charts around.',
-    widgets: '{count} visuals', untitled: 'Untitled dashboard', open: 'Open',
+    widgets: { one: '{count} visual', other: '{count} visuals' }, untitled: 'Untitled dashboard', open: 'Open',
   },
   editor: {
     view: 'View', edit: 'Edit', addVisual: 'Add visual', saved: 'Saved', unsaved: 'Unsaved changes',
@@ -40,7 +40,7 @@ export const en: DeepStringify<typeof vi> = {
     options: 'Options', showLegend: 'Show legend', stacked: 'Stacked', showValues: 'Show values', numberFormat: 'Number format',
     formatAuto: 'Auto', formatCompact: 'Compact (1.2M)', formatInteger: 'Integer', formatPercent: 'Percent', formatCurrency: 'Currency (₫)',
     removeWidget: 'Remove visual', duplicateWidget: 'Duplicate', configure: 'Configure', noData: 'No data', needsFields: 'Drag at least one field onto this visual', needsMeasure: 'Drop a numeric field into Values to draw the chart',
-    truncated: 'Result truncated at {count} rows', rows: '{count} rows', ms: '{ms} ms', showSql: 'Show SQL', sqlTitle: 'Generated SQL',
+    truncated: 'Result truncated at {count} rows', rows: { one: '{count} row', other: '{count} rows' }, ms: '{ms} ms', showSql: 'Show SQL', sqlTitle: 'Generated SQL',
     widgetDefaultTitle: 'New visual', by: 'by', unsavedLeave: 'You have unsaved changes. Leave anyway?', leave: 'Leave', canvas: 'Canvas',
     bucketLabel: 'Date grouping', aggLabel: 'Aggregation', sortDesc: 'Value, high to low', sortAsc: 'Value, low to high',
     filterField: 'Field', filterOp: 'Condition', filterValue: 'Value', filterValues: 'Values (comma separated)',
@@ -75,4 +75,36 @@ export const en: DeepStringify<typeof vi> = {
   },
   kinds: { number: 'number', date: 'date/time', string: 'text', boolean: 'boolean', other: 'other' },
   notFound: { title: 'Page not found', back: 'Back to dashboards' },
+  ai: {
+    providers: 'AI providers', addProvider: 'Add provider', addProviderTitle: 'Add AI provider', editProviderTitle: 'Edit AI provider',
+    empty: 'No AI providers yet', emptyHint: 'Add an API key (Anthropic, OpenAI, Google Gemini or an OpenAI-compatible server such as Ollama) to enable AI chart suggestions.',
+    kind: 'Kind', model: 'Model', modelHint: 'The model id exactly as the provider names it', baseUrl: 'API base URL', baseUrlPlaceholder: 'e.g. http://ollama:11434/v1', baseUrlKeep: "Leave blank for the provider's default endpoint",
+    apiKey: 'API key', apiKeyKeep: 'Leave blank to keep the current key', keyHint: 'Keys are encrypted at rest and never sent to the browser; every AI call goes through the server.',
+    isDefault: 'Use as the default provider', testOk: 'Working · {model} · {ms} ms', testFail: 'Test failed: {error}',
+    kindAnthropic: 'Anthropic (Claude)', kindOpenai: 'OpenAI', kindGemini: 'Google Gemini', kindCompatible: 'OpenAI-compatible (Ollama, vLLM, DeepSeek, Groq…)',
+    suggest: 'Suggest with AI', suggestTitle: 'AI chart suggestions', prompt: 'What do you want to see?', promptPlaceholder: 'e.g. monthly revenue per region; best-selling products; share of orders by status',
+    promptHelp: 'Leave blank and the AI proposes useful visuals for the selected dataset. It only picks fields, aggregations and chart types; it never writes SQL.',
+    provider: 'Provider', run: 'Suggest', running: 'Thinking…', addOne: 'Add to dashboard', addedOne: 'Added', addAll: 'Add all', added: { one: 'Added {count} visual', other: 'Added {count} visuals' },
+    needDataset: 'Pick a data source and a table in the left pane first', noProvider: 'No AI provider configured', noProviderHint: 'An admin adds an API key under Settings → AI providers.',
+    resultMeta: '{provider} · {model} · {ms} ms', dataset: 'Dataset: {label}', fieldsCount: { one: '{count} field', other: '{count} fields' },
+  },
+  errors: {
+    unauthorized: 'Please sign in.', forbidden: 'You are not allowed to do that.', not_found: 'Not found.', validation_failed: 'The submitted data is invalid.',
+    invalid_id: 'Invalid id.', malformed_json: 'The request body is not valid JSON.', internal: 'Server error. Please try again.',
+    invalid_credentials: 'Invalid username or password', password_incorrect: 'The current password is incorrect.', username_exists: 'That username already exists.',
+    user_not_found: 'User not found.', cannot_delete_self: 'You cannot delete your own account.',
+    dashboard_not_found: 'Dashboard not found.', dataset_not_found: 'Dataset not found.', dataset_name_exists: 'This data source already has a dataset with that name.',
+    dataset_wrong_datasource: 'The dataset does not belong to this data source.', adhoc_sql_forbidden: 'Only editors can run ad-hoc SQL.',
+    datasource_not_found: 'Data source not found.', datasource_name_exists: 'A data source with that name already exists.', table_not_found: 'Table not found or it has no columns.',
+    invalid_identifier: 'The name "{name}" is not valid.', invalid_table: 'The table name "{name}" is not valid.', count_distinct_needs_field: 'Distinct count needs a specific field.',
+    between_needs_two_values: 'The "between" condition needs exactly two values.', order_by_unknown: 'Cannot sort by the unknown column "{alias}".',
+    sql_empty: 'The SQL is empty.', sql_multiple_statements: 'Only a single statement is allowed.', sql_not_select: 'Only SELECT statements are allowed.', sql_keyword_blocked: 'The keyword "{keyword}" is not allowed in a read-only query.',
+    sql_locking: 'Locking reads (FOR UPDATE / LOCK IN SHARE MODE) are not allowed.',
+    db_access_denied: 'The data source denied access: {message}', db_unreachable: 'Cannot reach the data source: {message}', db_timeout: 'The query ran longer than {seconds} s and was stopped.',
+    db_read_only: 'The connection is read-only; write statements are blocked.', db_sql_error: 'SQL error: {message}',
+    ai_provider_not_found: 'AI provider not found.', ai_provider_name_exists: 'An AI provider with that name already exists.', ai_no_provider: 'No AI provider is configured.',
+    ai_auth_failed: 'The AI provider rejected the API key ({message}).', ai_provider_error: 'The AI provider returned error {status}: {message}', ai_timeout: 'The AI provider did not answer within {seconds} s.',
+    ai_bad_response: 'The AI returned an unusable answer. Try again or rephrase the request.', ai_needs_fields: 'At least one field is needed for a suggestion.',
+    local_login_disabled: 'Password sign-in is disabled. Use Sign in with Microsoft.', account_has_no_password: 'This account signs in with Microsoft Entra ID and has no password.',
+  },
 };

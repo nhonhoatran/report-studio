@@ -1,9 +1,11 @@
 import type {
-  AuthProviders, Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo, QueryRequest, QueryResult, TableInfo, User,
+  AiProvider, AiProviderInput, AiSuggestRequest, AiSuggestResponse, Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo,
+  QueryRequest, QueryResult, TableInfo, TestResult, User, AuthProviders,
 } from './types';
 
+/** `code` is the server's stable error code; `lib/errors.ts` translates it. `message` is the English fallback. */
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public details?: unknown) {
+  constructor(public status: number, message: string, public details?: unknown, public code?: string) {
     super(message);
     this.name = 'ApiError';
   }
@@ -30,8 +32,8 @@ async function request<T>(method: string, url: string, body?: unknown, init?: Re
   try { data = text ? JSON.parse(text) : undefined; } catch { data = { error: text }; }
   if (!res.ok) {
     if (res.status === 401 && !url.startsWith('/auth/login')) unauthorizedListeners.forEach((fn) => fn());
-    const err = (data as { error?: string; details?: unknown }) ?? {};
-    throw new ApiError(res.status, err.error ?? res.statusText, err.details);
+    const err = (data as { error?: string; code?: string; details?: unknown }) ?? {};
+    throw new ApiError(res.status, err.error ?? res.statusText, err.details, err.code);
   }
   return data as T;
 }
@@ -56,8 +58,7 @@ export const api = {
     create: (input: DatasourceInput) => request<{ datasource: Datasource }>('POST', '/datasources', input),
     update: (id: number, input: Partial<DatasourceInput>) => request<{ datasource: Datasource }>('PUT', `/datasources/${id}`, input),
     remove: (id: number) => request<void>('DELETE', `/datasources/${id}`),
-    test: (input: Omit<DatasourceInput, 'name'> & { id?: number }) =>
-      request<{ ok: boolean; version?: string; latencyMs?: number; error?: string }>('POST', '/datasources/test', input),
+    test: (input: Omit<DatasourceInput, 'name'> & { id?: number }) => request<TestResult>('POST', '/datasources/test', input),
     tables: (id: number) => request<{ tables: TableInfo[] }>('GET', `/datasources/${id}/tables`),
     columns: (id: number, table: string) => request<{ columns: FieldInfo[] }>('GET', `/datasources/${id}/tables/${encodeURIComponent(table)}/columns`),
   },
@@ -80,5 +81,13 @@ export const api = {
   query: {
     run: (req: QueryRequest, signal?: AbortSignal) => request<QueryResult>('POST', '/query', req, { signal }),
     explain: (req: QueryRequest) => request<{ sql: string; params: unknown[] }>('POST', '/query/explain', req),
+  },
+  ai: {
+    providers: () => request<{ providers: AiProvider[] }>('GET', '/ai/providers'),
+    createProvider: (input: AiProviderInput) => request<{ provider: AiProvider }>('POST', '/ai/providers', input),
+    updateProvider: (id: number, input: Partial<AiProviderInput>) => request<{ provider: AiProvider }>('PUT', `/ai/providers/${id}`, input),
+    removeProvider: (id: number) => request<void>('DELETE', `/ai/providers/${id}`),
+    testProvider: (input: Partial<AiProviderInput> & { kind: AiProviderInput['kind']; model: string; id?: number }) => request<TestResult>('POST', '/ai/providers/test', input),
+    suggest: (req: AiSuggestRequest, signal?: AbortSignal) => request<AiSuggestResponse>('POST', '/ai/suggest', req, { signal }),
   },
 };

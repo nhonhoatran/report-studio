@@ -6,7 +6,8 @@ import { api } from '@/api/client';
 import type { Dataset, FieldInfo } from '@/api/types';
 import { useAuth, canEdit } from '@/store/auth';
 import { toast } from '@/store/toast';
-import { useT } from '@/i18n';
+import { useI18nStore, useT } from '@/i18n';
+import { formatNumber } from '@/lib/format';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Field';
@@ -76,6 +77,7 @@ function DatasetModal({ open, datasourceId, initial, onClose }: { open: boolean;
 
 export function DatasourceDetailPage() {
   const t = useT();
+  const lang = useI18nStore((s) => s.lang);
   const id = Number(useParams().id);
   const user = useAuth((s) => s.user);
   const editable = canEdit(user);
@@ -91,7 +93,7 @@ export function DatasourceDetailPage() {
   const remove = useMutation({
     mutationFn: (dsId: number) => api.datasets.remove(dsId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['datasets'] }); setToDelete(null); toast.success(t('common.deleted')); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
 
   return (
@@ -119,7 +121,7 @@ export function DatasourceDetailPage() {
                     <tr key={tb.name}>
                       <td><Button variant="ghost" size="sm" className="mono" onClick={() => setOpenTable(tb.name)}>{tb.name}</Button></td>
                       <td><span className="badge">{tb.type === 'view' ? t('datasources.view') : t('datasources.table')}</span></td>
-                      <td className="num text-muted">{tb.rows === null ? '—' : tb.rows.toLocaleString()}</td>
+                      <td className="num text-muted">{tb.rows === null ? '—' : formatNumber(tb.rows, 'integer', lang)}</td>
                     </tr>
                   ))}
                 </tbody>

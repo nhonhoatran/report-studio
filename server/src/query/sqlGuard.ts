@@ -63,22 +63,22 @@ export function stripLiteralsAndComments(sql: string): string {
 export function assertReadOnlySelect(rawSql: string): string {
   let sql = rawSql.trim();
   if (sql.endsWith(';')) sql = sql.slice(0, -1).trimEnd();
-  if (!sql) throw badRequest('SQL is empty');
+  if (!sql) throw badRequest('SQL is empty', 'sql_empty');
 
   const scan = stripLiteralsAndComments(sql);
-  if (scan.includes(';')) throw badRequest('Only a single statement is allowed');
+  if (scan.includes(';')) throw badRequest('Only a single statement is allowed', 'sql_multiple_statements');
 
   const firstWord = scan.trimStart().split(/\s+/)[0]?.toLowerCase();
   if (firstWord !== 'select' && firstWord !== 'with') {
-    throw badRequest('Only SELECT statements are allowed');
+    throw badRequest('Only SELECT statements are allowed', 'sql_not_select');
   }
 
   const tokens = scan.toLowerCase().match(/[a-z_][a-z0-9_]*/g) ?? [];
   const hit = tokens.find((t) => FORBIDDEN.includes(t));
-  if (hit) throw badRequest(`Keyword "${hit.toUpperCase()}" is not allowed in a read-only query`);
+  if (hit) throw badRequest(`Keyword "${hit.toUpperCase()}" is not allowed in a read-only query`, 'sql_keyword_blocked', { keyword: hit.toUpperCase() });
 
   if (/\bfor\s+update\b/i.test(scan) || /\block\s+in\s+share\s+mode\b/i.test(scan)) {
-    throw badRequest('Locking reads are not allowed');
+    throw badRequest('Locking reads are not allowed', 'sql_locking');
   }
   return sql;
 }

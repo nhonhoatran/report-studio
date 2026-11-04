@@ -33,8 +33,18 @@ Report Studio is a two-package npm workspace that ships as one container.
 | `query/sqlGuard.ts` | strips comments/literals, allows a single `SELECT`/`WITH`, rejects write/lock/`INTO` keywords |
 | `query/executor.ts` | per-datasource pool cache (invalidated on edit), `READ ONLY` + `max_statement_time` on each connection, error translation |
 | `query/introspect.ts` | table list, column kinds (number/date/string/boolean), field types from result packets |
+| `routes/ai.ts` | AI providers (admin CRUD + key test) and `POST /ai/suggest`; keys stored AES-256-GCM encrypted, never returned |
+| `ai/providers.ts` | one adapter per key kind: Anthropic (official SDK, structured output), OpenAI and OpenAI-compatible servers (chat completions), Google Gemini (`generateContent`) |
+| `ai/suggest.ts` | prompt builder, tolerant JSON parser and the validator that keeps only fields, aggregations, buckets and chart shapes the editor can run |
+| `lib/errors.ts` | `HttpError` with a stable `code` (`ErrorCode`); the client translates codes, `message` is the English fallback |
 
-Async route handlers are wrapped so a thrown `HttpError` becomes a JSON error (`{ error, details }`).
+Async route handlers are wrapped so a thrown `HttpError` becomes a JSON error (`{ error, code?, details? }`). `code` is one of `ErrorCode` in `lib/errors.ts`; the web client looks up `errors.<code>` in its dictionaries and uses scalar `details` as template parameters (`{keyword}`, `{seconds}`), so server-side failures read in the user's language.
+
+### AI suggestions
+
+`POST /api/ai/suggest` sends the model a description of the selected dataset (field names and kinds), the house rules of the semantic query model and the user's request, and asks for JSON. The answer is parsed leniently (code fences, preambles) and then **validated against the real field list**: unknown fields are dropped, `sum`/`avg` on non-numeric fields become `count`, date dimensions get a bucket, wells are trimmed to what the chart type reads, duplicates and unrunnable visuals are removed. The client turns each surviving suggestion into an ordinary widget, so the AI never has more power than a user dragging fields. The model never sees data rows and never produces SQL.
+
+Providers are rows in `ai_providers` (`kind`, `model`, `base_url`, encrypted key, `is_default`). Several can coexist (one Anthropic key, one local Ollama…); the editor picks one per request, otherwise the default is used. Keys are decrypted only inside the server process for the duration of a call.
 
 ### Semantic query model
 
@@ -83,7 +93,9 @@ The server validates shape and size only, so new widget options never need a mig
 | `components/editor/` | `FieldsPane` (draggable fields), `Canvas` (react-grid-layout, droppable widgets, 1 column under 640px), `VisualPane` (chart type, wells, filters, options), `WidgetChart` (react-query + states) |
 | `components/charts/ChartRenderer.tsx` | ECharts option builder for cartesian + pie, plus KPI card and table |
 | `store/editor.ts` | zustand store: definition, selection, dirty flag, drop logic (`autoPlace`: numbers → measures) |
-| `i18n/` | `vi` (default) and `en` dictionaries; `useT()` is typed over the dictionary keys |
+| `i18n/` | `LANGUAGES` registry (code, label, locale), `vi` (default) and `en` dictionaries; `useT()` is typed over the dictionary keys; plural forms via `Intl.PluralRules`; language = stored choice → browser language → `vi` |
+| `lib/errors.ts` | `describeError()` turns a thrown `ApiError` into text: the translated `errors.<code>` when known, else the server message |
+| `components/editor/AiSuggestDialog.tsx` | "Suggest with AI": prompt + provider choice, suggestion cards, adds widgets through the editor store |
 | `api/client.ts` | fetch wrapper; a 401 anywhere clears the session; `auth.providers()` tells the login page which methods to show, `auth.entraLoginUrl()` is the full-page link that starts SSO |
 
 Drag and drop: dnd-kit for *field → widget / well* (`DndContext` in `DashboardEditorPage`); react-grid-layout for *widget move / resize*. They do not conflict because grid dragging only starts on `.widget__header`.
@@ -97,6 +109,13 @@ Drag and drop: dnd-kit for *field → widget / well* (`DndContext` in `Dashboard
 5. Data-source passwords are AES-256-GCM encrypted with a key derived from `APP_SECRET`.
 6. Viewers can run saved dashboards but cannot send ad-hoc SQL; editors manage sources, datasets and dashboards; admins manage users.
 7. Entra sign-in trusts only an ID token that verifies against the tenant's published keys, carries this app as audience, the expected issuer for its tenant and the nonce of the current attempt; `returnTo` is restricted to same-origin paths. Accounts provisioned from Entra have `password_hash = NULL`, so the password form cannot be used against them.
+8. AI provider keys are encrypted like data-source passwords and are write-only through the API; only admins manage them, only editors call `/ai/suggest`, and model output is reduced to the semantic query model before anything runs.
+
+## Adding a language
+
+1. Copy `web/src/i18n/en.ts` to `web/src/i18n/<code>.ts` and translate every value. The file is typed as `Dictionary`, so a missing key fails `npm run typecheck`. A value may be plural forms where the language needs them: `{ one: '{count} row', other: '{count} rows' }` (categories follow `Intl.PluralRules`).
+2. Add `{ code, label, locale }` to `LANGUAGES` in `web/src/i18n/index.ts` and the dictionary to `dictionaries`. The Login and Settings switchers, `<html lang>`, number/date formatting and browser-language detection all read from that list.
+3. Server error texts come from the `errors` section of the dictionary; the server only sends codes.
 
 ## Adding a new chart type
 

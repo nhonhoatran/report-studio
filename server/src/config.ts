@@ -98,6 +98,11 @@ export const config = {
     poolSizePerSource: envInt('QUERY_POOL_SIZE', 4),
   },
 
+  // AI suggestions: how long one provider call may take.
+  ai: {
+    timeoutSeconds: envInt('AI_TIMEOUT_SECONDS', 60),
+  },
+
   // Directory with the built web app (served in production).
   webDist: env('WEB_DIST', new URL('../../web/dist', import.meta.url).pathname),
 };

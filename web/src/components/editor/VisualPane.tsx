@@ -13,7 +13,8 @@ import { KindIcon } from '@/components/ui/KindBadge';
 
 export const WELL_DROP_PREFIX = 'well:';
 
-const typeIcons: Record<WidgetType, typeof BarChart3> = {
+/** One icon per chart type; the AI dialog reuses them so a type looks the same everywhere. */
+export const typeIcons: Record<WidgetType, typeof BarChart3> = {
   column: BarChart3, bar: BarChartHorizontal, line: ChartLine, area: ChartArea, pie: ChartPie, donut: CircleDot, kpi: Hash, table: Table2,
 };
 

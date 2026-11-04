@@ -71,3 +71,20 @@ export interface Dashboard {
 export interface DashboardInput { name: string; description?: string; definition: DashboardDefinition }
 
 export const emptyDefinition = (): DashboardDefinition => ({ version: 1, widgets: [], filters: [], settings: {} });
+
+// --- AI suggestions --------------------------------------------------------------------------
+export type AiProviderKind = 'anthropic' | 'openai' | 'gemini' | 'openai_compatible';
+export const AI_PROVIDER_KINDS: AiProviderKind[] = ['anthropic', 'openai', 'gemini', 'openai_compatible'];
+export interface AiProvider { id: number; name: string; kind: AiProviderKind; model: string; baseUrl: string; isDefault: boolean; createdAt: string; updatedAt: string }
+export interface AiProviderInput { name: string; kind: AiProviderKind; model: string; baseUrl?: string; apiKey?: string; isDefault?: boolean }
+export interface AiSuggestion {
+  type: WidgetType; title: string; explanation: string;
+  dimensions: { field: string; kind: FieldKind; bucket?: DateBucket }[];
+  measures: { field: string; kind: FieldKind; agg: Aggregation }[];
+  filters: Omit<Filter, 'id'>[];
+  sortBy: NonNullable<WidgetOptions['sortBy']>;
+}
+export interface AiSuggestRequest { providerId?: number; sourceLabel: string; fields: Pick<FieldInfo, 'name' | 'kind' | 'dataType'>[]; prompt?: string; lang?: string; count?: number }
+export interface AiSuggestResponse { suggestions: AiSuggestion[]; provider: AiProvider; durationMs: number }
+/** Shape of a test endpoint answer (data source or AI provider). */
+export interface TestResult { ok: boolean; latencyMs?: number; version?: string; model?: string; error?: string; code?: string; details?: unknown }

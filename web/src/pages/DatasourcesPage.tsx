@@ -7,6 +7,7 @@ import type { Datasource, DatasourceInput } from '@/api/types';
 import { useAuth, canEdit } from '@/store/auth';
 import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
+import { describeError, describeServerError } from '@/lib/errors';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Input } from '@/components/ui/Field';
@@ -31,8 +32,13 @@ export function DatasourceModal({ open, initial, onClose }: { open: boolean; ini
 
   const test = useMutation({
     mutationFn: () => api.datasources.test({ ...form, id: initial?.id }),
-    onSuccess: (r) => { setTestOk(r.ok); setTestResult(r.ok ? t('datasources.testOk', { version: r.version ?? '', ms: r.latencyMs ?? 0 }) : t('datasources.testFail', { error: r.error ?? '' })); },
-    onError: (e) => { setTestOk(false); setTestResult(e.message); },
+    onSuccess: (r) => {
+      setTestOk(r.ok);
+      setTestResult(r.ok
+        ? t('datasources.testOk', { version: r.version ?? '', ms: r.latencyMs ?? 0 })
+        : t('datasources.testFail', { error: describeServerError({ code: r.code, message: r.error, details: r.details }, t) }));
+    },
+    onError: (e) => { setTestOk(false); setTestResult(describeError(e, t)); },
   });
   const save = useMutation({
     mutationFn: () => initial
@@ -89,7 +95,7 @@ export function DatasourcesPage() {
   const remove = useMutation({
     mutationFn: (id: number) => api.datasources.remove(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['datasources'] }); setToDelete(null); toast.success(t('common.deleted')); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
 
   return (

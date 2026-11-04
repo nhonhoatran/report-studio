@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
-import { ArrowLeft, Eye, Pencil, Plus, RefreshCw, Save } from 'lucide-react';
+import { ArrowLeft, Eye, Pencil, Plus, RefreshCw, Save, Sparkles } from 'lucide-react';
 import { api } from '@/api/client';
 import type { FieldInfo } from '@/api/types';
 import { useAuth, canEdit } from '@/store/auth';
@@ -16,6 +16,7 @@ import { KindIcon } from '@/components/ui/KindBadge';
 import { FieldsPane, FIELD_DRAG_PREFIX } from '@/components/editor/FieldsPane';
 import { Canvas, WIDGET_DROP_PREFIX } from '@/components/editor/Canvas';
 import { VisualPane, WELL_DROP_PREFIX } from '@/components/editor/VisualPane';
+import { AiSuggestDialog } from '@/components/editor/AiSuggestDialog';
 import '@/components/editor/editor.css';
 
 /** Shared by the edit and view routes: `mode` decides which panes render. */
@@ -30,6 +31,8 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   const qc = useQueryClient();
   const [dragging, setDragging] = useState<FieldInfo | null>(null);
   const [leaveTo, setLeaveTo] = useState<string | null>(null);
+  // the AI dialog is re-keyed on every open so an old answer never shows up again
+  const [ai, setAi] = useState<{ open: boolean; key: number }>({ open: false, key: 0 });
 
   const dashboard = useQuery({ queryKey: ['dashboard', id], queryFn: () => api.dashboards.get(id).then((r) => r.dashboard), enabled: Number.isInteger(id) });
 
@@ -48,7 +51,7 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   const save = useMutation({
     mutationFn: () => api.dashboards.update(id, { name: ed.name || t('dashboards.untitled'), description: ed.description, definition: ed.definition }),
     onSuccess: () => { ed.markSaved(); toast.success(t('editor.saved')); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
 
   // Ctrl/Cmd+S
@@ -114,6 +117,7 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
           {editable ? (
             <>
               <Button icon={<Plus size={16} />} onClick={() => ed.addWidget()}>{t('editor.addVisual')}</Button>
+              <Button icon={<Sparkles size={16} />} onClick={() => setAi((a) => ({ open: true, key: a.key + 1 }))}>{t('ai.suggest')}</Button>
               <Button icon={<Eye size={16} />} onClick={() => leave(`/dashboards/${id}`)}>{t('editor.view')}</Button>
               <Button variant="primary" icon={<Save size={16} />} onClick={() => save.mutate()} loading={save.isPending} disabled={!ed.dirty && !save.isError}>{t('common.save')}</Button>
             </>
@@ -141,6 +145,7 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
           <Canvas editable={false} />
         </div>
       )}
+      {editable && <AiSuggestDialog key={ai.key} open={ai.open} onClose={() => setAi((a) => ({ ...a, open: false }))} />}
       <ConfirmDialog open={!!leaveTo} title={t('editor.unsaved')} message={t('editor.unsavedLeave')} confirmLabel={t('editor.leave')}
         onConfirm={() => { const to = leaveTo!; setLeaveTo(null); ed.markSaved(); navigate(to); }} onClose={() => setLeaveTo(null)} />
     </div>

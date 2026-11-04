@@ -62,3 +62,16 @@ Thông báo lỗi có thể gặp sau khi quay về từ Microsoft:
 | Chưa có tài khoản Report Studio cho người dùng này | `ENTRA_AUTO_PROVISION=false` và admin chưa tạo tài khoản với tên đăng nhập = e-mail |
 | Phiên đăng nhập Microsoft đã hết hạn | quá 10 phút giữa lúc nhấn nút và lúc quay về, hoặc mở link cũ |
 | Đăng nhập Microsoft không thành công | lỗi cấu hình (redirect URI, client secret hết hạn…) — xem log server |
+
+## 5. Gợi ý biểu đồ bằng AI
+1. (Chỉ admin, một lần) **Cài đặt → Nhà cung cấp AI → Thêm nhà cung cấp**: chọn loại key — *Anthropic (Claude)*, *OpenAI*, *Google Gemini* hoặc *Tương thích OpenAI* (Ollama, vLLM, DeepSeek, Groq… — cần nhập địa chỉ API, ví dụ `http://ollama:11434/v1`) — nhập model và API key, nhấn **Kiểm tra** rồi **Lưu**. Có thể thêm nhiều key; đánh dấu một key làm *mặc định*.
+2. Trong trình chỉnh sửa bảng điều khiển, chọn nguồn dữ liệu và bảng ở cột trái, rồi nhấn **Gợi ý bằng AI** trên thanh công cụ.
+3. Mô tả điều muốn xem (ví dụ *"doanh thu theo tháng của từng khu vực"*, *"top sản phẩm bán chạy"*) hoặc để trống để AI tự đề xuất. Nếu có nhiều nhà cung cấp, chọn một trong hộp thoại.
+4. Mỗi gợi ý hiển thị loại biểu đồ, các trường và phép gộp; nhấn **Thêm vào bảng** cho từng gợi ý hoặc **Thêm tất cả**. Biểu đồ được thêm như bạn tự kéo-thả, nên có thể chỉnh tiếp ở cột phải.
+
+Lưu ý: AI chỉ nhìn thấy **tên và kiểu trường**, không nhìn thấy dữ liệu, và chỉ chọn trường / phép gộp / loại biểu đồ — câu SQL vẫn do máy chủ sinh ra như mọi biểu đồ khác.
+
+## 6. Ngôn ngữ & giao diện
+- Ngôn ngữ được nhận theo trình duyệt ở lần đầu; đổi ngay ở màn **Đăng nhập** (góc dưới) hoặc **Cài đặt → Hiển thị**. Lựa chọn được ghi nhớ trên trình duyệt này.
+- Số, ngày giờ và thông báo lỗi từ máy chủ hiển thị theo ngôn ngữ đã chọn.
+- Giao diện tối là mặc định; chọn *Sáng* hoặc *Theo hệ thống* trong **Cài đặt → Hiển thị**.

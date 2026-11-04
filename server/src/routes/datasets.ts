@@ -33,7 +33,7 @@ function view(r: DatasetRow) {
 
 export async function loadDataset(id: number): Promise<DatasetRow> {
   const row = await queryOne<DatasetRow>('SELECT * FROM datasets WHERE id = ?', [id]);
-  if (!row) throw notFound('Dataset not found');
+  if (!row) throw notFound('Dataset not found', 'dataset_not_found');
   return row;
 }
 
@@ -68,7 +68,7 @@ datasetsRouter.post('/', requireRole('editor'), async (req, res) => {
   const sql = assertReadOnlySelect(body.sql);
   await describeSql(poolForDatasource(ds), sql); // fail early on invalid SQL
   if (await queryOne('SELECT id FROM datasets WHERE datasource_id = ? AND name = ?', [body.datasourceId, body.name])) {
-    throw conflict('A dataset with this name already exists on this data source');
+    throw conflict('A dataset with this name already exists on this data source', 'dataset_name_exists');
   }
   const result = await execute(
     'INSERT INTO datasets (datasource_id, name, description, sql_text, created_by) VALUES (?, ?, ?, ?, ?)',

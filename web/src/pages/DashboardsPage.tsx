@@ -27,17 +27,17 @@ export function DashboardsPage() {
   const create = useMutation({
     mutationFn: () => api.dashboards.create({ name: t('dashboards.untitled'), definition: emptyDefinition() }),
     onSuccess: ({ dashboard }) => { qc.invalidateQueries({ queryKey: ['dashboards'] }); navigate(`/dashboards/${dashboard.id}/edit`); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
   const duplicate = useMutation({
     mutationFn: (id: number) => api.dashboards.duplicate(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['dashboards'] }),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
   const remove = useMutation({
     mutationFn: (id: number) => api.dashboards.remove(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['dashboards'] }); setToDelete(null); toast.success(t('common.deleted')); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
 
   return (

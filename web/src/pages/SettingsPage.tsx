@@ -15,6 +15,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Segmented } from '@/components/ui/Segmented';
 import { ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
+import { AiProvidersPanel } from '@/components/settings/AiProvidersPanel';
 import '@/components/layout/layout.css';
 
 function ChangePassword() {
@@ -50,12 +51,12 @@ function Users() {
   const update = useMutation({
     mutationFn: ({ id, role }: { id: number; role: Role }) => api.auth.updateUser(id, { role }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
   const remove = useMutation({
     mutationFn: (id: number) => api.auth.deleteUser(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setToDelete(null); toast.success(t('common.deleted')); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e),
   });
   const roles: Role[] = ['admin', 'editor', 'viewer'];
   const roleLabel = (r: Role) => t(r === 'admin' ? 'settings.roleAdmin' : r === 'editor' ? 'settings.roleEditor' : 'settings.roleViewer');
@@ -129,6 +130,7 @@ export function SettingsPage() {
           {me?.hasPassword === false ? <p className="text-sm text-muted">{t('settings.managedByEntra')}</p> : <ChangePassword />}
         </Panel>
         {me?.role === 'admin' && <div className="settings-grid__full"><Users /></div>}
+        {me?.role === 'admin' && <div className="settings-grid__full"><AiProvidersPanel /></div>}
       </div>
     </>
   );

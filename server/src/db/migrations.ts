@@ -60,7 +60,26 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
     ],
   },
   {
-    // version 2 is taken by the ai_providers migration on the AI/i18n branch.
+    version: 2,
+    name: 'ai_providers',
+    sql: [
+      `CREATE TABLE IF NOT EXISTS ai_providers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(120) NOT NULL UNIQUE,
+        kind VARCHAR(32) NOT NULL,
+        model VARCHAR(160) NOT NULL,
+        base_url VARCHAR(500) NULL,
+        api_key_enc TEXT NOT NULL,
+        is_default TINYINT(1) NOT NULL DEFAULT 0,
+        created_by INT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_ai_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB`,
+    ],
+  },
+  {
+    // version 2 is taken by the ai_providers migration above.
     version: 3,
     name: 'users_external_identity',
     sql: [
