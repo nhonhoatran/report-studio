@@ -19,7 +19,7 @@ import '@/components/layout/layout.css';
 
 const FORM_ID = 'dataset-form';
 
-function DatasetForm({ datasourceId, initial, onClose }: { datasourceId: number; initial: Dataset | null; onClose: () => void }) {
+function DatasetModal({ open, datasourceId, initial, onClose }: { open: boolean; datasourceId: number; initial: Dataset | null; onClose: () => void }) {
   const t = useT();
   const qc = useQueryClient();
   const [name, setName] = useState(initial?.name ?? '');
@@ -36,9 +36,22 @@ function DatasetForm({ datasourceId, initial, onClose }: { datasourceId: number;
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['datasets'] }); onClose(); },
   });
 
-  const onSubmit = (e: FormEvent) => { e.preventDefault(); if (name && sql.trim()) save.mutate(); };
+  const valid = !!(name && sql.trim());
+  const onSubmit = (e: FormEvent) => { e.preventDefault(); if (valid) save.mutate(); };
 
   return (
+    <Modal
+      open={open}
+      wide
+      title={initial ? t('datasets.editTitle') : t('datasets.addTitle')}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" form={FORM_ID} variant="primary" disabled={!valid} loading={save.isPending}>{t('common.save')}</Button>
+        </>
+      }
+    >
     <form id={FORM_ID} onSubmit={onSubmit} className="stack">
       <div className="form-grid">
         <Input label={t('common.name')} required value={name} onChange={(e) => setName(e.target.value)} autoFocus />
@@ -57,16 +70,7 @@ function DatasetForm({ datasourceId, initial, onClose }: { datasourceId: number;
       )}
       {save.error && <ErrorBox error={save.error} />}
     </form>
-  );
-}
-
-function DatasetFormFooter({ onClose }: { onClose: () => void }) {
-  const t = useT();
-  return (
-    <>
-      <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-      <Button type="submit" form={FORM_ID} variant="primary">{t('common.save')}</Button>
-    </>
+    </Modal>
   );
 }
 
@@ -161,17 +165,14 @@ export function DatasourceDetailPage() {
               <thead><tr><th>{t('datasources.columns')}</th><th></th><th></th></tr></thead>
               <tbody>
                 {columns.data.map((c) => (
-                  <tr key={c.name}><td className="mono row">{c.name}{c.isKey && <Key size={12} aria-label={t('datasources.primaryKey')} />}</td><td className="mono text-muted">{c.dataType}</td><td><KindBadge kind={c.kind} label={t(`kinds.${c.kind}`)} /></td></tr>
+                  <tr key={c.name}><td className="mono"><span className="row">{c.name}{c.isKey && <><Key size={12} aria-hidden /><span className="sr-only">{t('datasources.primaryKey')}</span></>}</span></td><td className="mono text-muted">{c.dataType}</td><td><KindBadge kind={c.kind} label={t(`kinds.${c.kind}`)} /></td></tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
       </Modal>
-      <Modal open={editing !== null} title={editing === 'new' ? t('datasets.addTitle') : t('datasets.editTitle')} onClose={() => setEditing(null)} wide
-        footer={<DatasetFormFooter onClose={() => setEditing(null)} />}>
-        {editing !== null && <DatasetForm key={editing === 'new' ? 'new' : editing.id} datasourceId={id} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-      </Modal>
+      <DatasetModal key={editing === 'new' ? 'new' : editing?.id ?? 'closed'} open={editing !== null} datasourceId={id} initial={editing === 'new' || editing === null ? null : editing} onClose={() => setEditing(null)} />
       <ConfirmDialog open={!!toDelete} title={t('common.delete')} message={t('common.confirmDelete', { name: toDelete?.name ?? '' })} confirmLabel={t('common.delete')}
         loading={remove.isPending} onConfirm={() => toDelete && remove.mutate(toDelete.id)} onClose={() => setToDelete(null)} />
     </>

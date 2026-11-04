@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2 } from 'lucide-react';
-import type { FormEvent as FE } from 'react';
 import { api } from '@/api/client';
 import type { Role } from '@/api/types';
 import { useAuth } from '@/store/auth';
@@ -88,7 +87,7 @@ function Users() {
       )}
       <Modal open={open} title={t('settings.addUser')} onClose={() => setOpen(false)}
         footer={<><Button variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button type="submit" form="user-form" variant="primary" loading={create.isPending} disabled={!form.username || !form.displayName || form.password.length < 8}>{t('common.create')}</Button></>}>
-        <form id="user-form" className="stack" onSubmit={(e: FE) => { e.preventDefault(); create.mutate(); }}>
+        <form id="user-form" className="stack" onSubmit={(e: FormEvent) => { e.preventDefault(); create.mutate(); }}>
           <Input label={t('login.username')} required autoComplete="off" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           <Input label={t('settings.displayName')} required value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
           <Input label={t('login.password')} type="password" autoComplete="new-password" required minLength={8} help={t('settings.minPassword')} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />

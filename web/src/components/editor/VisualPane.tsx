@@ -165,7 +165,7 @@ export function VisualPane() {
         <div className="pane__section-title">{t('editor.options')}</div>
         {q.measures.length > 0 && widget.type !== 'kpi' && (
           <Select size="sm" label={t('editor.sort')} value={widget.options.sortBy ?? 'none'} onChange={(e) => setOptions({ sortBy: e.target.value as Widget['options']['sortBy'] })}>
-            <option value="none">{t('bucket.none')}</option>
+            <option value="none">{t('common.none')}</option>
             <option value="measure_desc">{t('editor.sortDesc')}</option>
             <option value="measure_asc">{t('editor.sortAsc')}</option>
           </Select>

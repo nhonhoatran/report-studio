@@ -81,8 +81,19 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   };
   const refresh = () => qc.invalidateQueries({ queryKey: ['widget-query'] });
 
-  if (dashboard.isLoading) return <div className="editor__loading"><Spinner block /></div>;
-  if (dashboard.error) return <div className="editor__loading"><ErrorBox error={dashboard.error} /></div>;
+  if (dashboard.isLoading || dashboard.error) {
+    return (
+      <div className="editor">
+        <div className="editor__bar">
+          <div className="row grow">
+            <Button variant="ghost" iconOnly icon={<ArrowLeft size={18} />} onClick={() => navigate('/dashboards')}>{t('common.back')}</Button>
+            <h1 className="editor__name truncate">{t('nav.dashboards')}</h1>
+          </div>
+        </div>
+        <div className="editor__loading">{dashboard.error ? <ErrorBox error={dashboard.error} /> : <Spinner block />}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="editor">

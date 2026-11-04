@@ -77,6 +77,7 @@
   --sidebar-width: 220px;
   --pane-width: 280px;
   --header-height: 52px;
+  --header-user-width: 160px;
 }
 
 :root[data-theme="dark"] {

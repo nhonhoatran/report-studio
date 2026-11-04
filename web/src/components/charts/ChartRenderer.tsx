@@ -5,7 +5,7 @@ import { echarts } from './echarts';
 import type { QueryResult, Widget } from '@/api/types';
 import { formatAxis, formatCell, formatNumber } from '@/lib/format';
 import { cssPx, cssVar, useTheme } from '@/store/theme';
-import { useI18nStore, useT, type TFn } from '@/i18n';
+import { translate, useI18nStore, useT, type Lang } from '@/i18n';
 import { CARTESIAN } from '@/lib/widget';
 import { EmptyState } from '@/components/ui/Feedback';
 import './charts.css';
@@ -22,7 +22,7 @@ const ANIMATION_MS = 300;
 const PIE_RADIUS = { full: '72%', inner: '45%' };
 
 /** rows -> { categories, series[] } honouring axis (dim 0) and legend (dim 1). */
-function shape(result: QueryResult, widget: Widget, t: TFn) {
+function shape(result: QueryResult, widget: Widget, lang: Lang) {
   const dims = result.columns.filter((c) => c.role === 'dimension').map((c) => c.alias);
   const measures = result.columns.filter((c) => c.role === 'measure').map((c) => c.alias);
   const axis = dims[0];
@@ -30,7 +30,7 @@ function shape(result: QueryResult, widget: Widget, t: TFn) {
   const categories = axis ? Array.from(new Set(result.rows.map((r) => String(r[axis] ?? '')))) : [''];
   const labelOf = (alias: string) => {
     const m = widget.query.measures.find((mm) => (mm.alias ?? `${mm.agg}_${mm.field === '*' ? 'all' : mm.field}`) === alias);
-    return m ? `${t(`agg.${m.agg}`)} · ${m.field === '*' ? '' : m.field}`.trim() : alias;
+    return m ? `${translate(lang, `agg.${m.agg}`)} · ${m.field === '*' ? '' : m.field}`.trim() : alias;
   };
   const series: { name: string; data: (number | null)[] }[] = [];
   if (legend && measures[0]) {
@@ -66,7 +66,7 @@ export function ChartRenderer({ widget, result }: Props) {
     const grid = cssVar('--chart-grid');
     const surface = cssVar('--color-surface');
     const border = cssVar('--color-border');
-    const { categories, series, measures } = shape(result, widget, t);
+    const { categories, series, measures } = shape(result, widget, lang);
     const radiusSm = cssPx('--radius-sm', 4);
     const s2 = cssPx('--space-2', 8);
     const s4 = cssPx('--space-4', 16);
@@ -122,7 +122,7 @@ export function ChartRenderer({ widget, result }: Props) {
     };
     // theme is a dependency so colours re-read when it flips
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget, result, fmt, lang, theme, t]);
+  }, [widget, result, fmt, lang, theme]);
 
   if (result.rows.length === 0) return <EmptyState compact title={t('editor.noData')} />;
 

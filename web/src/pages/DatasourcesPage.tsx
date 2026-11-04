@@ -20,7 +20,8 @@ const blank: DatasourceInput = { name: '', host: '', port: 3306, database: '', u
 
 const FORM_ID = 'datasource-form';
 
-export function DatasourceForm({ initial, onClose }: { initial: Datasource | null; onClose: () => void }) {
+/** Add / edit dialog. Owns the form state so the footer's Save button reflects validity and pending. */
+export function DatasourceModal({ open, initial, onClose }: { open: boolean; initial: Datasource | null; onClose: () => void }) {
   const t = useT();
   const qc = useQueryClient();
   const [form, setForm] = useState<DatasourceInput>(initial ? { ...initial, password: '' } : blank);
@@ -40,9 +41,21 @@ export function DatasourceForm({ initial, onClose }: { initial: Datasource | nul
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['datasources'] }); onClose(); },
   });
 
-  const onSubmit = (e: FormEvent) => { e.preventDefault(); if (form.name && form.host && form.database && form.username && form.port > 0) save.mutate(); };
+  const valid = !!(form.name && form.host && form.database && form.username && form.port > 0);
+  const onSubmit = (e: FormEvent) => { e.preventDefault(); if (valid) save.mutate(); };
 
   return (
+    <Modal
+      open={open}
+      title={initial ? t('datasources.editTitle') : t('datasources.addTitle')}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" form={FORM_ID} variant="primary" disabled={!valid} loading={save.isPending}>{t('common.save')}</Button>
+        </>
+      }
+    >
     <form id={FORM_ID} onSubmit={onSubmit} className="stack">
       <p className="text-sm text-muted">{t('datasources.readonlyHint')}</p>
       <div className="form-grid">
@@ -60,17 +73,7 @@ export function DatasourceForm({ initial, onClose }: { initial: Datasource | nul
       {testResult && <Notice kind={testOk ? 'success' : 'error'}>{testResult}</Notice>}
       {save.error && <ErrorBox error={save.error} />}
     </form>
-  );
-}
-
-/** Footer for the Modal that hosts DatasourceForm: submits the form by id. */
-export function DatasourceFormFooter({ onClose, pending, valid }: { onClose: () => void; pending?: boolean; valid?: boolean }) {
-  const t = useT();
-  return (
-    <>
-      <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-      <Button type="submit" form={FORM_ID} variant="primary" disabled={valid === false} loading={pending}>{t('common.save')}</Button>
-    </>
+    </Modal>
   );
 }
 
@@ -126,10 +129,7 @@ export function DatasourcesPage() {
           </div>
         </Panel>
       )}
-      <Modal open={editing !== null} title={editing === 'new' ? t('datasources.addTitle') : t('datasources.editTitle')} onClose={() => setEditing(null)}
-        footer={<DatasourceFormFooter onClose={() => setEditing(null)} />}>
-        {editing !== null && <DatasourceForm key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-      </Modal>
+      <DatasourceModal key={editing === 'new' ? 'new' : editing?.id ?? 'closed'} open={editing !== null} initial={editing === 'new' || editing === null ? null : editing} onClose={() => setEditing(null)} />
       <ConfirmDialog open={!!toDelete} title={t('common.delete')} message={t('common.confirmDelete', { name: toDelete?.name ?? '' })} confirmLabel={t('common.delete')}
         loading={remove.isPending} onConfirm={() => toDelete && remove.mutate(toDelete.id)} onClose={() => setToDelete(null)} />
     </>

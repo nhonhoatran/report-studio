@@ -1,8 +1,8 @@
 .editor { display: grid; grid-template-rows: auto 1fr; height: 100%; min-height: 0; }
 .editor__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-4); background: var(--color-surface); border-bottom: 1px solid var(--color-border); flex-wrap: wrap; }
 .editor__name { font-size: var(--text-xl); font-weight: 600; border: 1px solid transparent; border-radius: var(--radius-md); padding: var(--space-1) var(--space-2); background: transparent; min-width: 0; width: min(420px, 100%); }
-.editor__name:hover { border-color: var(--color-border); }
-.editor__name:focus-visible { border-color: var(--color-focus); background: var(--color-surface); }
+input.editor__name:hover { border-color: var(--color-border); }
+input.editor__name:focus-visible { border-color: var(--color-focus); background: var(--color-surface); }
 .editor__status { font-size: var(--text-sm); color: var(--color-text-faint); }
 .editor__status--dirty { color: var(--color-warning); }
 .editor__body { display: grid; grid-template-columns: var(--pane-width) 1fr var(--pane-width); min-height: 0; }
