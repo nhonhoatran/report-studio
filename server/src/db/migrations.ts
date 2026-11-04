@@ -60,7 +60,8 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
     ],
   },
   {
-    version: 2,
+    // version 2 is taken by the ai_providers migration on the AI/i18n branch.
+    version: 3,
     name: 'users_external_identity',
     sql: [
       // Accounts signed in through Microsoft Entra ID carry no password; the
