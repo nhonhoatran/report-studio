@@ -87,8 +87,8 @@ export interface WidgetOptions {
   showTotals?: boolean;
   /** table: a bar behind each numeric cell, proportional to the column's maximum */
   dataBars?: boolean;
-  /** gauge: scale and target; a second measure overrides `target` */
-  gaugeMin?: number; gaugeMax?: number; target?: number;
+  /** gauge: scale, and whether the target mark and label are drawn; a second measure overrides `target` (gauge, KPI with trend) */
+  gaugeMin?: number; gaugeMax?: number; showTarget?: boolean; target?: number;
   /** cartesian analytics: a constant line and the series average */
   referenceLine?: number; averageLine?: boolean;
 }

@@ -26,7 +26,7 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
   });
 
   if (!runnable) return <div className="widget__center"><EmptyState compact title={t('editor.needsFields')} /></div>;
-  if (missing) return <div className="widget__center"><EmptyState compact title={t(missing)} /></div>;
+  if (missing) return <div className="widget__center"><EmptyState compact title={t(missing.message, { well: t(missing.well) })} /></div>;
   if (query.isPending) return <div className="widget__center"><Spinner /></div>;
   if (query.error) return <div className="widget__body"><ErrorBox error={query.error} /></div>;
   const result = query.data!;

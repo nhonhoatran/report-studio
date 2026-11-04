@@ -30,7 +30,7 @@ export function DataTable({ widget, result }: Props) {
   const [sort, setSort] = useState<Sort>(null);
   const numeric = useMemo(() => new Set(result.columns.filter((c) => c.role === 'measure' || typeof result.rows[0]?.[c.alias] === 'number').map((c) => c.alias)), [result]);
   const rows = useMemo(() => sortRows(result.rows, sort, numeric), [result.rows, sort, numeric]);
-  const measures = measureAliases(result);
+  const measures = useMemo(() => measureAliases(result), [result]);
   const maxima = useMemo(() => {
     const out = new Map<string, number>();
     if (!widget.options.dataBars) return out;

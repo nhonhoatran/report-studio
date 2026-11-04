@@ -1,4 +1,4 @@
-import type { Dimension, FieldInfo, Measure, QueryRequest, Widget, WidgetType } from '@/api/types';
+import type { Dimension, FieldInfo, Measure, QueryRequest, Stacking, Widget, WidgetType } from '@/api/types';
 import type { TKey } from '@/i18n';
 import { newId } from './id';
 
@@ -11,7 +11,9 @@ export type ChartFeature =
   | 'analytics'     // reference line, average line
   | 'totals'        // totals row / column
   | 'dataBars'      // bars behind numeric cells
-  | 'gauge';        // min / max / target
+  | 'gauge'         // min / max, show the target
+  | 'target'        // a target number when no second measure carries it
+  | 'series';       // each measure drawn as a column or a line (combo)
 
 export interface ChartSpec {
   /** gallery grouping (Power BI order): compare, trend, part-to-whole, relation, single value, tables */
@@ -49,8 +51,8 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
   area: cartesian,
   combo: {
     group: 'compare', minDimensions: 0, maxDimensions: 1, minMeasures: 1, maxMeasures: 20,
-    wells: { dimensions: 'editor.wellAxis', measures: 'editor.wellComboValues' }, dimensionSlots: ['editor.slotAxis'],
-    features: ['legend', 'showValues', 'sort', 'analytics'], limit: 1000,
+    wells: { dimensions: 'editor.wellAxis', measures: 'editor.wellComboValues' },
+    features: ['legend', 'showValues', 'sort', 'analytics', 'series'], limit: 1000,
   },
   scatter: {
     group: 'relation', minDimensions: 1, maxDimensions: 2, minMeasures: 2, maxMeasures: 3,
@@ -85,7 +87,7 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
   gauge: {
     group: 'single', minDimensions: 0, maxDimensions: 0, minMeasures: 1, maxMeasures: 2,
     wells: { dimensions: 'editor.wellCategory', measures: 'editor.wellValueTarget' },
-    measureSlots: ['editor.slotValue', 'editor.slotTarget'], features: ['gauge', 'showValues'], limit: 1,
+    measureSlots: ['editor.slotValue', 'editor.slotTarget'], features: ['gauge', 'target'], limit: 1,
   },
   kpi: {
     group: 'single', minDimensions: 0, maxDimensions: 0, minMeasures: 1, maxMeasures: 1,
@@ -94,7 +96,7 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
   trend: {
     group: 'single', minDimensions: 1, maxDimensions: 1, minMeasures: 1, maxMeasures: 2,
     wells: { dimensions: 'editor.wellTrendAxis', measures: 'editor.wellValueTarget' },
-    measureSlots: ['editor.slotValue', 'editor.slotTarget'], features: [], limit: 1000,
+    measureSlots: ['editor.slotValue', 'editor.slotTarget'], features: ['target'], limit: 1000,
   },
   multirow: {
     group: 'single', minDimensions: 1, maxDimensions: 1, minMeasures: 1, maxMeasures: 20,
@@ -183,21 +185,28 @@ export function isRunnable(widget: Widget): boolean {
   return !!widget.datasourceId && !!widget.source && (widget.query.dimensions.length + widget.query.measures.length > 0);
 }
 
-/** Which well is still short for this type, as the message to show instead of the chart; null when the query can run. */
-export function missingWells(widget: Widget): TKey | null {
+/** Which well is still short for this type: the message to show instead of the chart and the well it names; null when the query can run. */
+export function missingWells(widget: Widget): { message: TKey; well: TKey } | null {
   const spec = CHART_SPECS[widget.type];
   const dims = widget.query.dimensions.length;
   const measures = widget.query.measures.length;
-  if (dims < spec.minDimensions) return spec.minDimensions >= 2 ? 'editor.needsTwoDimensions' : 'editor.needsDimension';
-  if (measures < spec.minMeasures) return spec.minMeasures >= 2 ? 'editor.needsTwoMeasures' : 'editor.needsMeasure';
+  if (dims < spec.minDimensions) return { message: spec.minDimensions >= 2 ? 'editor.needsTwoDimensions' : 'editor.needsDimension', well: spec.wells.dimensions };
+  if (measures < spec.minMeasures) return { message: spec.minMeasures >= 2 ? 'editor.needsTwoMeasures' : 'editor.needsMeasure', well: spec.wells.measures };
   return null;
+}
+
+/** The stacking in force: the option only counts for types that offer it, so it does not follow a widget into a line chart. */
+export function stackingOf(widget: Widget): Stacking {
+  if (!hasFeature(widget.type, 'stacking')) return 'none';
+  return widget.options.stacking ?? (widget.options.stacked ? 'stacked' : 'none');
 }
 
 export function toQueryRequest(widget: Widget): QueryRequest | null {
   if (!widget.datasourceId || !widget.source) return null;
   const q = widget.query;
   const orderBy = [...q.orderBy];
-  if (orderBy.length === 0 && q.measures.length && widget.options.sortBy && widget.options.sortBy !== 'none') {
+  // the sort option only acts where the pane offers it, so it does not follow a widget into a type without the control
+  if (orderBy.length === 0 && q.measures.length && hasFeature(widget.type, 'sort') && widget.options.sortBy && widget.options.sortBy !== 'none') {
     const m = q.measures[0]!;
     orderBy.push({ alias: measureAlias(m), direction: widget.options.sortBy === 'measure_desc' ? 'desc' : 'asc' });
   }

@@ -2,7 +2,7 @@ import type { EChartsOption, SeriesOption } from 'echarts';
 import type { LegendPosition, NumberFormat, QueryResult, Widget } from '@/api/types';
 import { formatAxis, formatNumber } from '@/lib/format';
 import { translate, type Lang, type TKey, type TParams } from '@/i18n';
-import { comboRole, measureAlias } from '@/lib/widget';
+import { comboRole, measureAlias, stackingOf } from '@/lib/widget';
 import { cssPx, cssVar } from '@/store/theme';
 import { dimensionAliases, measureAliases, measureLabel, niceCeil, num, shape, str, toShares, type Row, type Shaped } from './shape';
 
@@ -13,7 +13,9 @@ import { dimensionAliases, measureAliases, measureLabel, niceCeil, num, shape, s
  */
 
 export interface ChartTheme {
-  colors: string[]; text: string; faint: string; grid: string; surface: string; border: string; font: string;
+  colors: string[];
+  /** the muted text colour axes and legends use; `textStrong` is the body text colour for labels drawn on top of marks */
+  text: string; textStrong: string; faint: string; grid: string; surface: string; border: string; font: string;
   fontSize: number; fontSizeLg: number;
   success: string; danger: string;
   radiusSm: number; s1: number; s2: number; s3: number; s4: number; s6: number; s7: number;
@@ -22,7 +24,7 @@ export interface ChartTheme {
 export function readChartTheme(): ChartTheme {
   return {
     colors: Array.from({ length: 8 }, (_, i) => cssVar(`--chart-${i + 1}`)).filter(Boolean),
-    text: cssVar('--color-text-muted'), faint: cssVar('--color-text-faint'), grid: cssVar('--chart-grid'),
+    text: cssVar('--color-text-muted'), textStrong: cssVar('--color-text'), faint: cssVar('--color-text-faint'), grid: cssVar('--chart-grid'),
     surface: cssVar('--color-surface'), border: cssVar('--color-border'), font: cssVar('--font-sans'),
     fontSize: cssPx('--text-xs', 11), fontSizeLg: cssPx('--text-xl', 20),
     success: cssVar('--color-success'), danger: cssVar('--color-danger'),
@@ -39,12 +41,19 @@ const BAR_MAX_WIDTH = 48;
 const LINE_SMOOTHNESS = 0.2;
 const AREA_FILL_OPACITY = 0.18;
 const SLICE_GAP = 2;
+const LINE_WIDTH = 2;
+const POINT_OPACITY = 0.85;
+const CELL_BORDER = 1;
 const PIE_RADIUS = { full: '72%', inner: '45%' };
+/** where a pie or radar sits, depending on which side the legend takes */
+const CENTER = { alone: ['50%', '50%'], legendRight: ['40%', '50%'], legendTop: ['50%', '55%'], legendBottom: ['50%', '45%'] };
+const RADAR_CENTER = { alone: ['50%', '50%'], legendRight: ['40%', '50%'], legendTop: ['50%', '56%'], legendBottom: ['50%', '46%'] };
 const FUNNEL_INSET = '8%';
 const FUNNEL_MIN_SIZE = '12%';
 const LEGEND_SIDE_WIDTH = '24%';
 const BUBBLE_SIZE = { min: 6, max: 40, plain: 10 };
 const HEAT_LOW_MIX = 0.85;
+const HEAT_SCALE_LENGTH = 3; // × --space-7
 const RADAR_RADIUS = '65%';
 const RADAR_HEADROOM = 1.1;
 const RADAR_SPLIT = 5;
@@ -52,8 +61,9 @@ const RADAR_SPLIT = 5;
 const RADAR_STEPS = [1, 2, 3, 5, 10];
 /** the weight base.css gives headings and the KPI value; ECharts needs it as a number */
 const HEADLINE_WEIGHT = 600;
-const GAUGE = { startAngle: 200, endAngle: -20, width: 14, valueOffset: '-10%', titleOffset: '24%', markLength: '14%', markWidth: 3, markOffset: '-88%' };
+const GAUGE = { startAngle: 200, endAngle: -20, radius: '100%', center: ['50%', '60%'], width: 14, splitNumber: 1, valueOffset: '-10%', titleOffset: '24%', markLength: '14%', markWidth: 3, markOffset: '-88%' };
 const TREEMAP_SATURATION: [number, number] = [0.35, 0.6];
+const TREEMAP_LEAF_GAP = 1;
 const MARK_LINE_DASH: [number, number] = [4, 4];
 
 interface TipParam { name: string; seriesName: string; value: unknown; marker: string; data: unknown; dataIndex: number }
@@ -101,7 +111,7 @@ function base(widget: Widget, ctx: ChartContext, showLegend: boolean, trigger: '
     textStyle: { fontFamily: th.font, fontSize: th.fontSize },
     tooltip: {
       trigger,
-      backgroundColor: th.surface, borderColor: th.border, textStyle: { color: cssVar('--color-text') },
+      backgroundColor: th.surface, borderColor: th.border, textStyle: { color: th.textStrong },
       valueFormatter: (v) => formatNumber(v as number, fmt, lang),
     },
     legend: legendOption(showLegend, widget.options.legendPosition ?? 'bottom', th),
@@ -109,7 +119,6 @@ function base(widget: Widget, ctx: ChartContext, showLegend: boolean, trigger: '
 }
 
 const legendPos = (w: Widget) => w.options.legendPosition ?? 'bottom';
-const stackingOf = (w: Widget) => w.options.stacking ?? (w.options.stacked ? 'stacked' : 'none');
 
 /** Reference and average lines on the first series (cartesian analytics). */
 function markLine(widget: Widget, ctx: ChartContext, horizontal: boolean) {
@@ -169,7 +178,7 @@ function cartesian(widget: Widget, result: QueryResult, ctx: ChartContext): ECha
       barMaxWidth: BAR_MAX_WIDTH,
       itemStyle: !isLine && stacking === 'none' ? { borderRadius: horizontal ? [0, th.radiusSm, th.radiusSm, 0] : [th.radiusSm, th.radiusSm, 0, 0] } : undefined,
       emphasis: { focus: 'series' },
-      label: widget.options.showValues ? { show: true, position: stacking !== 'none' ? 'inside' : horizontal ? 'right' : 'top', color: stacking !== 'none' ? cssVar('--color-text') : th.text, formatter: (p: { value?: unknown }) => valueFmt(p.value) } : undefined,
+      label: widget.options.showValues ? { show: true, position: stacking !== 'none' ? 'inside' : horizontal ? 'right' : 'top', color: stacking !== 'none' ? th.textStrong : th.text, formatter: (p: { value?: unknown }) => valueFmt(p.value) } : undefined,
       markLine: i === 0 ? markLine(widget, ctx, horizontal) : undefined,
     } as SeriesOption)),
   };
@@ -217,15 +226,17 @@ function waterfall(widget: Widget, result: QueryResult, ctx: ChartContext): ECha
   const shaped = shape(result, widget, lang);
   const deltas = shaped.series[0]?.data ?? [];
   const categories = [...shaped.categories, t(lang, 'editor.total')];
-  const baseData: number[] = []; const up: (number | null)[] = []; const down: (number | null)[] = []; const total: (number | null)[] = [];
+  // Every series holds a number at every index (0 where it has no bar): with stackStrategy 'all' ECharts
+  // adds the previous series' stacked value whatever its sign, and a null there would poison the sum.
+  const baseData: number[] = []; const up: number[] = []; const down: number[] = []; const total: number[] = [];
   let running = 0;
   for (const d of deltas) {
     const v = d ?? 0;
-    if (v >= 0) { baseData.push(running); up.push(v); down.push(null); } else { baseData.push(running + v); up.push(null); down.push(-v); }
-    total.push(null);
+    if (v >= 0) { baseData.push(running); up.push(v); down.push(0); } else { baseData.push(running + v); up.push(0); down.push(-v); }
+    total.push(0);
     running += v;
   }
-  baseData.push(Math.min(0, running)); up.push(null); down.push(null); total.push(Math.abs(running));
+  baseData.push(Math.min(0, running)); up.push(0); down.push(0); total.push(Math.abs(running));
   const showLegend = widget.options.legend !== false;
   const pos = legendPos(widget);
   const option = base(widget, ctx, showLegend, 'axis');
@@ -233,19 +244,21 @@ function waterfall(widget: Widget, result: QueryResult, ctx: ChartContext): ECha
   option.tooltip = {
     ...(option.tooltip as object),
     formatter: (p: unknown) => {
-      const params = asParams(p).filter((x) => x.seriesName !== names.base && x.value !== null && x.value !== undefined && x.value !== '-');
-      if (!params.length) return '';
-      const idx = params[0]!.dataIndex;
-      const sign = params[0]!.seriesName === names.down ? '−' : params[0]!.seriesName === names.up ? '+' : '';
-      const lines = params.map((x) => `${x.marker} ${x.seriesName}: ${sign}${formatNumber(x.value, fmt, lang)}`);
+      const all = asParams(p);
+      if (!all.length) return '';
+      const idx = all[0]!.dataIndex;
+      const params = all.filter((x) => x.seriesName !== names.base && Number(x.value) !== 0);
+      const sign = (name: string) => (name === names.down ? '−' : name === names.up ? '+' : '');
+      const lines = params.map((x) => `${x.marker} ${x.seriesName}: ${sign(x.seriesName)}${formatNumber(x.value, fmt, lang)}`);
       const runningTotal = idx < deltas.length ? deltas.slice(0, idx + 1).reduce<number>((acc, d) => acc + (d ?? 0), 0) : running;
-      return `${categories[idx]}<br/>${lines.join('<br/>')}<br/>${names.total}: ${formatNumber(runningTotal, fmt, lang)}`;
+      return [categories[idx], ...lines, `${names.total}: ${formatNumber(runningTotal, fmt, lang)}`].join('<br/>');
     },
   };
-  const bar = (name: string, data: (number | null)[], color: string): SeriesOption => ({
-    name, type: 'bar', stack: 'wf', data, barMaxWidth: BAR_MAX_WIDTH,
+  // stackStrategy 'all': ECharts otherwise stacks positives and negatives apart, which breaks the bars once the running total dips below zero
+  const bar = (name: string, data: number[], color: string): SeriesOption => ({
+    name, type: 'bar', stack: 'wf', stackStrategy: 'all', data, barMaxWidth: BAR_MAX_WIDTH,
     itemStyle: { color, borderRadius: [th.radiusSm, th.radiusSm, 0, 0] },
-    label: widget.options.showValues ? { show: true, position: 'top', color: th.text, formatter: (p: { value?: unknown }) => (p.value === null || p.value === undefined ? '' : formatAxis(p.value, lang)) } : undefined,
+    label: widget.options.showValues ? { show: true, position: 'top', color: th.text, formatter: (p: { value?: unknown }) => (Number(p.value) === 0 ? '' : formatAxis(p.value, lang)) } : undefined,
   } as SeriesOption);
   return {
     ...option,
@@ -254,7 +267,7 @@ function waterfall(widget: Widget, result: QueryResult, ctx: ChartContext): ECha
     xAxis: categoryAxis(categories, th),
     yAxis: valueAxis(ctx),
     series: [
-      { name: names.base, type: 'bar', stack: 'wf', data: baseData, barMaxWidth: BAR_MAX_WIDTH, silent: true, itemStyle: { color: 'transparent' }, emphasis: { disabled: true } } as SeriesOption,
+      { name: names.base, type: 'bar', stack: 'wf', stackStrategy: 'all', data: baseData, barMaxWidth: BAR_MAX_WIDTH, silent: true, itemStyle: { color: 'transparent' }, emphasis: { disabled: true } } as SeriesOption,
       bar(names.up, up, th.success),
       bar(names.down, down, th.danger),
       bar(names.total, total, th.colors[0] ?? th.text),
@@ -270,7 +283,7 @@ function pie(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOpt
   const values = shaped.series[0]?.data ?? [];
   const showLegend = widget.options.legend !== false;
   const pos = legendPos(widget);
-  const center = !showLegend ? ['50%', '50%'] : pos === 'right' ? ['40%', '50%'] : pos === 'top' ? ['50%', '55%'] : ['50%', '45%'];
+  const center = !showLegend ? CENTER.alone : pos === 'right' ? CENTER.legendRight : pos === 'top' ? CENTER.legendTop : CENTER.legendBottom;
   return {
     ...base(widget, ctx, showLegend, 'item'),
     series: [{
@@ -301,7 +314,7 @@ function funnel(widget: Widget, result: QueryResult, ctx: ChartContext): ECharts
       // the query's own order wins when the author sorted; otherwise widest stage first
       sort: widget.options.sortBy && widget.options.sortBy !== 'none' ? 'none' : 'descending',
       itemStyle: { borderColor: th.surface, borderWidth: SLICE_GAP },
-      label: { show: true, position: 'inside', color: cssVar('--color-text'), formatter: (p) => (widget.options.showValues ? `${p.name}\n${formatNumber(p.value as number, fmt, lang)}` : p.name) },
+      label: { show: true, position: 'inside', color: th.textStrong, formatter: (p) => (widget.options.showValues ? `${p.name}\n${formatNumber(p.value as number, fmt, lang)}` : p.name) },
       data: shaped.categories.map((c, i) => ({ name: c, value: values[i] ?? 0 })),
     }],
   };
@@ -348,7 +361,7 @@ function scatter(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
     series: Array.from(groups, ([name, rows]): SeriesOption => ({
       name, type: 'scatter', symbolSize,
       data: rows.map((r) => [num(r[mx!]) ?? 0, num(r[my!]) ?? 0, msize ? num(r[msize]) ?? 0 : 0, detail ? str(r[detail]) : name]),
-      itemStyle: { opacity: 0.85 },
+      itemStyle: { opacity: POINT_OPACITY },
       emphasis: { focus: 'series' },
       label: widget.options.showValues ? { show: true, position: 'top', color: th.text, formatter: (p: { value?: unknown }) => str((p.value as unknown[])[3]) } : undefined,
     } as SeriesOption)),
@@ -361,8 +374,9 @@ function heatmap(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
   const [m] = measureAliases(result);
   const xs = Array.from(new Set(result.rows.map((r) => str(r[dx!]))));
   const ys = Array.from(new Set(result.rows.map((r) => str(r[dy!]))));
-  const data = result.rows.map((r) => [xs.indexOf(str(r[dx!])), ys.indexOf(str(r[dy!])), num(r[m!])]);
-  const values = data.map((d) => d[2]).filter((v): v is number => v !== null);
+  // an empty cell is left out, so it keeps the surface colour instead of the scale's lowest one
+  const data = result.rows.map((r) => [xs.indexOf(str(r[dx!])), ys.indexOf(str(r[dy!])), num(r[m!])] as const).filter((d): d is readonly [number, number, number] => d[2] !== null);
+  const values = data.map((d) => d[2]);
   const min = Math.min(...values, 0); const max = Math.max(...values, 0);
   const showScale = widget.options.legend !== false;
   const high = th.colors[0] ?? th.text;
@@ -370,7 +384,7 @@ function heatmap(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
   option.tooltip = {
     ...(option.tooltip as object),
     formatter: (p: unknown) => {
-      const [xi, yi, v] = asParams(p)[0]!.value as [number, number, number | null];
+      const [xi, yi, v] = asParams(p)[0]!.value as [number, number, number];
       return `${xs[xi]} · ${ys[yi]}<br/>${measureLabel(widget, m!, lang) ?? m}: ${formatNumber(v, fmt, lang)}`;
     },
   };
@@ -382,14 +396,14 @@ function heatmap(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
     visualMap: {
       show: showScale, min, max, calculable: false, orient: 'horizontal', left: 'center', bottom: 0,
       text: [formatAxis(max, lang), formatAxis(min, lang)],
-      itemHeight: th.s7 * 3, itemWidth: th.s3, textStyle: { color: th.text },
+      itemHeight: th.s7 * HEAT_SCALE_LENGTH, itemWidth: th.s3, textStyle: { color: th.text },
       formatter: (v: unknown) => formatAxis(v, lang),
       inRange: { color: [mixHex(high, th.surface, HEAT_LOW_MIX), high] },
     },
     series: [{
-      type: 'heatmap', data,
-      itemStyle: { borderColor: th.surface, borderWidth: 1 },
-      label: { show: widget.options.showValues === true, color: cssVar('--color-text'), formatter: (p) => formatAxis((p.value as unknown[])[2], lang) },
+      type: 'heatmap', data: data.map((d) => [...d]),
+      itemStyle: { borderColor: th.surface, borderWidth: CELL_BORDER },
+      label: { show: widget.options.showValues === true, color: th.textStrong, formatter: (p) => formatAxis((p.value as unknown[])[2], lang) },
       emphasis: { itemStyle: { borderColor: th.text } },
     }],
   };
@@ -407,7 +421,7 @@ function radar(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
     radar: {
       indicator: shaped.categories.map((name) => ({ name, max })),
       radius: RADAR_RADIUS, splitNumber: RADAR_SPLIT,
-      center: [showLegend && pos === 'right' ? '40%' : '50%', showLegend && pos === 'top' ? '56%' : showLegend && pos === 'bottom' ? '46%' : '50%'],
+      center: !showLegend ? RADAR_CENTER.alone : pos === 'right' ? RADAR_CENTER.legendRight : pos === 'top' ? RADAR_CENTER.legendTop : RADAR_CENTER.legendBottom,
       axisName: { color: th.text },
       axisLine: { lineStyle: { color: th.grid } },
       splitLine: { lineStyle: { color: th.grid } },
@@ -417,7 +431,7 @@ function radar(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
       type: 'radar',
       symbolSize: th.s1,
       areaStyle: { opacity: AREA_FILL_OPACITY },
-      lineStyle: { width: 2 },
+      lineStyle: { width: LINE_WIDTH },
       label: { show: widget.options.showValues === true, color: th.text, formatter: (p) => formatAxis(p.value, lang) },
       emphasis: { focus: 'series' },
       data: shaped.series.map((s) => ({ name: s.name, value: s.data.map((v) => v ?? 0) })),
@@ -436,26 +450,27 @@ function gauge(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
   const min = widget.options.gaugeMin ?? 0;
   const max = widget.options.gaugeMax ?? niceCeil(Math.max(value, target ?? 0) || 1);
   const reached = target === null || value >= target;
-  const common = { type: 'gauge' as const, startAngle: GAUGE.startAngle, endAngle: GAUGE.endAngle, min, max, radius: '100%', center: ['50%', '60%'] };
+  const showTarget = target !== null && widget.options.showTarget !== false;
+  const common = { type: 'gauge' as const, startAngle: GAUGE.startAngle, endAngle: GAUGE.endAngle, min, max, radius: GAUGE.radius, center: GAUGE.center };
   const series: SeriesOption[] = [{
     ...common,
     progress: { show: true, width: GAUGE.width, roundCap: true, itemStyle: { color: target === null ? th.colors[0] : reached ? th.success : th.colors[0] } },
     axisLine: { roundCap: true, lineStyle: { width: GAUGE.width, color: [[1, th.grid]] } },
     axisTick: { show: false }, splitLine: { show: false },
-    splitNumber: 1,
+    splitNumber: GAUGE.splitNumber,
     axisLabel: { color: th.text, distance: -th.s7, formatter: (v: number) => formatAxis(v, lang) },
     pointer: { show: false }, anchor: { show: false },
-    title: { show: target !== null && widget.options.showValues !== false, offsetCenter: [0, GAUGE.titleOffset], color: th.text, fontSize: th.fontSize },
-    detail: { valueAnimation: true, offsetCenter: [0, GAUGE.valueOffset], color: cssVar('--color-text'), fontSize: th.fontSizeLg, fontWeight: HEADLINE_WEIGHT, formatter: (v: number) => formatNumber(v, fmt, lang) },
-    data: [{ value, name: target === null ? '' : t(lang, 'editor.targetLabel', { value: formatNumber(target, fmt, lang) }) }],
+    title: { show: showTarget, offsetCenter: [0, GAUGE.titleOffset], color: th.text, fontSize: th.fontSize },
+    detail: { valueAnimation: true, offsetCenter: [0, GAUGE.valueOffset], color: th.textStrong, fontSize: th.fontSizeLg, fontWeight: HEADLINE_WEIGHT, formatter: (v: number) => formatNumber(v, fmt, lang) },
+    data: [{ value, name: showTarget ? t(lang, 'editor.targetLabel', { value: formatNumber(target!, fmt, lang) }) : '' }],
   } as SeriesOption];
-  if (target !== null) {
+  if (showTarget) {
     series.push({
       ...common,
       axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
       progress: { show: false }, detail: { show: false }, title: { show: false },
       pointer: { show: true, icon: 'rect', length: GAUGE.markLength, width: GAUGE.markWidth, offsetCenter: [0, GAUGE.markOffset], itemStyle: { color: reached ? th.success : th.danger } },
-      data: [{ value: Math.min(Math.max(target, min), max) }],
+      data: [{ value: Math.min(Math.max(target!, min), max) }],
     } as SeriesOption);
   }
   return { ...base(widget, ctx, false, 'item'), tooltip: { show: false }, series };
@@ -492,13 +507,13 @@ function treemap(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
       left: 0, right: 0, top: 0, bottom: 0,
       roam: false, nodeClick: false, breadcrumb: { show: false },
       itemStyle: { borderColor: th.surface, borderWidth: SLICE_GAP, gapWidth: SLICE_GAP },
-      label: { show: true, color: cssVar('--color-text'), formatter: label },
-      upperLabel: dd ? { show: true, height: th.s6, color: cssVar('--color-text'), formatter: label } : { show: false },
+      label: { show: true, color: th.textStrong, formatter: label },
+      upperLabel: dd ? { show: true, height: th.s6, color: th.textStrong, formatter: label } : { show: false },
       levels: dd
         ? [
           { itemStyle: { borderWidth: 0, gapWidth: th.s1 }, upperLabel: { show: false } },
           { color: th.colors, itemStyle: { borderColor: th.surface, borderWidth: SLICE_GAP, gapWidth: SLICE_GAP } },
-          { colorSaturation: TREEMAP_SATURATION, itemStyle: { gapWidth: 1, borderColorSaturation: TREEMAP_SATURATION[1] } },
+          { colorSaturation: TREEMAP_SATURATION, itemStyle: { gapWidth: TREEMAP_LEAF_GAP, borderColorSaturation: TREEMAP_SATURATION[1] } },
         ]
         : [{ color: th.colors, itemStyle: { borderColor: th.surface, borderWidth: SLICE_GAP, gapWidth: SLICE_GAP } }],
     }],
@@ -515,7 +530,7 @@ export function sparklineOption(values: (number | null)[], good: boolean, th: Ch
     xAxis: { type: 'category', show: false, data: values.map((_, i) => String(i)) },
     yAxis: { type: 'value', show: false, scale: true },
     tooltip: { show: false },
-    series: [{ type: 'line', data: values, smooth: LINE_SMOOTHNESS, symbol: 'none', lineStyle: { color, width: 2 }, areaStyle: { color, opacity: AREA_FILL_OPACITY } }],
+    series: [{ type: 'line', data: values, smooth: LINE_SMOOTHNESS, symbol: 'none', lineStyle: { color, width: LINE_WIDTH }, areaStyle: { color, opacity: AREA_FILL_OPACITY } }],
   };
 }
 

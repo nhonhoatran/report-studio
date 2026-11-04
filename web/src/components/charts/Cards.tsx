@@ -45,22 +45,25 @@ export function TrendCard({ widget, result }: Props) {
   const target = mt ? num(last?.[mt]) : typeof widget.options.target === 'number' ? widget.options.target : null;
   const delta = value !== null && previous !== null ? value - previous : null;
   const pct = delta !== null && previous ? delta / Math.abs(previous) : null;
-  const good = target !== null ? (value ?? 0) >= target : delta === null || delta >= 0;
+  // like Power BI's KPI: the value is judged against the goal, the change by its direction
+  const onTarget = target === null ? null : (value ?? 0) >= target;
+  const rising = delta === null ? null : delta >= 0;
+  const good = onTarget ?? rising ?? true;
   const option = useMemo(() => sparklineOption(rows.map((r) => num(r[mv!])), good, readChartTheme()),
     // the look stamp is a dependency so colours re-read when the theme, accent or palette changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rows, mv, good, look]);
-  const Arrow = delta !== null && delta < 0 ? TrendingDown : TrendingUp;
+  const Arrow = rising === false ? TrendingDown : TrendingUp;
   return (
     <div className="kpi kpi--trend">
       <div className="kpi__head">
-        <div className="kpi__value">{formatNumber(value, fmt, lang)}</div>
+        <div className={['kpi__value', onTarget === true && 'kpi__value--good', onTarget === false && 'kpi__value--bad'].filter(Boolean).join(' ')}>{formatNumber(value, fmt, lang)}</div>
         <div className="kpi__label">
           {(mv && measureLabel(widget, mv, lang)) ?? mv}{axis && last ? ` · ${str(last[axis])}` : ''}
           {target !== null && ` · ${t('editor.targetLabel', { value: formatNumber(target, fmt, lang) })}`}
         </div>
         {delta !== null && (
-          <div className={['kpi__delta', good ? 'kpi__delta--good' : 'kpi__delta--bad'].join(' ')}>
+          <div className={['kpi__delta', rising ? 'kpi__delta--good' : 'kpi__delta--bad'].join(' ')}>
             <Arrow size={14} aria-hidden />
             <span>{delta > 0 ? '+' : ''}{formatNumber(delta, fmt, lang)}{pct !== null && ` (${pct > 0 ? '+' : ''}${formatNumber(pct, 'percent', lang)})`}</span>
             <span className="text-faint">{t('editor.vsPrevious')}</span>
@@ -83,13 +86,13 @@ export function MultiRowCard({ widget, result }: Props) {
   const cat = dimensionAliases(result)[0];
   const measures = measureAliases(result);
   return (
-    <div className="cards">
+    <div className="multirow">
       {result.rows.map((r, i) => (
-        <article key={i} className="cards__item">
-          <div className="cards__title truncate" title={cat ? str(r[cat]) : undefined}>{cat ? str(r[cat]) : ''}</div>
-          <dl className="cards__rows">
+        <article key={i} className="multirow__item">
+          <div className="multirow__title truncate" title={cat ? str(r[cat]) : undefined}>{cat ? str(r[cat]) : ''}</div>
+          <dl className="multirow__rows">
             {measures.map((m) => (
-              <div key={m} className="cards__row">
+              <div key={m} className="multirow__row">
                 <dt className="truncate">{measureLabel(widget, m, lang) ?? m}</dt>
                 <dd>{formatNumber(r[m], fmt, lang)}</dd>
               </div>

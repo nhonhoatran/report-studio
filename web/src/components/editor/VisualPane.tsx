@@ -7,7 +7,7 @@ import type { Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure
 import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, STACKINGS, WIDGET_TYPES } from '@/api/types';
 import { useT, type TKey } from '@/i18n';
 import { useEditor, useSelectedWidget } from '@/store/editor';
-import { CHART_SPECS, comboRole, hasFeature, maxDimensions, maxMeasures } from '@/lib/widget';
+import { CHART_SPECS, comboRole, hasFeature, maxDimensions, maxMeasures, stackingOf } from '@/lib/widget';
 import { newId } from '@/lib/id';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Input, Select } from '@/components/ui/Field';
@@ -62,7 +62,6 @@ function DimensionChip({ d, slot, onChange, onRemove }: { d: Dimension; slot?: T
 
 function MeasureChip({ m, slot, combo, onChange, onRemove }: { m: Measure; slot?: TKey; combo?: 'column' | 'line'; onChange: (m: Measure) => void; onRemove: () => void }) {
   const t = useT();
-  const ComboIcon = combo === 'line' ? ChartLine : BarChart3;
   return (
     <div className="well-chip">
       <Slot keyName={slot} />
@@ -72,10 +71,10 @@ function MeasureChip({ m, slot, combo, onChange, onRemove }: { m: Measure; slot?
         {AGGREGATIONS.filter((a) => !m.kind || m.kind === 'number' || !['sum', 'avg'].includes(a)).map((a) => <option key={a} value={a}>{t(`agg.${a}`)}</option>)}
       </Select>
       {combo && (
-        // combo chart: this measure is a column or the line; the button shows what it is now and flips it
-        <Button variant="ghost" size="sm" iconOnly icon={<ComboIcon size={12} />} aria-pressed={combo === 'line'} title={combo === 'line' ? t('editor.comboAsColumn') : t('editor.comboAsLine')}
+        // combo chart: "draw as a line" is pressed while this measure is the line; columns are the rest
+        <Button variant="ghost" size="sm" iconOnly icon={<ChartLine size={12} />} active={combo === 'line'} title={t('editor.comboAsLine')}
           onClick={() => onChange({ ...m, series: combo === 'line' ? 'column' : 'line' })}>
-          {combo === 'line' ? t('editor.comboAsColumn') : t('editor.comboAsLine')}
+          {t('editor.comboAsLine')}
         </Button>
       )}
       <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
@@ -145,8 +144,7 @@ export function VisualPane() {
   const setQuery = (patch: Partial<Widget['query']>) => updateWidget(widget.id, (w) => ({ ...w, query: { ...w.query, ...patch } }));
   const setOptions = (patch: Partial<Widget['options']>) => updateWidget(widget.id, (w) => ({ ...w, options: { ...w.options, ...patch } }));
   const fieldNames = activeFields.length ? activeFields.map((f) => f.name) : Array.from(new Set([...q.dimensions.map((d) => d.field), ...q.measures.map((m) => m.field), ...q.filters.map((f) => f.field)].filter(Boolean)));
-  const stacking: Stacking = o.stacking ?? (o.stacked ? 'stacked' : 'none');
-  const isTable = widget.type === 'table' || widget.type === 'matrix';
+  const stacking = stackingOf(widget);
   const has = (f: Parameters<typeof hasFeature>[1]) => hasFeature(widget.type, f);
 
   return (
@@ -180,7 +178,7 @@ export function VisualPane() {
         </Well>
         <Well id={`${WELL_DROP_PREFIX}measures`} label={t(spec.wells.measures)} empty={q.measures.length === 0} disabled={maxMeasures(widget.type) === 0}>
           {q.measures.map((m, i) => (
-            <MeasureChip key={`${m.field}-${i}`} m={m} slot={spec.measureSlots?.[i]} combo={widget.type === 'combo' ? comboRole(q.measures, i) : undefined}
+            <MeasureChip key={`${m.field}-${i}`} m={m} slot={spec.measureSlots?.[i]} combo={has('series') ? comboRole(q.measures, i) : undefined}
               onChange={(nm) => setQuery({ measures: q.measures.map((x, j) => (j === i ? nm : x)) })}
               onRemove={() => setQuery({ measures: q.measures.filter((_, j) => j !== i) })} />
           ))}
@@ -228,7 +226,7 @@ export function VisualPane() {
           </Select>
         )}
         {has('showValues') && (
-          <Checkbox label={widget.type === 'gauge' ? t('editor.showTarget') : t('editor.showValues')} checked={widget.type === 'gauge' ? o.showValues !== false : !!o.showValues} onChange={(e) => setOptions({ showValues: e.target.checked })} />
+          <Checkbox label={t('editor.showValues')} checked={!!o.showValues} onChange={(e) => setOptions({ showValues: e.target.checked })} />
         )}
         {has('totals') && (
           <Checkbox label={t('editor.showTotals')} checked={!!o.showTotals} onChange={(e) => setOptions({ showTotals: e.target.checked })} />
@@ -242,14 +240,15 @@ export function VisualPane() {
               <NumberOption label={t('editor.gaugeMin')} value={o.gaugeMin} placeholder="0" onChange={(v) => setOptions({ gaugeMin: v })} />
               <NumberOption label={t('editor.gaugeMax')} value={o.gaugeMax} placeholder={t('editor.formatAuto')} onChange={(v) => setOptions({ gaugeMax: v })} />
             </div>
-            {q.measures.length < 2 && <NumberOption label={t('editor.target')} value={o.target} onChange={(v) => setOptions({ target: v })} />}
+            <Checkbox label={t('editor.showTarget')} checked={o.showTarget !== false} onChange={(e) => setOptions({ showTarget: e.target.checked })} />
           </>
         )}
-        {widget.type === 'trend' && q.measures.length < 2 && (
+        {has('target') && q.measures.length < 2 && (
+          // the second measure is the target when there is one; otherwise a number typed here
           <NumberOption label={t('editor.target')} value={o.target} onChange={(v) => setOptions({ target: v })} />
         )}
 
-        {has('analytics') && !isTable && (
+        {has('analytics') && (
           <>
             <div className="pane__section-title">{t('editor.analytics')}</div>
             <NumberOption label={t('editor.referenceLine')} value={o.referenceLine} onChange={(v) => setOptions({ referenceLine: v })} />
