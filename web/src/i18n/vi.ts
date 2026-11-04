@@ -5,7 +5,7 @@ export const vi = {
     close: 'Đóng', confirm: 'Xác nhận', back: 'Quay lại', search: 'Tìm kiếm', loading: 'Đang tải…', refresh: 'Làm mới',
     name: 'Tên', description: 'Mô tả', actions: 'Thao tác', updatedAt: 'Cập nhật', none: 'Không có', yes: 'Có', no: 'Không',
     required: 'Trường này là bắt buộc', retry: 'Thử lại', duplicate: 'Nhân bản', optional: 'không bắt buộc',
-    confirmDelete: 'Bạn chắc chắn muốn xóa "{name}"? Hành động này không thể hoàn tác.',
+    confirmDelete: 'Bạn chắc chắn muốn xóa "{name}"? Hành động này không thể hoàn tác.', deleted: 'Đã xóa',
     errorGeneric: 'Đã xảy ra lỗi. Vui lòng thử lại.', unauthorized: 'Phiên đăng nhập đã hết hạn.',
     language: 'Ngôn ngữ', theme: 'Giao diện', themeLight: 'Sáng', themeDark: 'Tối', themeSystem: 'Theo hệ thống',
   },
@@ -16,7 +16,7 @@ export const vi = {
   },
   dashboards: {
     title: 'Bảng điều khiển', new: 'Tạo bảng mới', empty: 'Chưa có bảng điều khiển nào', emptyHint: 'Tạo bảng đầu tiên để bắt đầu kéo-thả biểu đồ.',
-    widgets: '{count} biểu đồ', untitled: 'Bảng chưa đặt tên', open: 'Mở', deleted: 'Đã xóa bảng điều khiển',
+    widgets: '{count} biểu đồ', untitled: 'Bảng chưa đặt tên', open: 'Mở',
   },
   editor: {
     view: 'Xem', edit: 'Chỉnh sửa', addVisual: 'Thêm biểu đồ', saved: 'Đã lưu', unsaved: 'Có thay đổi chưa lưu',
@@ -30,7 +30,8 @@ export const vi = {
     formatAuto: 'Tự động', formatCompact: 'Rút gọn (1,2 Tr)', formatInteger: 'Số nguyên', formatPercent: 'Phần trăm', formatCurrency: 'Tiền tệ (₫)',
     removeWidget: 'Xóa biểu đồ', duplicateWidget: 'Nhân bản', configure: 'Cấu hình', noData: 'Không có dữ liệu', needsFields: 'Kéo ít nhất một trường vào biểu đồ', needsMeasure: 'Kéo một trường số vào ô Giá trị để vẽ biểu đồ',
     truncated: 'Kết quả bị cắt ở {count} dòng', rows: '{count} dòng', ms: '{ms} ms', showSql: 'Xem SQL', sqlTitle: 'SQL được sinh ra',
-    widgetDefaultTitle: 'Biểu đồ mới', by: 'theo', unsavedLeave: 'Bạn có thay đổi chưa lưu. Rời trang?', deleteDashboard: 'Xóa bảng điều khiển',
+    widgetDefaultTitle: 'Biểu đồ mới', by: 'theo', unsavedLeave: 'Bạn có thay đổi chưa lưu. Rời trang?', leave: 'Rời trang', canvas: 'Khung vẽ',
+    bucketLabel: 'Nhóm theo thời gian', aggLabel: 'Phép gộp', sortDesc: 'Giá trị giảm dần', sortAsc: 'Giá trị tăng dần',
     filterField: 'Trường', filterOp: 'Điều kiện', filterValue: 'Giá trị', filterValues: 'Giá trị (phân cách bằng dấu phẩy)',
   },
   agg: { sum: 'Tổng', avg: 'Trung bình', count: 'Số lượng', count_distinct: 'Số lượng khác nhau', min: 'Nhỏ nhất', max: 'Lớn nhất' },
@@ -47,6 +48,7 @@ export const vi = {
     ssl: 'Dùng SSL', test: 'Kiểm tra kết nối', testing: 'Đang kiểm tra…', testOk: 'Kết nối thành công · {version} · {ms} ms', testFail: 'Kết nối thất bại: {error}',
     editTitle: 'Sửa nguồn dữ liệu', addTitle: 'Thêm nguồn dữ liệu MariaDB', readonlyHint: 'Nên dùng tài khoản chỉ có quyền SELECT. Mật khẩu được mã hóa khi lưu.',
     tables: 'Bảng & view', rowsEst: '~{count} dòng', rowsHeader: 'Số dòng (ước tính)', columns: 'Cột', view: 'view', table: 'bảng', detail: 'Chi tiết', typeMaria: 'MariaDB',
+    primaryKey: 'Khóa', hostPlaceholder: 'vd: db.noi-bo.local', noTables: 'Không có bảng nào trong database này',
   },
   datasets: {
     title: 'Bộ dữ liệu SQL', add: 'Thêm bộ dữ liệu', empty: 'Chưa có bộ dữ liệu SQL', emptyHint: 'Viết câu SELECT (có JOIN) để dùng như một bảng trong biểu đồ.',
@@ -59,4 +61,5 @@ export const vi = {
     roleAdmin: 'Quản trị', roleEditor: 'Biên tập', roleViewer: 'Chỉ xem', minPassword: 'Tối thiểu 8 ký tự', appearance: 'Hiển thị',
   },
   kinds: { number: 'số', date: 'ngày giờ', string: 'chữ', boolean: 'đúng/sai', other: 'khác' },
+  notFound: { title: 'Không tìm thấy trang', back: 'Về trang bảng điều khiển' },
 } as const;

@@ -42,9 +42,9 @@ function DimensionChip({ d, onChange, onRemove }: { d: Dimension; onChange: (d: 
       <KindIcon kind={d.kind ?? 'string'} size={12} />
       <span className="well-chip__name" title={d.field}>{d.field}</span>
       {d.kind === 'date' && (
-        <select className="field__control" aria-label={t('bucket.none')} value={d.bucket ?? 'none'} onChange={(e) => onChange({ ...d, bucket: e.target.value as Dimension['bucket'] })}>
+        <Select size="sm" aria-label={t('editor.bucketLabel')} value={d.bucket ?? 'none'} onChange={(e) => onChange({ ...d, bucket: e.target.value as Dimension['bucket'] })}>
           {DATE_BUCKETS.map((b) => <option key={b} value={b}>{t(`bucket.${b}`)}</option>)}
-        </select>
+        </Select>
       )}
       <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
     </div>
@@ -57,9 +57,9 @@ function MeasureChip({ m, onChange, onRemove }: { m: Measure; onChange: (m: Meas
     <div className="well-chip">
       <KindIcon kind={m.kind ?? 'number'} size={12} />
       <span className="well-chip__name" title={m.field}>{m.field}</span>
-      <select className="field__control" aria-label={t('agg.sum')} value={m.agg} onChange={(e) => onChange({ ...m, agg: e.target.value as Measure['agg'] })}>
+      <Select size="sm" aria-label={t('editor.aggLabel')} value={m.agg} onChange={(e) => onChange({ ...m, agg: e.target.value as Measure['agg'] })}>
         {AGGREGATIONS.filter((a) => m.kind === 'number' || !['sum', 'avg'].includes(a)).map((a) => <option key={a} value={a}>{t(`agg.${a}`)}</option>)}
-      </select>
+      </Select>
       <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
     </div>
   );
@@ -107,7 +107,7 @@ export function VisualPane() {
   if (!widget) {
     return (
       <aside className="pane pane--right" aria-label={t('editor.visual')}>
-        <div className="pane__header"><span className="pane__title">{t('editor.visual')}</span></div>
+        <div className="pane__header"><h2 className="pane__title">{t('editor.visual')}</h2></div>
         <div className="pane__body"><EmptyState compact title={t('editor.selectWidget')} /></div>
       </aside>
     );
@@ -121,7 +121,7 @@ export function VisualPane() {
 
   return (
     <aside className="pane pane--right" aria-label={t('editor.visual')}>
-      <div className="pane__header"><span className="pane__title">{t('editor.visual')}</span></div>
+      <div className="pane__header"><h2 className="pane__title">{t('editor.visual')}</h2></div>
       <div className="pane__body">
         <Input size="sm" label={t('editor.widgetTitle')} value={widget.title} placeholder={t('editor.widgetDefaultTitle')} onChange={(e) => updateWidget(widget.id, { title: e.target.value })} />
 
@@ -166,8 +166,8 @@ export function VisualPane() {
         {q.measures.length > 0 && widget.type !== 'kpi' && (
           <Select size="sm" label={t('editor.sort')} value={widget.options.sortBy ?? 'none'} onChange={(e) => setOptions({ sortBy: e.target.value as Widget['options']['sortBy'] })}>
             <option value="none">{t('bucket.none')}</option>
-            <option value="measure_desc">{t('agg.max')} → {t('agg.min')}</option>
-            <option value="measure_asc">{t('agg.min')} → {t('agg.max')}</option>
+            <option value="measure_desc">{t('editor.sortDesc')}</option>
+            <option value="measure_asc">{t('editor.sortAsc')}</option>
           </Select>
         )}
         <Select size="sm" label={t('editor.numberFormat')} value={widget.options.numberFormat ?? 'auto'} onChange={(e) => setOptions({ numberFormat: e.target.value as Widget['options']['numberFormat'] })}>

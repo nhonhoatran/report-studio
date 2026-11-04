@@ -86,7 +86,7 @@ export function FieldsPane() {
 
   return (
     <aside className="pane" aria-label={t('editor.fields')}>
-      <div className="pane__header"><span className="pane__title">{t('editor.fields')}</span></div>
+      <div className="pane__header"><h2 className="pane__title">{t('editor.fields')}</h2></div>
       <div className="pane__body">
         <Select size="sm" label={t('editor.chooseDatasource')} value={datasourceId} onChange={(e) => { setDatasourceId(e.target.value ? Number(e.target.value) : ''); setSourceKey(''); }}>
           <option value="">—</option>
@@ -105,7 +105,9 @@ export function FieldsPane() {
             </optgroup>
           )}
         </Select>
+        {datasources.error && <ErrorBox error={datasources.error} />}
         {tables.error && <ErrorBox error={tables.error} />}
+        {datasets.error && <ErrorBox error={datasets.error} />}
         {fields.isLoading && <Spinner />}
         {fields.error && <ErrorBox error={fields.error} />}
         {!source && !fields.isLoading && <EmptyState compact title={t('editor.noFields')} />}

@@ -45,7 +45,7 @@ export function LoginPage() {
             <p className="text-sm text-muted">{t('app.name')} · {t('app.tagline')}</p>
           </div>
         </div>
-        <form className="stack" onSubmit={onSubmit} noValidate>
+        <form className="stack" onSubmit={onSubmit}>
           <Input label={t('login.username')} name="username" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
           <Input label={t('login.password')} name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           {error && <ErrorBox>{error}</ErrorBox>}

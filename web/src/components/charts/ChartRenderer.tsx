@@ -4,8 +4,8 @@ import type { EChartsOption } from 'echarts';
 import { echarts } from './echarts';
 import type { QueryResult, Widget } from '@/api/types';
 import { formatAxis, formatCell, formatNumber } from '@/lib/format';
-import { cssVar, useTheme } from '@/store/theme';
-import { useI18nStore, useT } from '@/i18n';
+import { cssPx, cssVar, useTheme } from '@/store/theme';
+import { useI18nStore, useT, type TFn } from '@/i18n';
 import { CARTESIAN } from '@/lib/widget';
 import { EmptyState } from '@/components/ui/Feedback';
 import './charts.css';
@@ -16,8 +16,13 @@ function palette(): string[] {
   return Array.from({ length: 8 }, (_, i) => cssVar(`--chart-${i + 1}`)).filter(Boolean);
 }
 
+// ECharts takes numbers: spacing comes from the tokens, the rest are named constants.
+const BAR_MAX_WIDTH = 48;
+const ANIMATION_MS = 300;
+const PIE_RADIUS = { full: '72%', inner: '45%' };
+
 /** rows -> { categories, series[] } honouring axis (dim 0) and legend (dim 1). */
-function shape(result: QueryResult, widget: Widget) {
+function shape(result: QueryResult, widget: Widget, t: TFn) {
   const dims = result.columns.filter((c) => c.role === 'dimension').map((c) => c.alias);
   const measures = result.columns.filter((c) => c.role === 'measure').map((c) => c.alias);
   const axis = dims[0];
@@ -25,7 +30,7 @@ function shape(result: QueryResult, widget: Widget) {
   const categories = axis ? Array.from(new Set(result.rows.map((r) => String(r[axis] ?? '')))) : [''];
   const labelOf = (alias: string) => {
     const m = widget.query.measures.find((mm) => (mm.alias ?? `${mm.agg}_${mm.field === '*' ? 'all' : mm.field}`) === alias);
-    return m ? `${m.agg.replace('_', ' ')}(${m.field})` : alias;
+    return m ? `${t(`agg.${m.agg}`)} · ${m.field === '*' ? '' : m.field}`.trim() : alias;
   };
   const series: { name: string; data: (number | null)[] }[] = [];
   if (legend && measures[0]) {
@@ -61,12 +66,16 @@ export function ChartRenderer({ widget, result }: Props) {
     const grid = cssVar('--chart-grid');
     const surface = cssVar('--color-surface');
     const border = cssVar('--color-border');
-    const { categories, series, measures } = shape(result, widget);
+    const { categories, series, measures } = shape(result, widget, t);
+    const radiusSm = cssPx('--radius-sm', 4);
+    const s2 = cssPx('--space-2', 8);
+    const s4 = cssPx('--space-4', 16);
+    const s7 = cssPx('--space-7', 32);
     const horizontal = widget.type === 'bar';
     const showLegend = widget.options.legend !== false && (series.length > 1 || widget.type === 'pie' || widget.type === 'donut');
     const base: EChartsOption = {
       color: colors,
-      animationDuration: 300,
+      animationDuration: ANIMATION_MS,
       textStyle: { fontFamily: cssVar('--font-sans') },
       tooltip: {
         trigger: widget.type === 'pie' || widget.type === 'donut' ? 'item' : 'axis',
@@ -82,9 +91,9 @@ export function ChartRenderer({ widget, result }: Props) {
         ...base,
         series: [{
           type: 'pie',
-          radius: widget.type === 'donut' ? ['45%', '72%'] : '72%',
+          radius: widget.type === 'donut' ? [PIE_RADIUS.inner, PIE_RADIUS.full] : PIE_RADIUS.full,
           center: ['50%', showLegend ? '45%' : '50%'],
-          itemStyle: { borderColor: surface, borderWidth: 2, borderRadius: 4 },
+          itemStyle: { borderColor: surface, borderWidth: 2, borderRadius: radiusSm },
           label: { show: widget.options.showValues !== false, color: text, formatter: (p) => `${p.name}\n${formatNumber(p.value as number, fmt, lang)}` },
           data: categories.map((c, i) => ({ name: c, value: m ? Number(result.rows[i]?.[m] ?? 0) : 0 })),
         }],
@@ -95,7 +104,7 @@ export function ChartRenderer({ widget, result }: Props) {
     const valueAxis = { type: 'value' as const, splitLine: { lineStyle: { color: grid } }, axisLabel: { color: text, formatter: (v: number) => formatAxis(v, lang) } };
     return {
       ...base,
-      grid: { left: 8, right: 16, top: 16, bottom: showLegend ? 32 : 8, containLabel: true },
+      grid: { left: s2, right: s4, top: s4, bottom: showLegend ? s7 : s2, containLabel: true },
       xAxis: horizontal ? valueAxis : categoryAxis,
       yAxis: horizontal ? { ...categoryAxis, inverse: true } : valueAxis,
       series: series.map((s) => ({
@@ -105,15 +114,15 @@ export function ChartRenderer({ widget, result }: Props) {
         smooth: widget.type === 'line' || widget.type === 'area' ? 0.2 : undefined,
         areaStyle: widget.type === 'area' ? { opacity: 0.18 } : undefined,
         stack: widget.options.stacked ? 'total' : undefined,
-        barMaxWidth: 48,
-        itemStyle: widget.type === 'column' || widget.type === 'bar' ? { borderRadius: horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0] } : undefined,
+        barMaxWidth: BAR_MAX_WIDTH,
+        itemStyle: widget.type === 'column' || widget.type === 'bar' ? { borderRadius: horizontal ? [0, radiusSm, radiusSm, 0] : [radiusSm, radiusSm, 0, 0] } : undefined,
         emphasis: { focus: 'series' },
         label: widget.options.showValues ? { show: true, position: horizontal ? 'right' : 'top', color: text, formatter: (p: { value?: unknown }) => formatAxis(p.value, lang) } : undefined,
       })),
     };
     // theme is a dependency so colours re-read when it flips
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget, result, fmt, lang, theme]);
+  }, [widget, result, fmt, lang, theme, t]);
 
   if (result.rows.length === 0) return <EmptyState compact title={t('editor.noData')} />;
 
@@ -122,7 +131,7 @@ export function ChartRenderer({ widget, result }: Props) {
     const value = m ? result.rows[0]?.[m] : undefined;
     const measure = widget.query.measures[0];
     return (
-      <div className="kpi" style={{ containerType: 'inline-size' }}>
+      <div className="kpi">
         <div className="kpi__value">{formatNumber(value, fmt, lang)}</div>
         <div className="kpi__label">{measure ? `${t(`agg.${measure.agg}`)} · ${measure.field}` : m}</div>
       </div>

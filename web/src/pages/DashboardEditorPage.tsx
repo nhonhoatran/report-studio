@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
-import { ArrowLeft, Eye, Pencil, Plus, Save } from 'lucide-react';
+import { ArrowLeft, Eye, Pencil, Plus, RefreshCw, Save } from 'lucide-react';
 import { api } from '@/api/client';
 import type { FieldInfo } from '@/api/types';
 import { useAuth, canEdit } from '@/store/auth';
@@ -11,6 +11,7 @@ import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { ErrorBox, Spinner } from '@/components/ui/Feedback';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { KindIcon } from '@/components/ui/KindBadge';
 import { FieldsPane, FIELD_DRAG_PREFIX } from '@/components/editor/FieldsPane';
 import { Canvas, WIDGET_DROP_PREFIX } from '@/components/editor/Canvas';
@@ -26,7 +27,9 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   const user = useAuth((s) => s.user);
   const editable = mode === 'edit' && canEdit(user);
   const ed = useEditor();
+  const qc = useQueryClient();
   const [dragging, setDragging] = useState<FieldInfo | null>(null);
+  const [leaveTo, setLeaveTo] = useState<string | null>(null);
 
   const dashboard = useQuery({ queryKey: ['dashboard', id], queryFn: () => api.dashboards.get(id).then((r) => r.dashboard), enabled: Number.isInteger(id) });
 
@@ -73,12 +76,13 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   };
 
   const leave = (to: string) => {
-    if (ed.dirty && !window.confirm(t('editor.unsavedLeave'))) return;
-    navigate(to);
+    if (ed.dirty) setLeaveTo(to);
+    else navigate(to);
   };
+  const refresh = () => qc.invalidateQueries({ queryKey: ['widget-query'] });
 
-  if (dashboard.isLoading) return <div style={{ padding: 'var(--space-5)' }}><Spinner block /></div>;
-  if (dashboard.error) return <div style={{ padding: 'var(--space-5)' }}><ErrorBox error={dashboard.error} /></div>;
+  if (dashboard.isLoading) return <div className="editor__loading"><Spinner block /></div>;
+  if (dashboard.error) return <div className="editor__loading"><ErrorBox error={dashboard.error} /></div>;
 
   return (
     <div className="editor">
@@ -86,7 +90,10 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
         <div className="row grow">
           <Button variant="ghost" iconOnly icon={<ArrowLeft size={18} />} onClick={() => leave('/dashboards')}>{t('common.back')}</Button>
           {editable ? (
-            <input className="editor__name grow" aria-label={t('editor.nameLabel')} value={ed.name} onChange={(e) => ed.setName(e.target.value)} placeholder={t('dashboards.untitled')} />
+            <>
+              <h1 className="sr-only">{ed.name || t('dashboards.untitled')}</h1>
+              <input className="editor__name grow" aria-label={t('editor.nameLabel')} value={ed.name} onChange={(e) => ed.setName(e.target.value)} placeholder={t('dashboards.untitled')} />
+            </>
           ) : (
             <h1 className="editor__name truncate">{ed.name}</h1>
           )}
@@ -99,9 +106,12 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
               <Button icon={<Eye size={16} />} onClick={() => leave(`/dashboards/${id}`)}>{t('editor.view')}</Button>
               <Button variant="primary" icon={<Save size={16} />} onClick={() => save.mutate()} loading={save.isPending} disabled={!ed.dirty && !save.isError}>{t('common.save')}</Button>
             </>
-          ) : canEdit(user) ? (
-            <Button variant="primary" icon={<Pencil size={16} />} onClick={() => navigate(`/dashboards/${id}/edit`)}>{t('editor.edit')}</Button>
-          ) : null}
+          ) : (
+            <>
+              <Button icon={<RefreshCw size={16} />} onClick={refresh}>{t('common.refresh')}</Button>
+              {canEdit(user) && <Button variant="primary" icon={<Pencil size={16} />} onClick={() => navigate(`/dashboards/${id}/edit`)}>{t('editor.edit')}</Button>}
+            </>
+          )}
         </div>
       </div>
       {editable ? (
@@ -120,6 +130,8 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
           <Canvas editable={false} />
         </div>
       )}
+      <ConfirmDialog open={!!leaveTo} title={t('editor.unsaved')} message={t('editor.unsavedLeave')} confirmLabel={t('editor.leave')}
+        onConfirm={() => { const to = leaveTo!; setLeaveTo(null); ed.markSaved(); navigate(to); }} onClose={() => setLeaveTo(null)} />
     </div>
   );
 }

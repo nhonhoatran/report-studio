@@ -31,7 +31,7 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
   const result = query.data!;
   return (
     <>
-      <div className="widget__body" style={{ opacity: query.isFetching ? 0.6 : 1, transition: 'opacity 150ms' }}>
+      <div className={['widget__body', query.isFetching && 'widget__body--refreshing'].filter(Boolean).join(' ')}>
         <ChartRenderer widget={widget} result={result} />
       </div>
       {showMeta && (

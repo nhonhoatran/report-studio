@@ -9,7 +9,7 @@ export const en: DeepStringify<typeof vi> = {
     close: 'Close', confirm: 'Confirm', back: 'Back', search: 'Search', loading: 'Loading…', refresh: 'Refresh',
     name: 'Name', description: 'Description', actions: 'Actions', updatedAt: 'Updated', none: 'None', yes: 'Yes', no: 'No',
     required: 'This field is required', retry: 'Retry', duplicate: 'Duplicate', optional: 'optional',
-    confirmDelete: 'Delete "{name}"? This cannot be undone.',
+    confirmDelete: 'Delete "{name}"? This cannot be undone.', deleted: 'Deleted',
     errorGeneric: 'Something went wrong. Please try again.', unauthorized: 'Your session has expired.',
     language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeSystem: 'System',
   },
@@ -20,7 +20,7 @@ export const en: DeepStringify<typeof vi> = {
   },
   dashboards: {
     title: 'Dashboards', new: 'New dashboard', empty: 'No dashboards yet', emptyHint: 'Create your first dashboard to start dragging charts around.',
-    widgets: '{count} visuals', untitled: 'Untitled dashboard', open: 'Open', deleted: 'Dashboard deleted',
+    widgets: '{count} visuals', untitled: 'Untitled dashboard', open: 'Open',
   },
   editor: {
     view: 'View', edit: 'Edit', addVisual: 'Add visual', saved: 'Saved', unsaved: 'Unsaved changes',
@@ -34,7 +34,8 @@ export const en: DeepStringify<typeof vi> = {
     formatAuto: 'Auto', formatCompact: 'Compact (1.2M)', formatInteger: 'Integer', formatPercent: 'Percent', formatCurrency: 'Currency (₫)',
     removeWidget: 'Remove visual', duplicateWidget: 'Duplicate', configure: 'Configure', noData: 'No data', needsFields: 'Drag at least one field onto this visual', needsMeasure: 'Drop a numeric field into Values to draw the chart',
     truncated: 'Result truncated at {count} rows', rows: '{count} rows', ms: '{ms} ms', showSql: 'Show SQL', sqlTitle: 'Generated SQL',
-    widgetDefaultTitle: 'New visual', by: 'by', unsavedLeave: 'You have unsaved changes. Leave anyway?', deleteDashboard: 'Delete dashboard',
+    widgetDefaultTitle: 'New visual', by: 'by', unsavedLeave: 'You have unsaved changes. Leave anyway?', leave: 'Leave', canvas: 'Canvas',
+    bucketLabel: 'Date grouping', aggLabel: 'Aggregation', sortDesc: 'Value, high to low', sortAsc: 'Value, low to high',
     filterField: 'Field', filterOp: 'Condition', filterValue: 'Value', filterValues: 'Values (comma separated)',
   },
   agg: { sum: 'Sum', avg: 'Average', count: 'Count', count_distinct: 'Distinct count', min: 'Min', max: 'Max' },
@@ -51,6 +52,7 @@ export const en: DeepStringify<typeof vi> = {
     ssl: 'Use SSL', test: 'Test connection', testing: 'Testing…', testOk: 'Connected · {version} · {ms} ms', testFail: 'Connection failed: {error}',
     editTitle: 'Edit data source', addTitle: 'Add MariaDB data source', readonlyHint: 'Use an account with SELECT privileges only. The password is encrypted at rest.',
     tables: 'Tables & views', rowsEst: '~{count} rows', rowsHeader: 'Rows (estimate)', columns: 'Columns', view: 'view', table: 'table', detail: 'Details', typeMaria: 'MariaDB',
+    primaryKey: 'Key', hostPlaceholder: 'e.g. db.internal.local', noTables: 'No tables in this database',
   },
   datasets: {
     title: 'SQL datasets', add: 'Add dataset', empty: 'No SQL datasets yet', emptyHint: 'Write a SELECT (joins welcome) to use it like a table in visuals.',
@@ -63,4 +65,5 @@ export const en: DeepStringify<typeof vi> = {
     roleAdmin: 'Admin', roleEditor: 'Editor', roleViewer: 'Viewer', minPassword: 'At least 8 characters', appearance: 'Appearance',
   },
   kinds: { number: 'number', date: 'date/time', string: 'text', boolean: 'boolean', other: 'other' },
+  notFound: { title: 'Page not found', back: 'Back to dashboards' },
 };

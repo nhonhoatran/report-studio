@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2 } from 'lucide-react';
+import type { FormEvent as FE } from 'react';
 import { api } from '@/api/client';
 import type { Role } from '@/api/types';
 import { useAuth } from '@/store/auth';
@@ -10,7 +11,8 @@ import { useI18nStore, useT } from '@/i18n';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { Panel } from '@/components/ui/Panel';
 import { Button } from '@/components/ui/Button';
-import { Input, Select } from '@/components/ui/Field';
+import { Input, Labelled, Select } from '@/components/ui/Field';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Segmented } from '@/components/ui/Segmented';
 import { ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
@@ -39,12 +41,12 @@ function Users() {
   const qc = useQueryClient();
   const me = useAuth((s) => s.user);
   const [open, setOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<{ id: number; username: string } | null>(null);
   const [form, setForm] = useState({ username: '', displayName: '', password: '', role: 'editor' as Role });
   const users = useQuery({ queryKey: ['users'], queryFn: () => api.auth.users().then((r) => r.users) });
   const create = useMutation({
     mutationFn: () => api.auth.createUser(form),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setOpen(false); setForm({ username: '', displayName: '', password: '', role: 'editor' }); },
-    onError: (e) => toast.error(e.message),
   });
   const update = useMutation({
     mutationFn: ({ id, role }: { id: number; role: Role }) => api.auth.updateUser(id, { role }),
@@ -53,18 +55,18 @@ function Users() {
   });
   const remove = useMutation({
     mutationFn: (id: number) => api.auth.deleteUser(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setToDelete(null); toast.success(t('common.deleted')); },
     onError: (e) => toast.error(e.message),
   });
   const roles: Role[] = ['admin', 'editor', 'viewer'];
   const roleLabel = (r: Role) => t(r === 'admin' ? 'settings.roleAdmin' : r === 'editor' ? 'settings.roleEditor' : 'settings.roleViewer');
 
   return (
-    <Panel title={t('settings.users')} actions={<Button size="sm" icon={<Plus size={14} />} onClick={() => setOpen(true)}>{t('settings.addUser')}</Button>} flush>
+    <Panel title={t('settings.users')} actions={<Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setOpen(true)}>{t('settings.addUser')}</Button>} flush>
       {users.isLoading && <Spinner block />}
       {users.error && <div className="panel__body"><ErrorBox error={users.error} /></div>}
       {users.data && (
-        <div className="table-wrap" style={{ border: 0 }}>
+        <div className="table-wrap">
           <table className="table">
             <thead><tr><th>{t('login.username')}</th><th>{t('settings.displayName')}</th><th>{t('settings.role')}</th><th></th></tr></thead>
             <tbody>
@@ -73,11 +75,11 @@ function Users() {
                   <td className="mono">{u.username}</td>
                   <td>{u.displayName}</td>
                   <td>
-                    <select className="field__control field__control--sm" style={{ width: 'auto' }} value={u.role} disabled={u.id === me?.id} aria-label={t('settings.role')} onChange={(e) => update.mutate({ id: u.id, role: e.target.value as Role })}>
+                    <Select size="sm" className="field--auto" value={u.role} disabled={u.id === me?.id} aria-label={t('settings.role')} onChange={(e) => update.mutate({ id: u.id, role: e.target.value as Role })}>
                       {roles.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
-                    </select>
+                    </Select>
                   </td>
-                  <td className="num">{u.id !== me?.id && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => { if (window.confirm(t('common.confirmDelete', { name: u.username }))) remove.mutate(u.id); }}>{t('common.delete')}</Button>}</td>
+                  <td className="num">{u.id !== me?.id && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete({ id: u.id, username: u.username })}>{t('common.delete')}</Button>}</td>
                 </tr>
               ))}
             </tbody>
@@ -85,16 +87,19 @@ function Users() {
         </div>
       )}
       <Modal open={open} title={t('settings.addUser')} onClose={() => setOpen(false)}
-        footer={<><Button variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button variant="primary" onClick={() => create.mutate()} loading={create.isPending} disabled={!form.username || !form.displayName || form.password.length < 8}>{t('common.create')}</Button></>}>
-        <div className="stack">
+        footer={<><Button variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button type="submit" form="user-form" variant="primary" loading={create.isPending} disabled={!form.username || !form.displayName || form.password.length < 8}>{t('common.create')}</Button></>}>
+        <form id="user-form" className="stack" onSubmit={(e: FE) => { e.preventDefault(); create.mutate(); }}>
           <Input label={t('login.username')} required autoComplete="off" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           <Input label={t('settings.displayName')} required value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
           <Input label={t('login.password')} type="password" autoComplete="new-password" required minLength={8} help={t('settings.minPassword')} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           <Select label={t('settings.role')} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
             {roles.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
           </Select>
-        </div>
+          {create.error && <ErrorBox error={create.error} />}
+        </form>
       </Modal>
+      <ConfirmDialog open={!!toDelete} title={t('common.delete')} message={t('common.confirmDelete', { name: toDelete?.username ?? '' })} confirmLabel={t('common.delete')}
+        loading={remove.isPending} onConfirm={() => toDelete && remove.mutate(toDelete.id)} onClose={() => setToDelete(null)} />
     </Panel>
   );
 }
@@ -110,22 +115,20 @@ export function SettingsPage() {
       <div className="settings-grid">
         <Panel title={t('settings.appearance')}>
           <div className="stack">
-            <div className="field">
-              <span className="field__label">{t('common.theme')}</span>
+            <Labelled label={t('common.theme')}>
               <Segmented<ThemePref> ariaLabel={t('common.theme')} value={pref} onChange={setPref} options={[
                 { value: 'light', label: t('common.themeLight') }, { value: 'dark', label: t('common.themeDark') }, { value: 'system', label: t('common.themeSystem') },
               ]} />
-            </div>
-            <div className="field">
-              <span className="field__label">{t('common.language')}</span>
+            </Labelled>
+            <Labelled label={t('common.language')}>
               <Segmented ariaLabel={t('common.language')} value={lang} onChange={setLang} options={[{ value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]} />
-            </div>
+            </Labelled>
           </div>
         </Panel>
         <Panel title={`${t('settings.account')} · ${me?.username}`}>
           <ChangePassword />
         </Panel>
-        {me?.role === 'admin' && <div style={{ gridColumn: '1 / -1' }}><Users /></div>}
+        {me?.role === 'admin' && <div className="settings-grid__full"><Users /></div>}
       </div>
     </>
   );

@@ -36,7 +36,7 @@ export function DashboardsPage() {
   });
   const remove = useMutation({
     mutationFn: (id: number) => api.dashboards.remove(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['dashboards'] }); setToDelete(null); toast.success(t('dashboards.deleted')); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['dashboards'] }); setToDelete(null); toast.success(t('common.deleted')); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -61,15 +61,15 @@ export function DashboardsPage() {
               </div>
               <div className="card__actions">
                 {editable && <Button variant="ghost" size="sm" iconOnly icon={<Copy size={15} />} onClick={() => duplicate.mutate(d.id)}>{t('common.duplicate')}</Button>}
+                {editable && <Button variant="ghost" size="sm" iconOnly icon={<Pencil size={15} />} onClick={() => navigate(`/dashboards/${d.id}/edit`)}>{t('common.edit')}</Button>}
                 {editable && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete(d)}>{t('common.delete')}</Button>}
-                {editable && <Button variant="secondary" size="sm" icon={<Pencil size={14} />} onClick={() => navigate(`/dashboards/${d.id}/edit`)}>{t('common.edit')}</Button>}
                 <Button variant="primary" size="sm" onClick={() => navigate(`/dashboards/${d.id}`)}>{t('dashboards.open')}</Button>
               </div>
             </article>
           ))}
         </div>
       )}
-      <ConfirmDialog open={!!toDelete} title={t('editor.deleteDashboard')} message={t('common.confirmDelete', { name: toDelete?.name ?? '' })}
+      <ConfirmDialog open={!!toDelete} title={t('common.delete')} message={t('common.confirmDelete', { name: toDelete?.name ?? '' })}
         confirmLabel={t('common.delete')} loading={remove.isPending} onConfirm={() => toDelete && remove.mutate(toDelete.id)} onClose={() => setToDelete(null)} />
     </>
   );

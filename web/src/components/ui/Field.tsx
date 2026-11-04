@@ -43,6 +43,16 @@ export function Textarea({ label, hint, error, help, className, id: givenId, ...
   );
 }
 
+/** Label + any custom control (a Segmented, a toggle) in the Field layout. */
+export function Labelled({ label, className, children }: { label: ReactNode; className?: string; children: ReactNode }) {
+  return (
+    <div className={['field', className].filter(Boolean).join(' ')}>
+      <span className="field__label">{label}</span>
+      {children}
+    </div>
+  );
+}
+
 export function Checkbox({ label, className, id: givenId, ...rest }: { label: ReactNode; className?: string } & InputHTMLAttributes<HTMLInputElement>) {
   const auto = useId(); const id = givenId ?? auto;
   return (

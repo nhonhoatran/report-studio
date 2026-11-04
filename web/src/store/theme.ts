@@ -44,3 +44,9 @@ export const useTheme = create<ThemeState>((set) => {
 export function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
+
+/** A px token as a number, for libraries that take numbers (grid, charts). */
+export function cssPx(name: string, fallback: number): number {
+  const n = Number.parseFloat(cssVar(name));
+  return Number.isFinite(n) ? n : fallback;
+}

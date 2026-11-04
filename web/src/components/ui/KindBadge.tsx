@@ -5,7 +5,7 @@ const icons: Record<FieldKind, typeof Hash> = { number: Hash, date: Calendar, st
 
 export function KindIcon({ kind, size = 14 }: { kind: FieldKind; size?: number }) {
   const Icon = icons[kind] ?? CircleHelp;
-  return <Icon size={size} aria-hidden style={{ color: kind === 'number' ? 'var(--color-measure)' : kind === 'date' ? 'var(--color-date)' : 'var(--color-dimension)' }} />;
+  return <Icon size={size} aria-hidden className={`kind-icon kind-icon--${kind}`} />;
 }
 
 export function KindBadge({ kind, label }: { kind: FieldKind; label: string }) {

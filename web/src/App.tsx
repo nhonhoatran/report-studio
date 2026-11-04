@@ -6,6 +6,7 @@ import { useAuth } from '@/store/auth';
 import { useI18nStore } from '@/i18n';
 import { Spinner, Toasts } from '@/components/ui/Feedback';
 import { AppShell } from '@/components/layout/AppShell';
+import '@/components/layout/layout.css';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardsPage } from '@/pages/DashboardsPage';
 import { DashboardEditorPage } from '@/pages/DashboardEditorPage';
@@ -22,7 +23,7 @@ function RequireAuth() {
   const { user, status, load } = useAuth();
   const location = useLocation();
   useEffect(() => { if (status === 'idle') void load(); }, [status, load]);
-  if (status !== 'ready') return <div style={{ padding: 'var(--space-8)' }}><Spinner block /></div>;
+  if (status !== 'ready') return <div className="app__boot"><Spinner block /></div>;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   return <Outlet />;
 }

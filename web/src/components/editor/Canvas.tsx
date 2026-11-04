@@ -6,10 +6,12 @@ import type { Widget } from '@/api/types';
 import { useT } from '@/i18n';
 import { useEditor } from '@/store/editor';
 import { autoTitle } from '@/lib/widget';
+import { cssPx } from '@/store/theme';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Feedback';
 import { WidgetChart } from './WidgetChart';
 
+/** Below this canvas width every widget takes the full width (a breakpoint, not a theme value). */
 const NARROW = 480;
 export const WIDGET_DROP_PREFIX = 'widget:';
 
@@ -26,6 +28,8 @@ function WidgetFrame({ widget, editable }: { widget: Widget; editable: boolean }
       ref={setNodeRef}
       className={['widget', selected && 'widget--selected', isOver && 'widget--over'].filter(Boolean).join(' ')}
       onMouseDown={() => editable && select(widget.id)}
+      onFocus={() => editable && select(widget.id)}
+      tabIndex={editable ? 0 : undefined}
       aria-label={widget.title || t('editor.widgetDefaultTitle')}
     >
       <header className={['widget__header', editable && 'widget__header--draggable'].filter(Boolean).join(' ')}>
@@ -62,6 +66,8 @@ export function Canvas({ editable }: { editable: boolean }) {
   }, []);
   const narrow = width > 0 && width < NARROW;
   const interactive = editable && !narrow;
+  const gap = cssPx('--space-3', 12);
+  const rowHeight = cssPx('--space-8', 40);
 
   const layout = useMemo<Layout[]>(() => {
     if (!narrow) return widgets.map((w) => ({ i: w.id, ...w.layout, minW: 2, minH: 3 }));
@@ -71,7 +77,7 @@ export function Canvas({ editable }: { editable: boolean }) {
   }, [widgets, narrow]);
 
   return (
-    <section ref={ref} className="canvas" aria-label="canvas" onMouseDown={(e) => { if (e.target === e.currentTarget) select(null); }}>
+    <section ref={ref} className="canvas" aria-label={t('editor.canvas')} onMouseDown={(e) => { if (e.target === e.currentTarget) select(null); }}>
       {widgets.length === 0 ? (
         <EmptyState
           title={t('editor.emptyCanvas')}
@@ -83,11 +89,11 @@ export function Canvas({ editable }: { editable: boolean }) {
           {width > 0 && (
           <GridLayout
             className="layout"
-            width={width - 24}
+            width={width - gap * 2}
             layout={layout}
             cols={narrow ? 1 : 12}
-            rowHeight={40}
-            margin={[12, 12]}
+            rowHeight={rowHeight}
+            margin={[gap, gap]}
             containerPadding={[0, 0]}
             isDraggable={interactive}
             isResizable={interactive}
