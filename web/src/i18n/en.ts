@@ -17,6 +17,13 @@ export const en: DeepStringify<typeof vi> = {
   login: {
     title: 'Sign in', username: 'Username', password: 'Password', submit: 'Sign in', submitting: 'Signing in…',
     failed: 'Invalid username or password',
+    or: 'or', withMicrosoft: 'Sign in with Microsoft',
+    noProviders: 'No sign-in method is enabled. Contact an administrator.',
+    entraDenied: 'Microsoft sign-in was cancelled.',
+    entraDomain: 'This Microsoft account is not in an organisation that is allowed to sign in.',
+    entraNoAccount: 'No Report Studio account exists for this user. Contact an administrator.',
+    entraExpired: 'The Microsoft sign-in attempt expired. Please try again.',
+    entraFailed: 'Microsoft sign-in failed. Please try again.',
   },
   dashboards: {
     title: 'Dashboards', new: 'New dashboard', empty: 'No dashboards yet', emptyHint: 'Create your first dashboard to start dragging charts around.',
@@ -63,6 +70,8 @@ export const en: DeepStringify<typeof vi> = {
     title: 'Settings', account: 'Account', changePassword: 'Change password', currentPassword: 'Current password', newPassword: 'New password',
     passwordChanged: 'Password changed', users: 'Users', addUser: 'Add user', displayName: 'Display name', role: 'Role',
     roleAdmin: 'Admin', roleEditor: 'Editor', roleViewer: 'Viewer', minPassword: 'At least 8 characters', appearance: 'Appearance',
+    loginMethod: 'Sign-in', providerLocal: 'Password', providerEntra: 'Microsoft Entra',
+    managedByEntra: 'This account signs in with Microsoft Entra ID; its password is managed by your organisation.',
   },
   kinds: { number: 'number', date: 'date/time', string: 'text', boolean: 'boolean', other: 'other' },
   notFound: { title: 'Page not found', back: 'Back to dashboards' },

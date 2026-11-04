@@ -26,6 +26,6 @@ Ordered by what a team moving off Looker Studio tends to hit first.
 
 ## Later
 - PostgreSQL / MySQL / ClickHouse / SQLite engines.
-- SSO (OIDC / LDAP).
+- SSO for other identity providers (generic OIDC, LDAP); Microsoft Entra ID is in 0.1.
 - Alerts on thresholds.
 - Theme editor (brand palette) persisted per workspace.

@@ -27,6 +27,9 @@
 .login { min-height: 100vh; display: grid; place-items: center; padding: var(--space-4); background: radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 70%), var(--color-bg); }
 .login__card { width: min(400px, 100%); padding: var(--space-7); display: flex; flex-direction: column; gap: var(--space-4); }
 .login__brand { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+/* "or" between the password form and the Microsoft sign-in: a hairline on each side */
+.login__or { display: flex; align-items: center; gap: var(--space-3); color: var(--color-text-faint); font-size: var(--text-sm); }
+.login__or::before, .login__or::after { content: ''; flex: 1; border-top: 1px solid var(--color-border); }
 
 /* Card grid for dashboards */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-4); }

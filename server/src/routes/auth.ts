@@ -1,44 +1,36 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { query, queryOne, execute, type Row } from '../db/metadata.js';
-import { COOKIE_NAME, signSession, type Role, type SessionUser } from '../auth/jwt.js';
+import { query, queryOne, execute } from '../db/metadata.js';
+import { COOKIE_NAME, sessionCookieOptions, signSession } from '../auth/jwt.js';
 import { requireAuth, requireRole } from '../auth/middleware.js';
-import { badRequest, conflict, notFound, unauthorized } from '../lib/errors.js';
+import { entraEnabled } from '../auth/entra.js';
+import { findUserById, toPublicUser, toSession, type UserRow } from '../auth/users.js';
+import { badRequest, conflict, forbidden, notFound, unauthorized } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
 import { config } from '../config.js';
 
 export const authRouter = Router();
 
-interface UserRow extends Row {
-  id: number; username: string; display_name: string; password_hash: string; role: Role; created_at: string;
-}
-
 const loginSchema = z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(200) });
 
-function toSession(u: UserRow): SessionUser {
-  return { id: Number(u.id), username: u.username, displayName: u.display_name, role: u.role };
-}
+// A hash nothing matches, so a missing user or a password-less (Entra) account costs the same time.
+const DUMMY_HASH = '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalid';
 
-function cookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: 'lax' as const,
-    secure: config.cookieSecure,
-    maxAge: config.sessionTtlHours * 3600 * 1000,
-    path: '/',
-  };
-}
+/** Which sign-in methods the login page should offer. */
+authRouter.get('/providers', (_req, res) => {
+  res.json({ local: config.auth.localLogin, entra: entraEnabled });
+});
 
 authRouter.post('/login', async (req, res) => {
+  if (!config.auth.localLogin) throw forbidden('Password sign-in is disabled');
   const body = parse(loginSchema, req.body);
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE username = ?', [body.username]);
   // constant-ish time: always run bcrypt
-  const ok = user ? await bcrypt.compare(body.password, user.password_hash) : await bcrypt.compare(body.password, '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalid');
-  if (!user || !ok) throw unauthorized('Invalid username or password');
-  const session = toSession(user);
-  res.cookie(COOKIE_NAME, signSession(session), cookieOptions());
-  res.json({ user: session });
+  const ok = await bcrypt.compare(body.password, user?.password_hash ?? DUMMY_HASH);
+  if (!user || !user.password_hash || !ok) throw unauthorized('Invalid username or password');
+  res.cookie(COOKIE_NAME, signSession(toSession(user)), sessionCookieOptions());
+  res.json({ user: toPublicUser(user) });
 });
 
 authRouter.post('/logout', (_req, res) => {
@@ -46,16 +38,20 @@ authRouter.post('/logout', (_req, res) => {
   res.status(204).end();
 });
 
-authRouter.get('/me', requireAuth, (req, res) => {
-  res.json({ user: req.user });
+authRouter.get('/me', requireAuth, async (req, res) => {
+  const user = await findUserById(req.user!.id);
+  if (!user) throw unauthorized();
+  res.json({ user: toPublicUser(user) });
 });
 
 const changePasswordSchema = z.object({ currentPassword: z.string().min(1), newPassword: z.string().min(8).max(200) });
 
 authRouter.post('/change-password', requireAuth, async (req, res) => {
   const body = parse(changePasswordSchema, req.body);
-  const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = ?', [req.user!.id]);
-  if (!user || !(await bcrypt.compare(body.currentPassword, user.password_hash))) {
+  const user = await findUserById(req.user!.id);
+  if (!user) throw unauthorized();
+  if (!user.password_hash) throw badRequest('This account signs in with Microsoft Entra ID and has no password');
+  if (!(await bcrypt.compare(body.currentPassword, user.password_hash))) {
     throw badRequest('Current password is incorrect');
   }
   await execute('UPDATE users SET password_hash = ? WHERE id = ?', [await bcrypt.hash(body.newPassword, 10), user.id]);
@@ -76,8 +72,8 @@ const userUpdateSchema = z.object({
 });
 
 authRouter.get('/users', requireRole('admin'), async (_req, res) => {
-  const rows = await query<UserRow>('SELECT id, username, display_name, role, created_at FROM users ORDER BY username');
-  res.json({ users: rows.map((u) => ({ id: Number(u.id), username: u.username, displayName: u.display_name, role: u.role, createdAt: u.created_at })) });
+  const rows = await query<UserRow>('SELECT id, username, display_name, role, auth_provider, email, created_at, password_hash IS NOT NULL AS has_password FROM users ORDER BY username');
+  res.json({ users: rows.map((u) => ({ ...toPublicUser(u), hasPassword: Boolean(Number(u.has_password)) })) });
 });
 
 authRouter.post('/users', requireRole('admin'), async (req, res) => {
@@ -92,7 +88,7 @@ authRouter.post('/users', requireRole('admin'), async (req, res) => {
 authRouter.put('/users/:id', requireRole('admin'), async (req, res) => {
   const id = parseId(req.params.id);
   const body = parse(userUpdateSchema, req.body);
-  const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = ?', [id]);
+  const user = await findUserById(id);
   if (!user) throw notFound('User not found');
   await execute('UPDATE users SET display_name = ?, role = ?, password_hash = ? WHERE id = ?', [
     body.displayName ?? user.display_name,

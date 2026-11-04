@@ -13,6 +13,13 @@ export const vi = {
   login: {
     title: 'Đăng nhập', username: 'Tên đăng nhập', password: 'Mật khẩu', submit: 'Đăng nhập', submitting: 'Đang đăng nhập…',
     failed: 'Tên đăng nhập hoặc mật khẩu không đúng',
+    or: 'hoặc', withMicrosoft: 'Đăng nhập bằng Microsoft',
+    noProviders: 'Chưa có phương thức đăng nhập nào được bật. Hãy liên hệ quản trị viên.',
+    entraDenied: 'Bạn đã hủy đăng nhập Microsoft.',
+    entraDomain: 'Tài khoản Microsoft này không thuộc tổ chức được phép đăng nhập.',
+    entraNoAccount: 'Chưa có tài khoản Report Studio cho người dùng này. Hãy liên hệ quản trị viên.',
+    entraExpired: 'Phiên đăng nhập Microsoft đã hết hạn. Vui lòng thử lại.',
+    entraFailed: 'Đăng nhập Microsoft không thành công. Vui lòng thử lại.',
   },
   dashboards: {
     title: 'Bảng điều khiển', new: 'Tạo bảng mới', empty: 'Chưa có bảng điều khiển nào', emptyHint: 'Tạo bảng đầu tiên để bắt đầu kéo-thả biểu đồ.',
@@ -59,6 +66,8 @@ export const vi = {
     title: 'Cài đặt', account: 'Tài khoản', changePassword: 'Đổi mật khẩu', currentPassword: 'Mật khẩu hiện tại', newPassword: 'Mật khẩu mới',
     passwordChanged: 'Đã đổi mật khẩu', users: 'Người dùng', addUser: 'Thêm người dùng', displayName: 'Tên hiển thị', role: 'Vai trò',
     roleAdmin: 'Quản trị', roleEditor: 'Biên tập', roleViewer: 'Chỉ xem', minPassword: 'Tối thiểu 8 ký tự', appearance: 'Hiển thị',
+    loginMethod: 'Đăng nhập', providerLocal: 'Mật khẩu', providerEntra: 'Microsoft Entra',
+    managedByEntra: 'Tài khoản này đăng nhập bằng Microsoft Entra ID; mật khẩu do tổ chức của bạn quản lý.',
   },
   kinds: { number: 'số', date: 'ngày giờ', string: 'chữ', boolean: 'đúng/sai', other: 'khác' },
   notFound: { title: 'Không tìm thấy trang', back: 'Về trang bảng điều khiển' },

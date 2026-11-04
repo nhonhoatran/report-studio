@@ -1,16 +1,21 @@
 # HTTP API
 
-All endpoints live under `/api`, speak JSON, and (except login/health) require the session cookie set by `POST /api/auth/login`. Errors are `{ "error": string, "details"?: any }` with a 4xx/5xx status. Roles: `viewer < editor < admin`.
+All endpoints live under `/api`, speak JSON, and (except login/health) require the session cookie set by `POST /api/auth/login` or by the Microsoft Entra callback. Errors are `{ "error": string, "details"?: any }` with a 4xx/5xx status. Roles: `viewer < editor < admin`.
+
+`user` objects look like `{ id, username, displayName, role, provider: 'local' | 'entra', hasPassword, email, createdAt? }`.
 
 ## Auth
 | Method | Path | Role | Body / notes |
 |---|---|---|---|
-| POST | `/auth/login` | – | `{ username, password }` → `{ user }`, sets `rs_session` cookie (httpOnly, SameSite=Lax) |
+| GET | `/auth/providers` | – | `{ local: boolean, entra: boolean }` — which sign-in methods the server offers |
+| POST | `/auth/login` | – | `{ username, password }` → `{ user }`, sets `rs_session` cookie (httpOnly, SameSite=Lax); 403 when `AUTH_LOCAL_LOGIN=false` |
+| GET | `/auth/entra/login?returnTo=/path` | – | browser navigation; stores the attempt in the `rs_entra` cookie (10 min) and redirects to Microsoft Entra (OIDC code flow + PKCE) |
+| GET | `/auth/entra/callback` | – | Entra redirect target: verifies state + ID token, finds/links/creates the account, sets `rs_session`, redirects to `returnTo`; on failure redirects to `/login?error=entra_denied\|entra_domain\|entra_no_account\|entra_state\|entra_failed` |
 | POST | `/auth/logout` | – | clears the cookie |
-| GET | `/auth/me` | any | `{ user }` |
-| POST | `/auth/change-password` | any | `{ currentPassword, newPassword }` |
+| GET | `/auth/me` | any | `{ user }` (read from the database, so a deleted account gets 401) |
+| POST | `/auth/change-password` | any | `{ currentPassword, newPassword }`; 400 for an Entra account without a password |
 | GET | `/auth/users` | admin | `{ users }` |
-| POST | `/auth/users` | admin | `{ username, displayName, password, role }` |
+| POST | `/auth/users` | admin | `{ username, displayName, password, role }` — creates a password (`local`) account |
 | PUT | `/auth/users/:id` | admin | `{ displayName?, password?, role? }` |
 | DELETE | `/auth/users/:id` | admin | cannot delete yourself |
 

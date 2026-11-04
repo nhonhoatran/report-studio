@@ -13,6 +13,7 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 - **Nguồn dữ liệu MariaDB**: thêm nhiều kết nối, kiểm tra kết nối, duyệt bảng/view và cột. Mật khẩu được mã hóa AES-256-GCM khi lưu.
 - **Bộ dữ liệu SQL**: viết câu `SELECT` (JOIN, CTE…) và dùng như một bảng. Server chỉ chấp nhận đúng một câu SELECT; mọi lệnh ghi bị chặn, kết nối đặt `READ ONLY` và có timeout.
 - Đăng nhập, phân quyền `admin / editor / viewer`, đổi mật khẩu, quản lý người dùng.
+- **Đăng nhập bằng Microsoft Entra ID** (SSO, OpenID Connect): tự tạo tài khoản lần đầu, ánh xạ app role / group sang vai trò, giới hạn theo domain e-mail; có thể tắt hẳn đăng nhập bằng mật khẩu.
 - Giao diện tiếng Việt (mặc định) và tiếng Anh. Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
 - Một container duy nhất: API Express + giao diện React build sẵn. Metadata (bảng điều khiển, kết nối, người dùng) cũng lưu trong MariaDB.
 
@@ -39,6 +40,18 @@ Trong ứng dụng, vào **Nguồn dữ liệu → Thêm nguồn**: host `mariad
 Để kết nối MariaDB *có sẵn* của công ty: tạo một tài khoản chỉ có quyền `SELECT` trên các schema cần báo cáo rồi thêm làm nguồn dữ liệu. Có thể bỏ service `mariadb` trong `docker-compose.yml` và trỏ `META_DB_*` vào MariaDB của bạn (ứng dụng tự tạo bảng khi khởi động).
 
 Đặt sau reverse proxy HTTPS (nginx / Caddy / Traefik) và bật `COOKIE_SECURE=true`.
+
+## Đăng nhập bằng Microsoft Entra ID (SSO)
+
+Report Studio đăng nhập qua Entra ID bằng OpenID Connect (authorization code + PKCE). Khi bật, trang đăng nhập có thêm nút **Đăng nhập bằng Microsoft**; đăng nhập bằng mật khẩu vẫn hoạt động song song (trừ khi tắt).
+
+1. Trong **Microsoft Entra admin center → App registrations → New registration**: chọn *Accounts in this organizational directory only*; mục **Redirect URI** chọn *Web* và nhập `https://<host>/api/auth/entra/callback`.
+2. **Overview**: copy *Application (client) ID* → `ENTRA_CLIENT_ID`, *Directory (tenant) ID* → `ENTRA_TENANT_ID`.
+3. **Certificates & secrets → New client secret**: copy *Value* → `ENTRA_CLIENT_SECRET`.
+4. (Nên làm) **Token configuration → Add optional claim → ID → `email`** để tài khoản có e-mail; **App roles** tạo ví dụ `ReportStudio.Admin`, `ReportStudio.Editor`, `ReportStudio.Viewer` rồi gán người dùng/nhóm trong **Enterprise applications → Users and groups**, và khai báo `ENTRA_ADMIN_ROLES=ReportStudio.Admin` … Người không có role nào được gán sẽ nhận `ENTRA_DEFAULT_ROLE`; admin vẫn đổi được vai trò trong ứng dụng khi không dùng ánh xạ.
+5. Điền các biến `ENTRA_*` vào `.env`, khởi động lại. Khi chạy dev (Vite :5173) đặt `ENTRA_REDIRECT_URI=http://localhost:5173/api/auth/entra/callback` và đăng ký đúng URI đó.
+
+Giới hạn ai được vào: bật *Assignment required* trên Enterprise application, hoặc `ENTRA_ALLOWED_DOMAINS=congty.vn`, hoặc `ENTRA_AUTO_PROVISION=false` (chỉ tài khoản đã được admin tạo trước với tên đăng nhập = UPN/e-mail mới vào được; lần đầu đăng nhập tài khoản đó được liên kết với Entra và vẫn giữ mật khẩu cũ). Khi SSO đã chạy ổn và có ít nhất một admin đăng nhập qua Entra, đặt `AUTH_LOCAL_LOGIN=false` để ẩn form mật khẩu.
 
 ## Phát triển
 
@@ -78,6 +91,13 @@ docs/     kiến trúc, lộ trình, hướng dẫn đóng góp
 | `QUERY_MAX_ROWS` | `5000` | số dòng tối đa trả về cho một biểu đồ |
 | `QUERY_TIMEOUT_SECONDS` | `30` | timeout mỗi truy vấn (`max_statement_time` + client) |
 | `COOKIE_SECURE` | `false` | `true` khi chạy sau HTTPS |
+| `ENTRA_TENANT_ID` / `ENTRA_CLIENT_ID` / `ENTRA_CLIENT_SECRET` | (tắt) | bật đăng nhập Microsoft Entra ID khi đủ cả ba |
+| `ENTRA_REDIRECT_URI` | suy từ request | URL callback công khai: `https://<host>/api/auth/entra/callback` |
+| `ENTRA_ALLOWED_DOMAINS` | (mọi domain) | domain e-mail được phép, cách nhau bằng dấu phẩy |
+| `ENTRA_AUTO_PROVISION` | `true` | tự tạo tài khoản ở lần đăng nhập đầu |
+| `ENTRA_DEFAULT_ROLE` | `viewer` | vai trò cho tài khoản tự tạo khi không khớp ánh xạ |
+| `ENTRA_ADMIN_ROLES` / `ENTRA_EDITOR_ROLES` / `ENTRA_VIEWER_ROLES` | (trống) | app role hoặc group object id ánh xạ sang vai trò, cách nhau bằng dấu phẩy |
+| `AUTH_LOCAL_LOGIN` | `true` | `false` để tắt đăng nhập bằng mật khẩu (bắt buộc đã cấu hình Entra) |
 
 Xem đầy đủ trong `.env.example` và `server/.env.example`.
 
@@ -90,7 +110,7 @@ Xem đầy đủ trong `.env.example` và `server/.env.example`.
 
 ## Lộ trình
 
-Xem `docs/ROADMAP.md` (bộ lọc toàn dashboard, lịch gửi báo cáo, xuất PDF/Excel, cache, chia sẻ link công khai, thêm PostgreSQL/MySQL/ClickHouse…).
+Xem `docs/ROADMAP.md` (bộ lọc toàn dashboard, lịch gửi báo cáo, xuất PDF/Excel, cache, chia sẻ link công khai, thêm PostgreSQL/MySQL/ClickHouse, SSO cho nhà cung cấp OIDC khác…).
 
 ## Giấy phép
 

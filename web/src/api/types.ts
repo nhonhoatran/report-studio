@@ -1,5 +1,12 @@
 export type Role = 'admin' | 'editor' | 'viewer';
-export interface User { id: number; username: string; displayName: string; role: Role; createdAt?: string }
+export type AuthProvider = 'local' | 'entra';
+export interface User {
+  id: number; username: string; displayName: string; role: Role;
+  /** Where the account came from; `entra` accounts may have no password. */
+  provider: AuthProvider; hasPassword: boolean; email?: string | null; createdAt?: string;
+}
+/** Sign-in methods the server offers (`GET /auth/providers`). */
+export interface AuthProviders { local: boolean; entra: boolean }
 
 export interface Datasource {
   id: number; name: string; type: string; host: string; port: number; database: string; username: string; ssl: boolean;

@@ -50,3 +50,15 @@ Khi cần JOIN nhiều bảng hoặc tính toán trước:
 | Quản trị (admin) | tất cả + quản lý người dùng |
 
 Admin tạo tài khoản ở **Cài đặt → Người dùng**. Mỗi người tự đổi mật khẩu ở **Cài đặt → Tài khoản**.
+
+### Đăng nhập bằng Microsoft (Entra ID)
+Nếu quản trị viên đã bật SSO, trang đăng nhập có nút **Đăng nhập bằng Microsoft**: bạn được chuyển sang trang đăng nhập của Microsoft rồi quay lại ứng dụng. Lần đầu đăng nhập, tài khoản được tạo tự động (hoặc liên kết với tài khoản admin đã tạo sẵn có tên đăng nhập là e-mail của bạn). Tài khoản loại này không có mật khẩu riêng — ô **Cài đặt → Tài khoản** sẽ ghi rõ mật khẩu do tổ chức quản lý. Trong **Cài đặt → Người dùng**, cột **Đăng nhập** cho biết tài khoản dùng *Mật khẩu* hay *Microsoft Entra*; vai trò có thể đổi tại đây trừ khi quản trị viên đã cấu hình ánh xạ vai trò từ Entra (khi đó vai trò được đồng bộ mỗi lần đăng nhập).
+
+Thông báo lỗi có thể gặp sau khi quay về từ Microsoft:
+
+| Thông báo | Nguyên nhân |
+|---|---|
+| Tài khoản Microsoft này không thuộc tổ chức được phép đăng nhập | domain e-mail không nằm trong `ENTRA_ALLOWED_DOMAINS` |
+| Chưa có tài khoản Report Studio cho người dùng này | `ENTRA_AUTO_PROVISION=false` và admin chưa tạo tài khoản với tên đăng nhập = e-mail |
+| Phiên đăng nhập Microsoft đã hết hạn | quá 10 phút giữa lúc nhấn nút và lúc quay về, hoặc mở link cũ |
+| Đăng nhập Microsoft không thành công | lỗi cấu hình (redirect URI, client secret hết hạn…) — xem log server |

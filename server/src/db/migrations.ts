@@ -59,4 +59,18 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
       ) ENGINE=InnoDB`,
     ],
   },
+  {
+    version: 2,
+    name: 'users_external_identity',
+    sql: [
+      // Accounts signed in through Microsoft Entra ID carry no password; the
+      // (provider, external id) pair identifies them across logins.
+      `ALTER TABLE users
+        MODIFY password_hash VARCHAR(255) NULL,
+        ADD COLUMN auth_provider VARCHAR(20) NOT NULL DEFAULT 'local' AFTER role,
+        ADD COLUMN external_id VARCHAR(128) NULL AFTER auth_provider,
+        ADD COLUMN email VARCHAR(255) NULL AFTER external_id,
+        ADD UNIQUE KEY uq_users_external (auth_provider, external_id)`,
+    ],
+  },
 ];

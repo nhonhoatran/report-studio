@@ -34,3 +34,13 @@ export function verifySession(token: string): SessionUser | null {
     return null;
   }
 }
+
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: config.cookieSecure,
+    maxAge: config.sessionTtlHours * 3600 * 1000,
+    path: '/',
+  };
+}

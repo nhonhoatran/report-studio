@@ -67,12 +67,13 @@ function Users() {
       {users.data && (
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>{t('login.username')}</th><th>{t('settings.displayName')}</th><th>{t('settings.role')}</th><th></th></tr></thead>
+            <thead><tr><th>{t('login.username')}</th><th>{t('settings.displayName')}</th><th>{t('settings.loginMethod')}</th><th>{t('settings.role')}</th><th></th></tr></thead>
             <tbody>
               {users.data.map((u) => (
                 <tr key={u.id}>
                   <td className="mono">{u.username}</td>
                   <td>{u.displayName}</td>
+                  <td><span className="badge">{u.provider === 'entra' ? t('settings.providerEntra') : t('settings.providerLocal')}</span></td>
                   <td>
                     <Select size="sm" className="field--auto" value={u.role} disabled={u.id === me?.id} aria-label={t('settings.role')} onChange={(e) => update.mutate({ id: u.id, role: e.target.value as Role })}>
                       {roles.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
@@ -125,7 +126,7 @@ export function SettingsPage() {
           </div>
         </Panel>
         <Panel title={`${t('settings.account')} · ${me?.username}`}>
-          <ChangePassword />
+          {me?.hasPassword === false ? <p className="text-sm text-muted">{t('settings.managedByEntra')}</p> : <ChangePassword />}
         </Panel>
         {me?.role === 'admin' && <div className="settings-grid__full"><Users /></div>}
       </div>

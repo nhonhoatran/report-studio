@@ -1,5 +1,5 @@
 import type {
-  Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo, QueryRequest, QueryResult, TableInfo, User,
+  AuthProviders, Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo, QueryRequest, QueryResult, TableInfo, User,
 } from './types';
 
 export class ApiError extends Error {
@@ -38,6 +38,9 @@ async function request<T>(method: string, url: string, body?: unknown, init?: Re
 
 export const api = {
   auth: {
+    providers: () => request<AuthProviders>('GET', '/auth/providers'),
+    /** Full-page navigation target that starts the Microsoft Entra sign-in. */
+    entraLoginUrl: (returnTo: string) => `/api/auth/entra/login?returnTo=${encodeURIComponent(returnTo)}`,
     login: (username: string, password: string) => request<{ user: User }>('POST', '/auth/login', { username, password }),
     logout: () => request<void>('POST', '/auth/logout'),
     me: () => request<{ user: User }>('GET', '/auth/me'),
