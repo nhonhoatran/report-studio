@@ -13,7 +13,9 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 - **Nguồn dữ liệu MariaDB**: thêm nhiều kết nối, kiểm tra kết nối, duyệt bảng/view và cột. Mật khẩu được mã hóa AES-256-GCM khi lưu.
 - **Bộ dữ liệu SQL**: viết câu `SELECT` (JOIN, CTE…) và dùng như một bảng. Server chỉ chấp nhận đúng một câu SELECT; mọi lệnh ghi bị chặn, kết nối đặt `READ ONLY` và có timeout.
 - Đăng nhập, phân quyền `admin / editor / viewer`, đổi mật khẩu, quản lý người dùng.
-- Giao diện tiếng Việt (mặc định) và tiếng Anh. Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
+- **Gợi ý biểu đồ bằng AI**: mô tả điều bạn muốn xem ("doanh thu theo tháng của từng khu vực") hoặc để AI tự đề xuất; mỗi gợi ý thêm thẳng vào khung vẽ. Dùng được **nhiều loại key**: Anthropic (Claude), OpenAI, Google Gemini hoặc bất kỳ máy chủ tương thích OpenAI (Ollama, vLLM, DeepSeek, Groq…). Key mã hóa khi lưu, chỉ máy chủ gọi AI; AI chỉ chọn trường / phép gộp / loại biểu đồ, **không bao giờ sinh SQL**.
+- **Đa ngôn ngữ**: tiếng Việt (mặc định) và tiếng Anh, tự nhận theo ngôn ngữ trình duyệt, đổi được ngay ở màn đăng nhập hoặc trong Cài đặt; số, ngày giờ và cả thông báo lỗi từ máy chủ đều hiển thị theo ngôn ngữ đã chọn. Thêm ngôn ngữ mới = một file từ điển + một dòng đăng ký (xem `docs/ARCHITECTURE.md`).
+- Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
 - Một container duy nhất: API Express + giao diện React build sẵn. Metadata (bảng điều khiển, kết nối, người dùng) cũng lưu trong MariaDB.
 
 ## Chạy nhanh bằng Docker (khuyến nghị cho server Linux)
@@ -35,6 +37,8 @@ Container MariaDB đi kèm tự tạo:
 | `demo_sales` | `readonly` / `readonly_pw` | dữ liệu mẫu (1.200 đơn hàng, view `v_sales`) để thử ngay |
 
 Trong ứng dụng, vào **Nguồn dữ liệu → Thêm nguồn**: host `mariadb`, database `demo_sales`, tài khoản `readonly`.
+
+Để bật gợi ý bằng AI: **Cài đặt → Nhà cung cấp AI → Thêm nhà cung cấp**, chọn loại (Anthropic / OpenAI / Gemini / tương thích OpenAI), nhập model và API key, nhấn **Kiểm tra** rồi **Lưu**. Có thể thêm nhiều key; người soạn bảng chọn nhà cung cấp ngay trong hộp thoại gợi ý.
 
 Để kết nối MariaDB *có sẵn* của công ty: tạo một tài khoản chỉ có quyền `SELECT` trên các schema cần báo cáo rồi thêm làm nguồn dữ liệu. Có thể bỏ service `mariadb` trong `docker-compose.yml` và trỏ `META_DB_*` vào MariaDB của bạn (ứng dụng tự tạo bảng khi khởi động).
 
@@ -78,6 +82,7 @@ docs/     kiến trúc, lộ trình, hướng dẫn đóng góp
 | `QUERY_MAX_ROWS` | `5000` | số dòng tối đa trả về cho một biểu đồ |
 | `QUERY_TIMEOUT_SECONDS` | `30` | timeout mỗi truy vấn (`max_statement_time` + client) |
 | `COOKIE_SECURE` | `false` | `true` khi chạy sau HTTPS |
+| `AI_TIMEOUT_SECONDS` | `60` | thời gian tối đa cho một lời gọi nhà cung cấp AI (gợi ý biểu đồ) |
 
 Xem đầy đủ trong `.env.example` và `server/.env.example`.
 

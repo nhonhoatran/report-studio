@@ -35,7 +35,7 @@ authRouter.post('/login', async (req, res) => {
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE username = ?', [body.username]);
   // constant-ish time: always run bcrypt
   const ok = user ? await bcrypt.compare(body.password, user.password_hash) : await bcrypt.compare(body.password, '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalid');
-  if (!user || !ok) throw unauthorized('Invalid username or password');
+  if (!user || !ok) throw unauthorized('Invalid username or password', 'invalid_credentials');
   const session = toSession(user);
   res.cookie(COOKIE_NAME, signSession(session), cookieOptions());
   res.json({ user: session });
@@ -56,7 +56,7 @@ authRouter.post('/change-password', requireAuth, async (req, res) => {
   const body = parse(changePasswordSchema, req.body);
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = ?', [req.user!.id]);
   if (!user || !(await bcrypt.compare(body.currentPassword, user.password_hash))) {
-    throw badRequest('Current password is incorrect');
+    throw badRequest('Current password is incorrect', 'password_incorrect');
   }
   await execute('UPDATE users SET password_hash = ? WHERE id = ?', [await bcrypt.hash(body.newPassword, 10), user.id]);
   res.status(204).end();
@@ -82,7 +82,7 @@ authRouter.get('/users', requireRole('admin'), async (_req, res) => {
 
 authRouter.post('/users', requireRole('admin'), async (req, res) => {
   const body = parse(userCreateSchema, req.body);
-  if (await queryOne('SELECT id FROM users WHERE username = ?', [body.username])) throw conflict('Username already exists');
+  if (await queryOne('SELECT id FROM users WHERE username = ?', [body.username])) throw conflict('Username already exists', 'username_exists');
   const result = await execute('INSERT INTO users (username, display_name, password_hash, role) VALUES (?, ?, ?, ?)', [
     body.username, body.displayName, await bcrypt.hash(body.password, 10), body.role,
   ]);
@@ -93,7 +93,7 @@ authRouter.put('/users/:id', requireRole('admin'), async (req, res) => {
   const id = parseId(req.params.id);
   const body = parse(userUpdateSchema, req.body);
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = ?', [id]);
-  if (!user) throw notFound('User not found');
+  if (!user) throw notFound('User not found', 'user_not_found');
   await execute('UPDATE users SET display_name = ?, role = ?, password_hash = ? WHERE id = ?', [
     body.displayName ?? user.display_name,
     body.role ?? user.role,
@@ -105,7 +105,7 @@ authRouter.put('/users/:id', requireRole('admin'), async (req, res) => {
 
 authRouter.delete('/users/:id', requireRole('admin'), async (req, res) => {
   const id = parseId(req.params.id);
-  if (id === req.user!.id) throw badRequest('You cannot delete your own account');
+  if (id === req.user!.id) throw badRequest('You cannot delete your own account', 'cannot_delete_self');
   await execute('DELETE FROM users WHERE id = ?', [id]);
   res.status(204).end();
 });

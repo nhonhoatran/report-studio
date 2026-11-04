@@ -1,6 +1,6 @@
 # HTTP API
 
-All endpoints live under `/api`, speak JSON, and (except login/health) require the session cookie set by `POST /api/auth/login`. Errors are `{ "error": string, "details"?: any }` with a 4xx/5xx status. Roles: `viewer < editor < admin`.
+All endpoints live under `/api`, speak JSON, and (except login/health) require the session cookie set by `POST /api/auth/login`. Errors are `{ "error": string, "code"?: string, "details"?: any }` with a 4xx/5xx status; `code` is a stable identifier (see `ErrorCode` in `server/src/lib/errors.ts`, e.g. `invalid_credentials`, `sql_not_select`, `db_timeout`, `ai_auth_failed`) that clients can translate, `error` is the English message. Roles: `viewer < editor < admin`.
 
 ## Auth
 | Method | Path | Role | Body / notes |
@@ -71,6 +71,34 @@ Semantic query body:
 ```
 
 Output aliases: dimension → `field` or `field_bucket`; measure → `agg_field` (`count_all` for `*`); duplicates get `_2`, `_3`.
+
+## AI suggestions
+| Method | Path | Role | Body / notes |
+|---|---|---|---|
+| GET | `/ai/providers` | any | `{ providers: [{ id, name, kind, model, baseUrl, isDefault }] }` — never includes keys |
+| POST | `/ai/providers/test` | admin | `{ kind, model, baseUrl?, apiKey?, id? }` → `{ ok, latencyMs?, model?, error?, code? }`; with `id` and no `apiKey` the saved key is reused |
+| POST | `/ai/providers` | admin | `{ name, kind, model, baseUrl?, apiKey, isDefault? }`; the first provider becomes the default |
+| PUT | `/ai/providers/:id` | admin | partial; omit `apiKey` to keep it; `isDefault: true` moves the default here |
+| DELETE | `/ai/providers/:id` | admin | deleting the default promotes the oldest remaining provider |
+| POST | `/ai/suggest` | editor | `{ providerId?, sourceLabel, fields: [{ name, kind, dataType? }], prompt?, lang?, count? }` → `{ suggestions, provider, durationMs }` |
+
+`kind`: `anthropic` (Claude, official SDK), `openai`, `gemini`, `openai_compatible` (any `/v1/chat/completions` server such as Ollama, vLLM, DeepSeek or Groq; `baseUrl` required, e.g. `http://ollama:11434/v1`). `baseUrl` is optional for the other kinds and overrides the provider's public endpoint.
+
+A suggestion:
+
+```jsonc
+{
+  "type": "line",                                   // column|bar|line|area|pie|donut|kpi|table
+  "title": "Doanh thu theo tháng",
+  "explanation": "…",
+  "dimensions": [{ "field": "order_date", "kind": "date", "bucket": "month" }],
+  "measures":   [{ "field": "revenue", "kind": "number", "agg": "sum" }],
+  "filters":    [],                                 // same shape as query filters
+  "sortBy": "none"                                  // none|measure_desc|measure_asc
+}
+```
+
+Every field name has been checked against `fields`; aggregations, buckets and the number of dimensions/measures are already legal for `type`. The server never executes anything on behalf of the model; the client turns a suggestion into a widget and runs it through `/query` like any other visual.
 
 ## Misc
 | Method | Path | Notes |

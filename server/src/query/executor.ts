@@ -117,20 +117,20 @@ export function translateDbError(err: unknown): Error {
   switch (e.code) {
     case 'ER_ACCESS_DENIED_ERROR':
     case 'ER_DBACCESS_DENIED_ERROR':
-      return new HttpError(502, `Access denied by data source: ${message}`);
+      return new HttpError(502, `Access denied by data source: ${message}`, 'db_access_denied', { message });
     case 'ECONNREFUSED':
     case 'ENOTFOUND':
     case 'ETIMEDOUT':
     case 'EHOSTUNREACH':
     case 'PROTOCOL_CONNECTION_LOST':
-      return new HttpError(502, `Cannot reach data source: ${message}`);
+      return new HttpError(502, `Cannot reach data source: ${message}`, 'db_unreachable', { message });
     case 'PROTOCOL_SEQUENCE_TIMEOUT':
     case 'ER_STATEMENT_TIMEOUT':
-      return new HttpError(504, `Query timed out after ${config.query.timeoutSeconds}s`);
+      return new HttpError(504, `Query timed out after ${config.query.timeoutSeconds}s`, 'db_timeout', { seconds: config.query.timeoutSeconds });
     case 'ER_OPTION_PREVENTS_STATEMENT':
-      return new HttpError(400, 'Connection is read-only; write statements are blocked');
+      return new HttpError(400, 'Connection is read-only; write statements are blocked', 'db_read_only');
     default:
-      if (e.sqlMessage || (e.errno && e.errno >= 1000)) return badRequest(`SQL error: ${message}`);
+      if (e.sqlMessage || (e.errno && e.errno >= 1000)) return badRequest(`SQL error: ${message}`, 'db_sql_error', { message });
       return err instanceof Error ? err : new Error(message);
   }
 }

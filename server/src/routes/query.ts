@@ -20,12 +20,12 @@ async function resolveFrom(req: QueryRequest, role: string): Promise<string> {
       return quoteQualified(req.source.table);
     case 'dataset': {
       const ds = await loadDataset(req.source.datasetId);
-      if (Number(ds.datasource_id) !== req.datasourceId) throw forbidden('Dataset does not belong to this data source');
+      if (Number(ds.datasource_id) !== req.datasourceId) throw forbidden('Dataset does not belong to this data source', 'dataset_wrong_datasource');
       return `(${ds.sql_text}) AS \`__rs_src\``;
     }
     case 'sql':
       // ad-hoc SQL is for editors building a dataset; viewers only run saved specs
-      if (role === 'viewer') throw forbidden('Ad-hoc SQL requires editor role');
+      if (role === 'viewer') throw forbidden('Ad-hoc SQL requires editor role', 'adhoc_sql_forbidden');
       return `(${assertReadOnlySelect(req.source.sql)}) AS \`__rs_src\``;
   }
 }

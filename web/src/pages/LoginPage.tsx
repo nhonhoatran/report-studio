@@ -2,15 +2,17 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3 } from 'lucide-react';
 import { useAuth } from '@/store/auth';
-import { useT } from '@/i18n';
-import { ApiError } from '@/api/client';
+import { LANGUAGES, useI18nStore, useT } from '@/i18n';
+import { describeError } from '@/lib/errors';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { ErrorBox } from '@/components/ui/Feedback';
+import { Segmented } from '@/components/ui/Segmented';
 import '@/components/layout/layout.css';
 
 export function LoginPage() {
   const t = useT();
+  const { lang, setLang } = useI18nStore();
   const user = useAuth((s) => s.user);
   const login = useAuth((s) => s.login);
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ export function LoginPage() {
       await login(username, password);
       navigate(location.state?.from ?? '/dashboards', { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401 ? t('login.failed') : err instanceof Error ? err.message : t('common.errorGeneric'));
+      setError(describeError(err, t));
     } finally {
       setPending(false);
     }
@@ -51,6 +53,9 @@ export function LoginPage() {
           {error && <ErrorBox>{error}</ErrorBox>}
           <Button type="submit" variant="primary" loading={pending} disabled={!username || !password}>{pending ? t('login.submitting') : t('login.submit')}</Button>
         </form>
+        <div className="row row--end">
+          <Segmented ariaLabel={t('common.language')} value={lang} onChange={setLang} options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))} />
+        </div>
       </section>
     </main>
   );

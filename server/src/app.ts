@@ -13,6 +13,7 @@ import { datasourcesRouter } from './routes/datasources.js';
 import { datasetsRouter } from './routes/datasets.js';
 import { dashboardsRouter } from './routes/dashboards.js';
 import { queryRouter } from './routes/query.js';
+import { aiRouter } from './routes/ai.js';
 
 export function createApp() {
   const app = express();
@@ -48,7 +49,8 @@ export function createApp() {
   app.use('/api/datasets', wrapAsync(datasetsRouter));
   app.use('/api/dashboards', wrapAsync(dashboardsRouter));
   app.use('/api/query', wrapAsync(queryRouter));
-  app.all('/api/*', (_req, res) => res.status(404).json({ error: 'Not found' }));
+  app.use('/api/ai', wrapAsync(aiRouter));
+  app.all('/api/*', (_req, res) => res.status(404).json({ error: 'Not found', code: 'not_found' }));
 
   // Production: serve the built SPA and fall back to index.html for client routes.
   if (existsSync(config.webDist)) {
@@ -63,15 +65,15 @@ export function createApp() {
 
   app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof HttpError) {
-      res.status(err.status).json({ error: err.message, details: err.details });
+      res.status(err.status).json({ error: err.message, code: err.code, details: err.details });
       return;
     }
     if (err instanceof SyntaxError && 'body' in err) {
-      res.status(400).json({ error: 'Malformed JSON body' });
+      res.status(400).json({ error: 'Malformed JSON body', code: 'malformed_json' });
       return;
     }
     req.log?.error({ err }, 'unhandled error');
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', code: 'internal' });
   });
 
   return app;

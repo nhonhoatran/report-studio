@@ -9,14 +9,14 @@ export interface BuiltQuery {
 }
 
 export function quoteIdent(name: string): string {
-  if (!name || name.includes('\0')) throw badRequest(`Invalid identifier: ${name}`);
+  if (!name || name.includes('\0')) throw badRequest(`Invalid identifier: ${name}`, 'invalid_identifier', { name });
   return '`' + name.replace(/`/g, '``') + '`';
 }
 
 /** `db.table` -> `db`.`table`; a bare name is quoted as one identifier. */
 export function quoteQualified(name: string): string {
   const parts = name.split('.');
-  if (parts.length > 2) throw badRequest(`Invalid table name: ${name}`);
+  if (parts.length > 2) throw badRequest(`Invalid table name: ${name}`, 'invalid_table', { name });
   return parts.map(quoteIdent).join('.');
 }
 
@@ -52,7 +52,7 @@ function measureExpr(m: Measure): string {
     case 'max': return `MAX(${col})`;
     case 'count': return `COUNT(${col})`;
     case 'count_distinct':
-      if (m.field === '*') throw badRequest('count_distinct needs a field');
+      if (m.field === '*') throw badRequest('count_distinct needs a field', 'count_distinct_needs_field');
       return `COUNT(DISTINCT ${col})`;
   }
 }
@@ -95,7 +95,7 @@ export function buildWhere(filters: Filter[], params: unknown[]): string {
         break;
       case 'between': {
         const [a, b] = f.values ?? [];
-        if (a === undefined || b === undefined) throw badRequest('between needs two values');
+        if (a === undefined || b === undefined) throw badRequest('between needs two values', 'between_needs_two_values');
         clauses.push(`${col} BETWEEN ? AND ?`);
         params.push(a, b);
         break;
@@ -111,7 +111,7 @@ function buildOrderBy(orderBy: OrderBy[], known: Set<string>): string {
   if (!orderBy.length) return '';
   const parts = orderBy.map((o) => {
     const alias = safeAlias(o.alias);
-    if (!known.has(alias)) throw badRequest(`Cannot order by unknown column "${o.alias}"`);
+    if (!known.has(alias)) throw badRequest(`Cannot order by unknown column "${o.alias}"`, 'order_by_unknown', { alias: o.alias });
     return `${quoteIdent(alias)} ${o.direction === 'desc' ? 'DESC' : 'ASC'}`;
   });
   return ` ORDER BY ${parts.join(', ')}`;

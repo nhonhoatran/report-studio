@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { execute, query, queryOne, type Row } from '../db/metadata.js';
 import { requireAuth, requireRole } from '../auth/middleware.js';
 import { decrypt, encrypt } from '../lib/crypto.js';
-import { conflict, notFound } from '../lib/errors.js';
+import { HttpError, conflict, notFound } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
 import { dropPool, poolForDatasource, testConnection, translateDbError } from '../query/executor.js';
 import { listColumns, listTables } from '../query/introspect.js';
@@ -38,7 +38,7 @@ function publicView(r: DatasourceRow) {
 
 export async function loadDatasource(id: number): Promise<DatasourceRow> {
   const row = await queryOne<DatasourceRow>('SELECT * FROM datasources WHERE id = ?', [id]);
-  if (!row) throw notFound('Data source not found');
+  if (!row) throw notFound('Data source not found', 'datasource_not_found');
   return row;
 }
 
@@ -64,13 +64,13 @@ datasourcesRouter.post('/test', requireRole('editor'), async (req, res) => {
     res.json({ ok: true, ...result });
   } catch (err) {
     const e = translateDbError(err);
-    res.json({ ok: false, error: e.message });
+    res.json({ ok: false, error: e.message, code: e instanceof HttpError ? e.code : undefined, details: e instanceof HttpError ? e.details : undefined });
   }
 });
 
 datasourcesRouter.post('/', requireRole('editor'), async (req, res) => {
   const body = parse(createSchema, req.body);
-  if (await queryOne('SELECT id FROM datasources WHERE name = ?', [body.name])) throw conflict('A data source with this name already exists');
+  if (await queryOne('SELECT id FROM datasources WHERE name = ?', [body.name])) throw conflict('A data source with this name already exists', 'datasource_name_exists');
   const result = await execute(
     `INSERT INTO datasources (name, type, host, port, database_name, username, password_enc, use_ssl, created_by)
      VALUES (?, 'mariadb', ?, ?, ?, ?, ?, ?, ?)`,
@@ -84,7 +84,7 @@ datasourcesRouter.put('/:id', requireRole('editor'), async (req, res) => {
   const body = parse(updateSchema, req.body);
   const current = await loadDatasource(id);
   if (body.name && body.name !== current.name) {
-    if (await queryOne('SELECT id FROM datasources WHERE name = ? AND id <> ?', [body.name, id])) throw conflict('A data source with this name already exists');
+    if (await queryOne('SELECT id FROM datasources WHERE name = ? AND id <> ?', [body.name, id])) throw conflict('A data source with this name already exists', 'datasource_name_exists');
   }
   await execute(
     `UPDATE datasources SET name = ?, host = ?, port = ?, database_name = ?, username = ?, password_enc = ?, use_ssl = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -115,6 +115,6 @@ datasourcesRouter.get('/:id/tables', async (req, res) => {
 datasourcesRouter.get('/:id/tables/:table/columns', async (req, res) => {
   const ds = await loadDatasource(parseId(req.params.id));
   const columns = await listColumns(poolForDatasource(ds), String(req.params.table));
-  if (columns.length === 0) throw notFound('Table not found or has no columns');
+  if (columns.length === 0) throw notFound('Table not found or has no columns', 'table_not_found');
   res.json({ columns });
 });

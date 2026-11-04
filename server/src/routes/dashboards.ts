@@ -48,7 +48,7 @@ function view(r: DashboardRow, withDefinition: boolean) {
 
 async function load(id: number): Promise<DashboardRow> {
   const row = await queryOne<DashboardRow>('SELECT * FROM dashboards WHERE id = ?', [id]);
-  if (!row) throw notFound('Dashboard not found');
+  if (!row) throw notFound('Dashboard not found', 'dashboard_not_found');
   return row;
 }
 
