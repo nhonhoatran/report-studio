@@ -14,7 +14,6 @@ export interface UserRow extends Row {
   external_id: string | null;
   email: string | null;
   created_at: string;
-  preferences: string | null;
 }
 
 /** What the API returns for an account (never the hash). */

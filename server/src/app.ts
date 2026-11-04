@@ -9,6 +9,7 @@ import { logger } from './lib/logger.js';
 import { HttpError } from './lib/errors.js';
 import { attachUser } from './auth/middleware.js';
 import { authRouter } from './routes/auth.js';
+import { preferencesRouter } from './routes/preferences.js';
 import { entraRouter } from './routes/entra.js';
 import { datasourcesRouter } from './routes/datasources.js';
 import { datasetsRouter } from './routes/datasets.js';
@@ -47,6 +48,7 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true, version: process.env.npm_package_version ?? '0.1.0' }));
   app.use('/api/auth/entra', wrapAsync(entraRouter));
   app.use('/api/auth', wrapAsync(authRouter));
+  app.use('/api/preferences', wrapAsync(preferencesRouter));
   app.use('/api/datasources', wrapAsync(datasourcesRouter));
   app.use('/api/datasets', wrapAsync(datasetsRouter));
   app.use('/api/dashboards', wrapAsync(dashboardsRouter));

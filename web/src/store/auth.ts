@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { api, ApiError } from '@/api/client';
 import type { User } from '@/api/types';
-import { useTheme } from '@/store/theme';
 
 interface AuthState {
   user: User | null;
@@ -19,8 +18,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (get().status === 'loading') return;
     set({ status: 'loading' });
     try {
-      const { user, preferences } = await api.auth.me();
-      useTheme.getState().hydrate(preferences); // the look is applied before the pages render
+      const { user } = await api.auth.me();
       set({ user, status: 'ready' });
     } catch (err) {
       if (!(err instanceof ApiError && err.status === 401)) console.error(err);
@@ -28,8 +26,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
   },
   login: async (username, password) => {
-    const { user, preferences } = await api.auth.login(username, password);
-    useTheme.getState().hydrate(preferences);
+    const { user } = await api.auth.login(username, password);
     set({ user, status: 'ready' });
   },
   logout: async () => {

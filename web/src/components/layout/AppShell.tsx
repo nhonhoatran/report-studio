@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, Database, LayoutDashboard, LogOut, Menu, Settings } from 'lucide-react';
 import { useAuth } from '@/store/auth';
+import { useTheme } from '@/store/theme';
 import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +16,10 @@ export function AppShell() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const flush = /^\/dashboards\/\d+/.test(location.pathname);
+
+  // the signed-in user's look follows them: fetched once per user, applied over the browser's copy
+  const userId = user?.id;
+  useEffect(() => { if (userId) void useTheme.getState().load(); }, [userId]);
 
   // the drawer closes on Escape like a dialog would
   useEffect(() => {

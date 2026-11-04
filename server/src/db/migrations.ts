@@ -97,9 +97,23 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
     version: 4,
     name: 'user_preferences',
     sql: [
-      // Per-user appearance settings (theme mode, accent, chart palette, text size, corners,
-      // language). Client-owned JSON like dashboards.definition; the server checks shape and size.
+      // Superseded by version 5 (kept so databases that already recorded version 4 stay in step).
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences TEXT NULL`,
+    ],
+  },
+  {
+    version: 5,
+    name: 'user_preferences_table',
+    sql: [
+      // One row per user with their UI look (theme mode, accent, chart palette, text size, corners).
+      // The JSON bag is client-owned like dashboards.definition; the server checks shape and size.
+      `CREATE TABLE IF NOT EXISTS user_preferences (
+        user_id INT PRIMARY KEY,
+        prefs TEXT NOT NULL,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_prefs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB`,
+      `ALTER TABLE users DROP COLUMN IF EXISTS preferences`,
     ],
   },
 ];

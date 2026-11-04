@@ -9,7 +9,6 @@ import { findUserById, toPublicUser, toSession, type UserRow } from '../auth/use
 import { badRequest, conflict, forbidden, notFound, unauthorized } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
 import { config } from '../config.js';
-import { parsePreferencesColumn, preferencesSchema, serializePreferences } from '../auth/preferences.js';
 
 export const authRouter = Router();
 
@@ -31,7 +30,7 @@ authRouter.post('/login', async (req, res) => {
   const ok = await bcrypt.compare(body.password, user?.password_hash ?? DUMMY_HASH);
   if (!user || !user.password_hash || !ok) throw unauthorized('Invalid username or password', 'invalid_credentials');
   res.cookie(COOKIE_NAME, signSession(toSession(user)), sessionCookieOptions());
-  res.json({ user: toPublicUser(user), preferences: parsePreferencesColumn(user.preferences) });
+  res.json({ user: toPublicUser(user) });
 });
 
 authRouter.post('/logout', (_req, res) => {
@@ -42,19 +41,9 @@ authRouter.post('/logout', (_req, res) => {
 authRouter.get('/me', requireAuth, async (req, res) => {
   const user = await findUserById(req.user!.id);
   if (!user) throw unauthorized();
-  // preferences are read fresh from the row so a change made on another device shows up
-  res.json({ user: toPublicUser(user), preferences: parsePreferencesColumn(user.preferences) });
+  res.json({ user: toPublicUser(user) });
 });
 
-// --- per-user UI preferences (any signed-in user, own row only) ---
-const preferencesBodySchema = z.object({ preferences: preferencesSchema });
-
-authRouter.put('/preferences', requireAuth, async (req, res) => {
-  const body = parse(preferencesBodySchema, req.body);
-  const result = await execute('UPDATE users SET preferences = ? WHERE id = ?', [serializePreferences(body.preferences), req.user!.id]);
-  if (result.affectedRows === 0) throw notFound('User not found', 'user_not_found');
-  res.json({ preferences: body.preferences });
-});
 
 const changePasswordSchema = z.object({ currentPassword: z.string().min(1), newPassword: z.string().min(8).max(200) });
 

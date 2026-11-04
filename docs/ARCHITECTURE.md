@@ -23,11 +23,12 @@ Report Studio is a two-package npm workspace that ships as one container.
 |---|---|
 | `config.ts` | env parsing with safe defaults; refuses to boot in production without `APP_SECRET` / `ADMIN_PASSWORD`, with a half-configured `ENTRA_*` block, or with password login off and no Entra |
 | `db/metadata.ts`, `db/migrations.ts` | pool to the metadata DB, ordered migrations recorded in `schema_migrations`, first-admin seed |
-| `auth/` | bcrypt passwords, HS256 JWT in an `httpOnly` cookie (`rs_session`), `requireAuth` / `requireRole`; `users.ts` is the account row → API shape; `preferences.ts` validates the per-user UI bag stored in `users.preferences` (flat scalars, ≤ 4 KB, client-owned like a dashboard definition) |
+| `auth/` | bcrypt passwords, HS256 JWT in an `httpOnly` cookie (`rs_session`), `requireAuth` / `requireRole`; `users.ts` is the account row → API shape; `preferences.ts` validates the per-user UI bag stored in `user_preferences` (flat scalars, ≤ 4 KB, client-owned like a dashboard definition) |
 | `auth/entra.ts`, `auth/entraMapping.ts`, `auth/entraUsers.ts`, `routes/entra.ts` | Microsoft Entra ID sign-in: OIDC discovery (cached 24 h), authorization-code flow with PKCE, ID-token verification through the tenant's JWKS (`jose`), claim → account mapping (domain allow-list, app roles / groups → role), find-link-or-provision against `users` (`auth_provider`, `external_id`). The pending attempt (state, nonce, verifier, destination) lives in an AES-GCM encrypted `rs_entra` cookie, so there is no server-side session store |
 | `routes/datasources.ts` | CRUD, connection test, table & column introspection (`information_schema`) |
 | `routes/datasets.ts` | saved SQL datasets; SQL validated by `sqlGuard` and described with `SELECT … LIMIT 0` |
 | `routes/dashboards.ts` | dashboard documents (name + JSON `definition`), duplicate |
+| `routes/preferences.ts` | the signed-in user's own UI bag: `GET`, and `PUT` as an upsert into `user_preferences` |
 | `routes/query.ts` | runs one visual's semantic query; `/explain` shows the generated SQL |
 | `query/builder.ts` | semantic query → SQL: quoted identifiers, `?` params, GROUP BY positions, date buckets, LIMIT cap |
 | `query/sqlGuard.ts` | strips comments/literals, allows a single `SELECT`/`WITH`, rejects write/lock/`INTO` keywords |
@@ -93,11 +94,11 @@ The server validates shape and size only, so new widget options never need a mig
 | `components/editor/` | `FieldsPane` (draggable fields), `Canvas` (react-grid-layout, droppable widgets, 1 column under 640px), `VisualPane` (chart type, wells, filters, options), `WidgetChart` (react-query + states) |
 | `components/charts/ChartRenderer.tsx` | ECharts option builder for cartesian + pie, plus KPI card and table |
 | `store/editor.ts` | zustand store: definition, selection, dirty flag, drop logic (`autoPlace`: numbers → measures) |
-| `store/theme.ts` | the user's look: writes the preset attributes on `<html>`, mirrors them in `localStorage` (`rs.appearance`) for first paint, and saves them to `PUT /auth/preferences` (debounced) so they follow the user across devices. `useAuth` hydrates it from `/auth/me` and login; an empty server bag adopts the browser's current look. Charts re-read tokens on its `stamp` |
+| `store/theme.ts` | the user's look: writes the preset attributes on `<html>`, mirrors them in `localStorage` (`rs.appearance`) for first paint, loads them from `GET /preferences` once the shell mounts and saves changes with a debounced `PUT` (table `user_preferences`), so they follow the user across devices; an empty server bag adopts the browser's current look. The language is not part of it: it stays with the i18n store. Charts re-read tokens on its `stamp` |
 | `i18n/` | `LANGUAGES` registry (code, label, locale), `vi` (default) and `en` dictionaries; `useT()` is typed over the dictionary keys; plural forms via `Intl.PluralRules`; language = stored choice → browser language → `vi` |
 | `lib/errors.ts` | `describeError()` turns a thrown `ApiError` into text: the translated `errors.<code>` when known, else the server message |
 | `components/editor/AiSuggestDialog.tsx` | "Suggest with AI": prompt + provider choice, suggestion cards, adds widgets through the editor store |
-| `api/client.ts` | fetch wrapper; a 401 anywhere clears the session; `auth.providers()` tells the login page which methods to show, `auth.entraLoginUrl()` is the full-page link that starts SSO, `auth.updatePreferences()` saves the user's look |
+| `api/client.ts` | fetch wrapper; a 401 anywhere clears the session; `auth.providers()` tells the login page which methods to show, `auth.entraLoginUrl()` is the full-page link that starts SSO, `preferences.get()` / `preferences.update()` carry the user's look |
 
 Drag and drop: dnd-kit for *field → widget / well* (`DndContext` in `DashboardEditorPage`); react-grid-layout for *widget move / resize*. They do not conflict because grid dragging only starts on `.widget__header`.
 

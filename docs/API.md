@@ -8,19 +8,25 @@ All endpoints live under `/api`, speak JSON, and (except login/health) require t
 | Method | Path | Role | Body / notes |
 |---|---|---|---|
 | GET | `/auth/providers` | – | `{ local: boolean, entra: boolean }` — which sign-in methods the server offers |
-| POST | `/auth/login` | – | `{ username, password }` → `{ user, preferences }`, sets `rs_session` cookie (httpOnly, SameSite=Lax); 403 when `AUTH_LOCAL_LOGIN=false` |
+| POST | `/auth/login` | – | `{ username, password }` → `{ user }`, sets `rs_session` cookie (httpOnly, SameSite=Lax); 403 when `AUTH_LOCAL_LOGIN=false` |
 | GET | `/auth/entra/login?returnTo=/path` | – | browser navigation; stores the attempt in the `rs_entra` cookie (10 min) and redirects to Microsoft Entra (OIDC code flow + PKCE) |
 | GET | `/auth/entra/callback` | – | Entra redirect target: verifies state + ID token, finds/links/creates the account, sets `rs_session`, redirects to `returnTo`; on failure redirects to `/login?error=entra_denied\|entra_domain\|entra_no_account\|entra_state\|entra_failed` |
 | POST | `/auth/logout` | – | clears the cookie |
-| GET | `/auth/me` | any | `{ user, preferences }` (both read from the database, so a deleted account gets 401 and a preference change made on another device shows up) |
-| PUT | `/auth/preferences` | any | `{ preferences }` → `{ preferences }`; replaces the caller's own bag |
+| GET | `/auth/me` | any | `{ user }` (read from the database, so a deleted account gets 401) |
 | POST | `/auth/change-password` | any | `{ currentPassword, newPassword }`; 400 for an Entra account without a password |
 | GET | `/auth/users` | admin | `{ users }` |
 | POST | `/auth/users` | admin | `{ username, displayName, password, role }` — creates a password (`local`) account |
 | PUT | `/auth/users/:id` | admin | `{ displayName?, password?, role? }` |
 | DELETE | `/auth/users/:id` | admin | cannot delete yourself |
 
-`preferences` is the signed-in user's UI look, owned by the web client: a flat object of up to 32 identifier keys with string (≤ 60 chars), number or boolean values, at most 4 KB as JSON. The client currently stores `{ theme: 'light'|'dark'|'system', accent, palette, text, radius, lang }` — the preset names are listed in `web/src/store/theme.ts`; unknown values fall back to the defaults on the client.
+
+## Preferences
+| Method | Path | Role | Body / notes |
+|---|---|---|---|
+| GET | `/preferences` | any | `{ preferences }` — the caller's own UI look, `{}` until saved |
+| PUT | `/preferences` | any | `{ preferences }` → `{ preferences }`; replaces the caller's bag (upsert into `user_preferences`) |
+
+`preferences` is owned by the web client: a flat object of up to 32 identifier keys with string (≤ 60 chars), number or boolean values, at most 4 KB as JSON (400 `preferences_too_large` beyond that). The client stores `{ theme: 'light'|'dark'|'system', accent, palette, text, radius }` — preset names are listed in `web/src/store/theme.ts`; unknown values fall back to the defaults on the client. The language is not part of the bag; it stays a per-browser choice.
 
 ## Data sources
 | Method | Path | Role | Body / notes |
