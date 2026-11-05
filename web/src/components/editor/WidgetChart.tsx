@@ -100,7 +100,7 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; /** t
         <Button variant="ghost" size="sm" iconOnly icon={<Download size={13} />} onClick={() => setExportOpen(true)}>{t('editor.export')}</Button>
         {showMeta && <Button variant="ghost" size="sm" iconOnly icon={<Code2 size={13} />} onClick={() => setSqlOpen(true)}>{t('editor.showSql')}</Button>}
       </div>
-      <Modal open={!!drill} wide title={t('editor.drillTitle', { title: autoTitle(widget, t), value: drill?.value ?? '' })} onClose={() => setDrill(null)}>
+      <Modal open={!!drill} wide title={drill?.value !== undefined ? t('editor.drillTitleValue', { title: autoTitle(widget, t), value: drill.value }) : t('editor.drillTitle', { title: autoTitle(widget, t) })} onClose={() => setDrill(null)}>
         {drill && <DrillRows widget={drillWidget} extras={{ ...extras, page: undefined }} />}
       </Modal>
       <Modal open={exportOpen} title={t('editor.exportTitle')} onClose={() => setExportOpen(false)}>

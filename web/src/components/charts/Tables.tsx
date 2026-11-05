@@ -101,9 +101,15 @@ export function DataTable({ widget, result, paging, pick }: Props & { paging?: P
               onContextMenu={pick?.onDrill && firstDim ? (e) => { e.preventDefault(); pick.onDrill!(str(r[firstDim])); } : undefined}>
               {result.columns.map((c) => {
                 const f = cf(c.alias, r[c.alias]);
+                const text = numeric.has(c.alias) ? formatNumber(r[c.alias], fmt(c.alias), lang) : formatCell(r[c.alias], lang);
                 return (
                   <td key={c.alias} className={[numeric.has(c.alias) && 'num', maxima.has(c.alias) && 'bar', f?.className].filter(Boolean).join(' ') || undefined} style={{ ...barStyle(c.alias, r[c.alias]), ...f?.style }}>
-                    <CfIcon icon={f?.icon} />{numeric.has(c.alias) ? formatNumber(r[c.alias], fmt(c.alias), lang) : formatCell(r[c.alias], lang)}
+                    <CfIcon icon={f?.icon} />
+                    {pickable && c.alias === firstDim
+                      ? <button type="button" className="chart-table__pick" title={t('editor.pickHint')} onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && e.shiftKey && pick?.onDrill) { e.preventDefault(); pick.onDrill(str(r[firstDim!])); } }}
+                          onClickCapture={(e) => { if (e.shiftKey && pick?.onDrill) { e.preventDefault(); e.stopPropagation(); pick.onDrill(str(r[firstDim!])); } else { e.stopPropagation(); pick!.onSelect!(str(r[firstDim!])); } }}>{text}</button>
+                      : text}
                   </td>
                 );
               })}
@@ -221,7 +227,9 @@ export function Matrix({ widget, result, pick }: Props & { pick?: Pick }) {
               <tr key={node.key} className={parent ? 'matrix__parent' : undefined}>
                 <th scope="row" style={{ '--level': node.level - 1 } as CSSProperties} className={pick?.onSelect && node.level === 1 ? 'chart-table__row--pick' : undefined}
                   onClick={pick?.onSelect && node.level === 1 ? () => pick.onSelect!(node.path[0]!) : undefined}
-                  onContextMenu={pick?.onDrill && node.level === 1 ? (e) => { e.preventDefault(); pick.onDrill!(node.path[0]!); } : undefined}>
+                  onContextMenu={pick?.onDrill && node.level === 1 ? (e) => { e.preventDefault(); pick.onDrill!(node.path[0]!); } : undefined}
+                  onKeyDown={pick && node.level === 1 ? (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) { if (e.shiftKey) pick.onDrill?.(node.path[0]!); else pick.onSelect?.(node.path[0]!); } } : undefined}
+                  tabIndex={pick?.onSelect && node.level === 1 ? 0 : undefined} title={pick?.onSelect && node.level === 1 ? t('editor.pickHint') : undefined}>
                   <span className="matrix__row-head">
                     {rowLevels > 1 && (parent
                       ? <button type="button" className="matrix__toggle" aria-expanded={isOpen} title={t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })} onClick={() => toggle(node.key)}>{isOpen ? <Minus size={12} aria-hidden /> : <Plus size={12} aria-hidden />}<span className="sr-only">{t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })}</span></button>

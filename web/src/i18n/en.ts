@@ -64,8 +64,8 @@ export const en: Dictionary = {
     // export, paging
     export: 'Export data', exportTitle: 'Export the visual\'s data', exportHint: 'With the filters in force; numbers stay numbers in Excel. The server caps the row count.',
     exportCsv: 'Download CSV', exportExcel: 'Download Excel', exportPrint: 'Print / save the page as PDF',
-    crossFilter: 'Cross-filter: a click on this visual filters the others, and the other way round', crossFiltering: 'Filtering', clearCrossFilter: 'Clear this cross-filter',
-    drill: 'See the rows', drillTitle: 'Rows behind: {title} {value}',
+    crossFilter: 'Cross-filter: a click on this visual filters the others, and the other way round', crossFiltering: 'Filtering: {label}', clearCrossFilter: 'Clear this cross-filter', pickHint: 'Click to filter the other visuals; Shift + click (or right-click) for the rows behind it',
+    drill: 'See the rows', drillTitle: 'Rows behind: {title}', drillTitleValue: 'Rows behind: {title} · {value}',
     wellRegion: 'Region (province)', mapSection: 'Map', mapName: 'Base map', mapNameProperty: 'Feature property holding the region name', mapAliases: 'Name aliases',
     mapAliasesHelp: 'One per line: name in the data = name on the map (e.g. "HCM = Hồ Chí Minh"). Case, accents and "Tỉnh" / "Thành phố" prefixes match on their own.',
     mapUnmatched: { one: '{count} value matches no region: {names}', other: '{count} values match no region: {names}' }, mapMissing: 'The map "{name}" could not be loaded',
@@ -73,7 +73,7 @@ export const en: Dictionary = {
     // conditional formatting
     conditional: 'Conditional formatting', cfAddRule: 'Add rule', cfThreshold: 'Threshold', cfThresholdTo: 'To', cfColor: 'Colour', cfIcon: 'Icon', cfIconNone: 'No icon', cfIconUp: '▲ up / reached', cfIconDown: '▼ down / short',
     cfScale: 'Scale for the other cells', cfScales: { none: 'None', danger_success: 'Red → green (low → high)', success_danger: 'Green → red (low → high)', muted_primary: 'Light → strong' },
-    cfApply: 'Colour', cfText: 'The text', cfBackground: 'The cell', cfTotals: 'Also the totals',
+    cfApply: 'What takes the colour', cfText: 'The text', cfBackground: 'The cell', cfTotals: 'Also the totals',
     cfColors: { success: 'Green (reached)', danger: 'Red (warning)', warning: 'Amber (attention)', primary: 'Accent', muted: 'Grey' },
     // inside the visuals
     total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',

@@ -127,7 +127,7 @@ function ConditionalEditor({ cf, onChange }: { cf: ConditionalFormat | undefined
             <Select size="sm" aria-label={t('editor.filterOp')} value={r.op} onChange={(e) => setRule(r.id, { op: e.target.value as ConditionalOp })}>
               {CONDITIONAL_OPS.map((op) => <option key={op} value={op}>{t(`filterOp.${op}`)}</option>)}
             </Select>
-            <Input size="sm" type="number" aria-label={t('editor.cfThreshold')} value={Number.isFinite(r.value) ? r.value : ''} onChange={(e) => setRule(r.id, { value: Number(e.target.value) })} />
+            <Input size="sm" type="number" aria-label={t('editor.cfThreshold')} value={Number.isFinite(r.value) ? r.value : ''} onChange={(e) => setRule(r.id, { value: e.target.value === '' ? Number.NaN : Number(e.target.value) })} />
             {r.op === 'between' && <Input size="sm" type="number" aria-label={t('editor.cfThresholdTo')} value={r.value2 ?? ''} onChange={(e) => setRule(r.id, { value2: e.target.value === '' ? undefined : Number(e.target.value) })} />}
             <ColorSelect label={t('editor.cfColor')} value={r.color} onChange={(color) => setRule(r.id, { color })} />
             <Select size="sm" aria-label={t('editor.cfIcon')} value={r.icon ?? ''} onChange={(e) => setRule(r.id, { icon: (e.target.value || undefined) as 'up' | 'down' | undefined })}>

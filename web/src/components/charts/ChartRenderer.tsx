@@ -6,7 +6,7 @@ import type { OrderBy, QueryResult, Widget } from '@/api/types';
 import { useTheme } from '@/store/theme';
 import { useI18nStore, useT } from '@/i18n';
 import { ECHARTS_TYPES } from '@/lib/widget';
-import { EmptyState } from '@/components/ui/Feedback';
+import { EmptyState, Spinner } from '@/components/ui/Feedback';
 import { buildOption, readChartTheme } from './options';
 import { dimensionAliases, labelOthers, measureAliases, num, str } from './shape';
 import { DEFAULT_MAP, listMaps, loadMap, matchRegions, type Matched } from './maps';
@@ -67,6 +67,7 @@ export function ChartRenderer({ widget, result: raw, paging, pick }: Props) {
   }
 
   if (mapId && mapGeo.error) return <EmptyState compact title={t('editor.mapMissing', { name: mapId })} />;
+  if (mapId && !matched) return <Spinner block />;
   if (!option) return null;
   const note = matched && matched.unmatched.length > 0 ? t('editor.mapUnmatched', { count: matched.unmatched.length, names: matched.unmatched.slice(0, 5).join(', ') }) : null;
   // the category a mark stands for: its name on most series, the detail name on a scatter point

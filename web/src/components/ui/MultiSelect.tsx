@@ -45,9 +45,9 @@ export function MultiSelect<T extends string | number>({ label, value, options, 
         </summary>
         <div className="multiselect__menu" role="group" aria-labelledby={labelId}>
           {search && <Input size="sm" type="search" aria-label={search.placeholder} placeholder={search.placeholder} value={search.value} onChange={(e) => search.onChange(e.target.value)} />}
-          <Checkbox label={allLabel} checked={value.length === 0} onChange={() => onChange([])} />
+          <Checkbox type={single ? 'radio' : 'checkbox'} name={single ? id : undefined} label={allLabel} checked={value.length === 0} onChange={() => onChange([])} />
           {options.map((o) => (
-            <Checkbox key={String(o.value)} label={o.label} checked={value.includes(o.value)} onChange={(e) => toggle(o.value, e.target.checked)} />
+            <Checkbox key={String(o.value)} type={single ? 'radio' : 'checkbox'} name={single ? id : undefined} label={o.label} checked={value.includes(o.value)} onChange={(e) => toggle(o.value, e.target.checked)} />
           ))}
           {footer}
         </div>

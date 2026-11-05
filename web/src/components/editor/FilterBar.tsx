@@ -156,8 +156,8 @@ export function FilterBar({ editable, manage }: { /** edit mode: a change of val
       {crossFilters.length > 0 && (
         <div className="filter-bar__cross" role="group" aria-label={t('editor.crossFiltering')}>
           {crossFilters.map((cf) => (
-            <span key={cf.widgetId} className="badge">
-              {t('editor.crossFiltering')}: {cf.label}
+            <span key={cf.widgetId} className="well-chip filter-bar__chip">
+              <span className="truncate">{t('editor.crossFiltering', { label: cf.label })}</span>
               <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={() => removeCrossFilter(cf.widgetId)}>{t('editor.clearCrossFilter')}</Button>
             </span>
           ))}

@@ -53,12 +53,11 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 .filter-bar__range { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1); }
 /* the categories clicked on visuals: one chip each, with its own "remove", beside the filters */
 .filter-bar__cross { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); align-self: flex-end; min-height: var(--control-h-sm); }
-.filter-bar__cross .badge { height: var(--control-h-sm); color: var(--color-primary-text); border-color: var(--color-primary); background: var(--color-primary-soft); padding-right: 0; }
-.filter-bar__cross .btn { height: var(--space-5); width: var(--space-5); }
+.filter-bar__chip { color: var(--color-primary-text); border-color: var(--color-primary); background: var(--color-primary-soft); max-width: calc(var(--space-8) * 7); }
 .filter-bar__actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); align-self: flex-end; min-height: var(--control-h-sm); }
 
 /* the rows behind a visual, in a dialog: a bounded, scrolling table */
-.drill-rows { max-height: calc(100vh - 280px); min-height: calc(var(--space-8) * 4); overflow: auto; }
+.drill-rows { min-height: calc(var(--space-8) * 4); }
 
 /* Canvas */
 .canvas { position: relative; overflow: auto; background: var(--color-canvas); min-height: 0; padding: var(--space-4); }
@@ -116,7 +115,7 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 
 /* print / save as PDF: the canvas alone, on paper's white, every widget kept whole */
 @media print {
-  .app__sidebar, .app__header, .editor__bar, .page-tabs__tools, .filter-bar__tools, .filter-bar__actions, .pane, .widget__meta, .widget__actions, .toasts { display: none !important; }
+  .app__sidebar, .app__header, .editor__bar, .page-tabs__tools, .filter-bar__tools, .filter-bar__actions, .pane, .widget__meta, .widget__actions, .toasts, .chart-table__pager, .matrix__tools { display: none !important; }
   .app { grid-template-columns: 1fr; }
   .editor__body { grid-template-columns: 1fr; }
   .canvas { overflow: visible; background: transparent; padding: 0; }

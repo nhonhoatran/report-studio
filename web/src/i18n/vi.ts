@@ -53,7 +53,7 @@ export const vi = {
     // matrix hierarchy
     matrixExpand: 'Số cấp mở sẵn', expandToLevel: '{count} cấp', expandAllLevels: 'Tất cả', expandAll: 'Mở tất cả', collapseAll: 'Thu gọn tất cả', expandRow: 'Mở {name}', collapseRow: 'Thu gọn {name}', levelJoin: ' / ',
     analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình', sharedAxis: 'Đường dùng chung trục Y với cột',
-    dataAt: 'dữ liệu lúc {time}', fromCache: 'từ cache',
+    dataAt: 'dữ liệu lúc {time}', fromCache: 'kết quả lưu tạm',
     // top N, time comparison
     topN: 'Chỉ giữ N mục lớn nhất', topNAll: 'Tất cả', topNOthers: 'Gộp phần còn lại thành "Còn lại"', others: 'Còn lại',
     compare: 'So sánh với', compares: { previous_period: 'Kỳ trước', same_period_last_year: 'Cùng kỳ năm trước' }, comparePreviousShort: 'kỳ trước', compareLastYearShort: 'cùng kỳ năm trước', compareChange: '± %',
@@ -61,8 +61,8 @@ export const vi = {
     // export, paging
     export: 'Xuất dữ liệu', exportTitle: 'Xuất dữ liệu biểu đồ', exportHint: 'Theo đúng bộ lọc đang áp; số là số trong Excel. Số dòng tối đa do máy chủ đặt.',
     exportCsv: 'Tải CSV', exportExcel: 'Tải Excel', exportPrint: 'In / lưu PDF cả trang',
-    crossFilter: 'Lọc chéo: bấm vào biểu đồ này lọc các biểu đồ khác, và ngược lại', crossFiltering: 'Đang lọc', clearCrossFilter: 'Bỏ lọc chéo',
-    drill: 'Xem dòng gốc', drillTitle: 'Dòng gốc: {title} {value}',
+    crossFilter: 'Lọc chéo: bấm vào biểu đồ này lọc các biểu đồ khác, và ngược lại', crossFiltering: 'Đang lọc: {label}', clearCrossFilter: 'Bỏ lọc chéo', pickHint: 'Bấm để lọc các biểu đồ khác; Shift + bấm (hoặc chuột phải) để xem dòng gốc',
+    drill: 'Xem dòng gốc', drillTitle: 'Dòng gốc: {title}', drillTitleValue: 'Dòng gốc: {title} · {value}',
     wellRegion: 'Vùng (tỉnh / thành)', mapSection: 'Bản đồ', mapName: 'Bản đồ nền', mapNameProperty: 'Thuộc tính tên vùng trong bản đồ', mapAliases: 'Ghép tên',
     mapAliasesHelp: 'Mỗi dòng: tên trong dữ liệu = tên trên bản đồ (vd "HCM = Hồ Chí Minh"). Hoa / thường, dấu và tiền tố "Tỉnh", "Thành phố" tự khớp.',
     mapUnmatched: '{count} giá trị không khớp vùng nào: {names}', mapMissing: 'Không tải được bản đồ "{name}"',
