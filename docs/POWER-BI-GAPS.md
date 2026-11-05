@@ -6,7 +6,7 @@ Mỗi chức năng gồm: mục tiêu · người dùng thao tác ra sao · yêu
 
 Ưu tiên: **P1** = thiếu thì không chuyển được báo cáo Power BI phổ biến · **P2** = dùng được nhưng khác xa Power BI · **P3** = nên có.
 
-Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã làm. Các mục P1 (F1–F4) và F5 đã có từ nhánh này; cách làm được ghi ở `docs/ARCHITECTURE.md` (mục *Semantic query model*, *Dashboard document*).
+Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã làm. Toàn bộ F1–F15 đã có từ nhánh này (kèm ghi chú phạm vi ở từng mục); cách làm được ghi ở `docs/ARCHITECTURE.md` (mục *Semantic query model*, *Dashboard document*) và cách dùng ở `docs/USER-GUIDE.md`.
 
 ## Ràng buộc chung cho mọi chức năng
 
@@ -31,16 +31,16 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 | F3 | Báo cáo nhiều trang | P1 | — | Đã làm |
 | F4 | Phép tính "% trên tổng" (tỷ trọng) | P1 | F1 | Đã làm |
 | F5 | Ma trận nhiều cấp hàng, mở/thu, tổng phụ | P2 | — | Đã làm (một truy vấn, tổng phụ bằng window function; chưa tải cấp con theo yêu cầu) |
-| F6 | Định dạng có điều kiện | P2 | — | Chưa |
-| F7 | Bộ lọc phụ thuộc nhau | P2 | — | Chưa |
-| F8 | Bộ lọc danh sách có tìm kiếm, không cắt cụt | P2 | — | Chưa |
-| F9 | Cache kết quả truy vấn | P2 | — | Chưa |
-| F10 | So sánh theo thời gian (kỳ trước, cùng kỳ, lũy kế) | P2 | F1 | Chưa |
-| F11 | Lọc chéo khi bấm vào visual, drill-down / drill-through | P2 | — | Chưa |
-| F12 | Xuất Excel / CSV / PDF, phân trang bảng | P2 | — | Chưa |
-| F13 | Biểu đồ kết hợp dùng chung trục | P3 | — | Chưa |
-| F14 | Top N kèm nhóm "Còn lại" | P3 | — | Chưa |
-| F15 | Bản đồ theo vùng | P3 | — | Chưa |
+| F6 | Định dạng có điều kiện | P2 | — | Đã làm |
+| F7 | Bộ lọc phụ thuộc nhau | P2 | — | Đã làm |
+| F8 | Bộ lọc danh sách có tìm kiếm, không cắt cụt | P2 | — | Đã làm |
+| F9 | Cache kết quả truy vấn | P2 | — | Đã làm |
+| F10 | So sánh theo thời gian (kỳ trước, cùng kỳ, lũy kế) | P2 | F1 | Đã làm (lũy kế trong kỳ đang lọc; xem ghi chú) |
+| F11 | Lọc chéo khi bấm vào visual, drill-down / drill-through | P2 | — | Đã làm (lọc chéo, drill-through; drill-down theo cấp là ma trận F5) |
+| F12 | Xuất Excel / CSV / PDF, phân trang bảng | P2 | — | Đã làm (PDF qua hộp thoại in của trình duyệt) |
+| F13 | Biểu đồ kết hợp dùng chung trục | P3 | — | Đã làm |
+| F14 | Top N kèm nhóm "Còn lại" | P3 | — | Đã làm |
+| F15 | Bản đồ theo vùng | P3 | — | Đã làm (34 tỉnh thành 2025, dữ liệu MIT tự host) |
 
 ---
 
@@ -157,7 +157,7 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Nghiệm thu:** đặt 2 quy tắc thì ô đổi màu đúng ngưỡng ở cả hai theme. Đổi bộ lọc thì màu cập nhật theo.
 
-**Code liên quan:** `Tables.tsx` (đang có `dataBars`), `web/src/styles/tokens.css`.
+**Code liên quan:** `web/src/components/charts/conditional.ts` (quy tắc, thang màu), `Tables.tsx` (`CfIcon`, lớp `cf-text` / `cf-bg` / `cf-scale`), `VisualPane.tsx` (`ConditionalEditor` trong phần tùy chỉnh của measure). Quy tắc lưu ở `options.conditional[alias]`; màu là token (`success`, `danger`, `warning`, `primary`, `muted`).
 
 ## F7. Bộ lọc phụ thuộc nhau — P2
 
@@ -169,7 +169,7 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Nghiệm thu:** 3 bộ lọc lồng nhau thu hẹp đúng. Tắt tùy chọn thì về hành vi cũ.
 
-**Code liên quan:** `web/src/components/editor/FilterBar.tsx` (`useFilterValues` hiện gửi `filters: []`), `web/src/lib/filters.ts`.
+**Code liên quan:** `web/src/lib/filters.ts` (`filtersForChoices`), `FilterBar.tsx` (`useFilterValues`), `FilterDialog.tsx` (ô *Không thu hẹp theo bộ lọc khác* = `independent`). Giá trị đã chọn không còn trong dữ liệu vẫn giữ và được báo dưới bộ lọc.
 
 ## F8. Bộ lọc danh sách có tìm kiếm, không cắt cụt — P2
 
@@ -184,7 +184,7 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Nghiệm thu:** nguồn có hơn 10.000 giá trị vẫn tìm và chọn được bất kỳ giá trị nào. Không tải hết danh sách về trình duyệt.
 
-**Code liên quan:** `web/src/components/editor/FilterBar.tsx` (`VALUE_LIMIT = 500` đang cố định).
+**Code liên quan:** `FILTER_VALUE_LIMIT` (env, mặc định 200) qua `GET /config`; `FilterBar.tsx` (tìm `contains` ở server sau 300 ms ngừng gõ, *Tải thêm* theo trang, báo khi còn nhiều hơn); `components/ui/MultiSelect.tsx` (ô tìm, chế độ chọn một).
 
 ## F9. Cache kết quả truy vấn — P2
 
@@ -197,7 +197,7 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Nghiệm thu:** mở lại trong TTL thì không truy vấn nguồn. "Làm mới" thì truy vấn lại. Test xác nhận người khác bộ lọc dòng không nhận kết quả của nhau.
 
-**Code liên quan:** `server/src/routes/query.ts`, `server/src/query/executor.ts` (hiện chỉ cache pool kết nối). ROADMAP 0.3.
+**Code liên quan:** `server/src/query/cache.ts` (khóa = nguồn + SQL + tham số, nên bộ lọc dòng của từng người là một phần của khóa; test `cache.test.ts`), `routes/query.ts` (`runRequest`), cột `datasources.cache_ttl_seconds` (migration 7, ô *Giữ kết quả truy vấn* của nguồn) và `QUERY_CACHE_TTL_SECONDS` (mặc định 0 = tắt). Nút *Làm mới* gửi `fresh: true`; mỗi biểu đồ hiện "dữ liệu lúc …" và "(từ cache)".
 
 ## F10. So sánh theo thời gian — P2
 
@@ -209,7 +209,9 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Nghiệm thu:** chọn tháng 10 thì "cùng kỳ năm trước" lấy tháng 10 năm trước. Kỳ trước không có dữ liệu thì để trống, không báo 0%.
 
-**Phụ thuộc:** F1 (để tính % tăng giảm). Hiện chỉ thẻ KPI xu hướng có so với điểm liền trước (`web/src/components/charts/Cards.tsx`).
+**Phụ thuộc:** F1 (để tính % tăng giảm).
+
+**Code liên quan:** `server/src/query/compare.ts` (dời bộ lọc ngày lùi, dời chiều ngày tiến cùng khoảng, ghép theo giá trị chiều → cột `<alias>_prev`, `<alias>_change`), `routes/query.ts`, `builder.ts` (`cumulative`: `SUM(...) OVER (PARTITION BY các chiều khác ORDER BY ngày)`); client: *So sánh với* và *Lũy kế* trong tùy chỉnh measure. Ghi chú: lũy kế tính trong khoảng đang lọc, nên "từ đầu năm" = đặt bộ lọc ngày bắt đầu từ đầu năm; kỳ trước không có dữ liệu thì ô trống.
 
 ## F11. Lọc chéo và drill — P2
 
@@ -221,7 +223,7 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Nghiệm thu:** bấm thì lọc, bấm lại hoặc ✕ thì bỏ lọc. Drill-through tôn trọng bộ lọc dòng.
 
-**Code liên quan:** `web/src/components/charts/ChartRenderer.tsx`, `web/src/store/editor.ts` (`filterValues`). ROADMAP 0.2.
+**Code liên quan:** `store/editor.ts` (`crossFilters`, chỉ trong phiên), `lib/filters.ts` (`applyCrossFilters`: áp cho biểu đồ cùng trang có cột đó), `ChartRenderer.tsx` (`pick`: bấm = lọc chéo, chuột phải = dòng gốc), `WidgetChart.tsx` (`DrillRows`: `SELECT *` qua `/query` nên tôn trọng bộ lọc dòng), `FilterBar.tsx` (chip *Đang lọc: … ✕*); tùy chọn *Lọc chéo* của từng biểu đồ.
 
 ## F12. Xuất dữ liệu, phân trang bảng — P2
 
@@ -231,7 +233,7 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Nghiệm thu:** file xuất khớp số trên màn hình. Bảng hơn 10.000 dòng chuyển trang mượt.
 
-**Code liên quan:** ROADMAP 0.3 (CSV, phân trang) và 0.4 (PDF / Excel).
+**Code liên quan:** `server/src/routes/export.ts` (`POST /export`: CSV có BOM, Excel qua `exceljs`, tối đa `EXPORT_MAX_ROWS`), `WidgetChart.tsx` (hộp thoại *Xuất dữ liệu*, *In / lưu PDF* qua `@media print` trong `editor.css`), `offset` trong query model, `options.pageSize` của bảng (server sắp xếp và phân trang, `Tables.tsx` có thanh chuyển trang).
 
 ## F13. Biểu đồ kết hợp dùng chung trục — P3
 
@@ -239,13 +241,15 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 
 **Yêu cầu:** tùy chọn "Dùng chung trục Y" cho combo. Mặc định giữ như hiện tại.
 
-**Code liên quan:** `web/src/components/charts/options.ts` (combo hiện luôn vẽ 2 trục).
+**Code liên quan:** `options.sharedAxis`, `options.ts` (`combo`).
 
 ## F14. Top N kèm nhóm "Còn lại" — P3
 
 **Mục tiêu:** hiện N mục lớn nhất, phần còn lại gộp thành một dòng "Còn lại" để tổng vẫn đúng.
 
 **Yêu cầu:** N là tùy chọn của widget. Tính ở server.
+
+**Code liên quan:** `options.topN`, `options.topNOthers`; `routes/query.ts` (ba câu lệnh: xếp hạng chiều đầu theo measure đầu, truy vấn chính với `IN`, phần còn lại với `NOT IN` theo các chiều còn lại, nên "Còn lại" đúng cho mọi phép gộp kể cả công thức). Áp cho chiều đầu không nhóm theo ngày.
 
 ## F15. Bản đồ theo vùng — P3
 
@@ -254,6 +258,8 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 **Yêu cầu:** dữ liệu ranh giới tự host, không gọi dịch vụ bản đồ bên ngoài. Cách ghép tên vùng trong dữ liệu với ranh giới phải cấu hình được.
 
 **Ghi chú:** trước khi plan, tìm thư viện hoặc bộ dữ liệu ranh giới có sẵn (kiểm license) thay vì tự vẽ.
+
+**Code liên quan:** `web/public/maps/` (`vietnam-provinces.json`: 34 tỉnh thành sau Nghị quyết 2025, từ `thanglequoc/vietnamese-provinces-database` (MIT), đã rút gọn còn 350 KB; `index.json` đăng ký bản đồ; `README.md` ghi nguồn), `components/charts/maps.ts` (tải, đăng ký với ECharts, khớp tên bỏ dấu / tiền tố / bí danh), `options.ts` (`map`), tùy chọn *Bản đồ nền*, *Thuộc tính tên vùng*, *Ghép tên*.
 
 ---
 

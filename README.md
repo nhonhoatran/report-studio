@@ -8,11 +8,17 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 
 - **Kéo-thả xây dựng biểu đồ** kiểu Power BI: kéo trường vào biểu đồ (tự xếp số → *Giá trị*, chữ/ngày → *Trục*), hoặc thả vào ô *Trục / Chú giải / Giá trị*.
 - **Khung vẽ dạng lưới**: kéo để sắp xếp, kéo góc để đổi kích thước; tự xếp 1 cột trên điện thoại.
-- **19 loại hiển thị** theo bộ biểu đồ của Power BI: cột, thanh ngang, đường, vùng (xếp chồng / 100%), cột & đường (2 trục), phân tán / bong bóng, thác nước, phễu, tròn, vành khuyên, sơ đồ cây, bản đồ nhiệt, radar, đồng hồ đo (có mục tiêu), thẻ số, KPI xu hướng (so với kỳ trước, mục tiêu, sparkline), thẻ nhiều dòng, bảng (sắp xếp theo cột, dòng tổng, thanh dữ liệu), ma trận (pivot hàng × cột, tổng).
+- **20 loại hiển thị** theo bộ biểu đồ của Power BI (kể cả bản đồ theo vùng): cột, thanh ngang, đường, vùng (xếp chồng / 100%), cột & đường (2 trục), phân tán / bong bóng, thác nước, phễu, tròn, vành khuyên, sơ đồ cây, bản đồ nhiệt, radar, đồng hồ đo (có mục tiêu), thẻ số, KPI xu hướng (so với kỳ trước, mục tiêu, sparkline), thẻ nhiều dòng, bảng (sắp xếp theo cột, dòng tổng, thanh dữ liệu), ma trận (pivot hàng × cột, tổng).
 - Tùy chọn từng biểu đồ: vị trí chú giải, nhãn giá trị, đường tham chiếu và đường trung bình, định dạng số, sắp xếp, giới hạn dòng.
 - **Báo cáo nhiều trang**: thêm / đổi tên / sắp xếp / nhân bản / xóa trang, danh mục trang dạng tab, link mở đúng trang (`?page=`), bộ lọc áp cho cả báo cáo hoặc chỉ một trang.
 - **Tên hiển thị** cho trường và giá trị gộp ("Doanh số" thay vì "Sum doanh_so") ở tiêu đề cột, chú giải, tooltip, trục, thẻ.
 - **Ma trận nhiều cấp**: nhiều trường ở ô *Hàng* tạo cây mở / thu (⊞ / ⊟, mở tất cả / thu tất cả, mặc định mở tới cấp N), nhiều trường ở ô *Cột*; dòng cha là tổng phụ do nguồn dữ liệu tính cùng câu lệnh, mở / thu không truy vấn lại.
+- **Định dạng có điều kiện** (bảng, ma trận): quy tắc theo ngưỡng → màu token, kèm ▲ / ▼; thang màu liên tục; áp cho dòng tổng tùy chọn.
+- **Bộ lọc thông minh**: danh sách thu hẹp theo các bộ lọc khác, tìm ở máy chủ, tải theo trang (không cắt cụt); **cache kết quả** theo nguồn (khóa gồm quyền lọc dòng), nút Làm mới bỏ qua cache, hiện thời điểm dữ liệu.
+- **So sánh theo thời gian**: kỳ trước / cùng kỳ năm trước (cột kỳ trước và ± %), lũy kế trong kỳ; **Top N** kèm dòng "Còn lại" đúng tổng.
+- **Lọc chéo** khi bấm vào biểu đồ (chip bỏ được, không lưu), **xem dòng gốc** (drill-through) tôn trọng lọc dòng.
+- **Xuất CSV / Excel** (số giữ là số, theo bộ lọc đang áp), **in / lưu PDF**, bảng **phân trang** và sắp xếp ở máy chủ.
+- **Bản đồ theo vùng**: 34 tỉnh thành Việt Nam (2025) tự host (dữ liệu MIT), khớp tên bỏ dấu / tiền tố / bí danh; thêm bản đồ khác bằng một file GeoJSON.
 - **Đo lường tính toán**: công thức trên các giá trị gộp của biểu đồ (`[Lãi gộp] / [Doanh số]`, `sum(a) / count(*)`), tính sau GROUP BY trong SQL nên dòng tổng là tỷ lệ của các tổng; chia cho 0 cho ô trống; báo lỗi ngay chỗ gõ sai. **Hiển thị dưới dạng** % trên tổng chung / tổng nhóm cha / tổng cột (window function). Dòng tổng của bảng và ma trận do nguồn dữ liệu tính trong cùng câu lệnh.
 - **Bộ lọc bảng điều khiển** (slicer) áp dụng cho mọi biểu đồ: khoảng thời gian (preset hoặc từ–đến), loại thời gian (năm / quý / tháng…), danh sách giá trị đọc từ dữ liệu (chọn một hoặc nhiều). Giá trị lưu cùng bảng là mặc định cho người xem.
 - **Phân quyền RBAC + ABAC**: vai trò = tập quyền (3 vai trò có sẵn, thêm vai trò tùy ý, bật/tắt từng quyền); chính sách truy cập theo thuộc tính người dùng (ai xem bảng nào, truy vấn nguồn nào, cho phép / từ chối) và **lọc dòng** (row-level security: `region IN (thuộc tính region của người dùng)`).

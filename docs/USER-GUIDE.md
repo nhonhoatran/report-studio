@@ -83,11 +83,27 @@ Mỗi trường trong ô *Trục / Hàng / Cột / Giá trị* có nút **Tùy c
 ### Ma trận nhiều cấp
 Kéo nhiều trường vào ô **Hàng** (vd Khu vực → Kênh → Nhóm) và một hoặc nhiều trường vào ô **Cột** (vd Tháng). Ma trận hiện cấp 1; mỗi dòng cha mang tổng phụ của cấp đó cho từng cột, nhấn **⊞** để mở cấp dưới, **⊟** để thu; hai nút ở góc trên trái **mở tất cả / thu tất cả**. Tùy chọn **Số cấp mở sẵn** chọn người xem thấy sẵn mấy cấp. Tổng phụ, tổng hàng, tổng cột và tổng chung đều do nguồn dữ liệu tính trong cùng câu lệnh, nên phép tính (tỷ lệ) ở dòng cha là tỷ lệ của các tổng, và mở / thu không truy vấn lại. Giới hạn dòng áp lên cấp chi tiết nhất: khi kết quả bị cắt, dòng cha vẫn đúng nhưng thiếu dòng con, hãy lọc bớt hoặc nâng giới hạn.
 
+### Định dạng có điều kiện
+Trong *Tùy chỉnh trường* của một giá trị ở bảng / ma trận: **Thêm quy tắc** (điều kiện so với ngưỡng → màu, kèm ▲ / ▼ nếu muốn đọc được không cần màu), **Thang màu** cho các ô còn lại (theo vị trí giữa nhỏ nhất và lớn nhất của cột), tô **chữ** hay **nền ô**, và có áp cho **dòng tổng** hay không. Màu lấy từ bảng màu của giao diện nên đúng ở cả chế độ sáng lẫn tối.
+
+### So sánh theo thời gian, lũy kế, Top N
+- *Tùy chỉnh trường* của một giá trị: **So sánh với** kỳ trước hoặc cùng kỳ năm trước thêm hai cột "(kỳ trước)" và "(± %)"; kỳ lấy từ bộ lọc khoảng thời gian đang áp (kỳ trước = cùng số ngày liền trước), không có bộ lọc thì theo loại thời gian của trục (tháng trước, quý trước…). Kỳ trước không có dữ liệu thì ô trống. **Lũy kế trong kỳ** cộng dồn theo thời gian trong khoảng đang lọc: đặt bộ lọc từ đầu năm để có lũy kế từ đầu năm.
+- **Chỉ giữ N mục lớn nhất** (tùy chọn của biểu đồ cột, tròn, bảng…): giữ N giá trị đầu của trục theo giá trị đầu tiên, phần còn lại gộp thành dòng **Còn lại** nên tổng vẫn đúng.
+
+### Lọc chéo và xem dòng gốc
+Bấm vào một cột, một miếng, một dòng bảng hay dòng cấp 1 của ma trận: các biểu đồ khác trên trang có cột đó lọc theo, một chip **Đang lọc: … ✕** hiện cạnh bộ lọc; bấm lại hoặc ✕ để bỏ. Lọc chéo chỉ tồn tại trong phiên, không lưu; người soạn tắt được cho từng biểu đồ (*Lọc chéo*). Chuột phải vào một mục, hoặc nút **Xem dòng gốc** ở chân biểu đồ, mở bảng các dòng dữ liệu gốc đúng bộ lọc đang áp (kể cả lọc dòng theo quyền).
+
+### Xuất dữ liệu, in, phân trang
+Nút **Xuất dữ liệu** ở chân mỗi biểu đồ: **CSV**, **Excel** (số giữ là số; đúng bộ lọc đang áp; tối đa số dòng máy chủ đặt) hoặc **In / lưu PDF cả trang** (trang in chỉ còn khung vẽ). Bảng có tùy chọn **Số dòng mỗi trang**: máy chủ sắp xếp (bấm tiêu đề cột) và phân trang, thanh chuyển trang ở dưới bảng.
+
+### Bản đồ theo vùng
+Loại biểu đồ **Bản đồ theo vùng**: kéo cột tên tỉnh / thành vào ô *Vùng* và một giá trị. Bản đồ nền đi kèm là 34 tỉnh thành Việt Nam (2025), tự host, không gọi dịch vụ ngoài. Tên trong dữ liệu tự khớp bỏ dấu, hoa thường và tiền tố "Tỉnh" / "Thành phố"; tên khác hẳn thì khai ở **Ghép tên** (mỗi dòng `tên trong dữ liệu = tên trên bản đồ`). Giá trị không khớp vùng nào được liệt kê dưới bản đồ. Thêm bản đồ khác: một file GeoJSON và một dòng trong `web/public/maps/index.json`.
+
 ### Báo cáo nhiều trang
 Dãy **trang** nằm trên thanh lọc. Người xem bấm tên trang để chuyển; địa chỉ trang web mang theo trang đang xem (`?page=…`) nên gửi link là mở đúng trang. Người soạn có các nút bên phải dãy trang: **Đổi tên**, **Nhân bản**, **Chuyển trái / phải**, **Xóa trang** (có xác nhận; trang cuối cùng không xóa được) và **Thêm trang**. Mỗi trang có biểu đồ và bố cục riêng; bảng điều khiển tạo trước khi có trang được đọc như một trang.
 
 ### Bộ lọc bảng điều khiển (slicer)
-Thanh lọc nằm trên khung vẽ và áp dụng cho **mọi biểu đồ** trên bảng, như slicer của Power BI. Khi báo cáo có nhiều trang, mục *Phạm vi* của bộ lọc chọn **Cả báo cáo** (hiện ở mọi trang, giữ nguyên lựa chọn khi chuyển trang) hoặc **chỉ một trang**. Người có quyền *Thêm / sửa / xóa bộ lọc bảng điều khiển* (mặc định: Quản trị) nhấn **Thêm bộ lọc** và chọn một trong ba loại:
+Thanh lọc nằm trên khung vẽ và áp dụng cho **mọi biểu đồ** trên bảng, như slicer của Power BI. Khi báo cáo có nhiều trang, mục *Phạm vi* của bộ lọc chọn **Cả báo cáo** (hiện ở mọi trang, giữ nguyên lựa chọn khi chuyển trang) hoặc **chỉ một trang**. Danh sách giá trị **thu hẹp theo các bộ lọc khác** cùng nguồn (chọn "Kênh = Bán buôn" thì "Nhóm" chỉ còn nhóm của Bán buôn; tắt bằng *Không thu hẹp theo bộ lọc khác*), có ô **tìm** (tìm ở máy chủ) và **Tải thêm** khi còn nhiều giá trị, nên danh sách hàng chục nghìn mục vẫn chọn được. Giá trị đã chọn mà không còn trong dữ liệu vẫn giữ và được báo. Người có quyền *Thêm / sửa / xóa bộ lọc bảng điều khiển* (mặc định: Quản trị) nhấn **Thêm bộ lọc** và chọn một trong ba loại:
 
 | Loại | Lọc gì | Cách áp dụng |
 |---|---|---|
@@ -96,6 +112,9 @@ Thanh lọc nằm trên khung vẽ và áp dụng cho **mọi biểu đồ** tr�
 | Danh sách giá trị | một cột bất kỳ | giá trị riêng biệt đọc từ dữ liệu, "Tất cả" mặc định; chọn một hoặc nhiều |
 
 Một bộ lọc theo cột áp dụng cho mọi biểu đồ **cùng nguồn dữ liệu** mà bảng / bộ dữ liệu của biểu đồ có cột cùng tên, nên không bao giờ sinh SQL lỗi. Giá trị đang chọn lúc **Lưu** là mặc định cho người xem; người xem đổi giá trị chỉ trong phiên của họ và nhấn **Về mặc định** để quay lại.
+
+### Cache kết quả
+Mỗi nguồn dữ liệu có **Giữ kết quả truy vấn (giây)**: trong thời gian đó cùng một truy vấn (cùng bộ lọc, cùng quyền lọc dòng) trả kết quả đã có thay vì hỏi nguồn; để trống thì theo `QUERY_CACHE_TTL_SECONDS` của máy chủ (mặc định tắt). Nút **Làm mới** bỏ qua cache; chân mỗi biểu đồ ghi "dữ liệu lúc …" và "(từ cache)".
 
 ## 4. Người dùng & quyền
 Phân quyền gồm hai lớp:
