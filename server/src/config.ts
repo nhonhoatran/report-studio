@@ -38,7 +38,7 @@ const entraClientSecret = env('ENTRA_CLIENT_SECRET', '');
 
 export const config = {
   isProd,
-  port: envInt('PORT', 4000),
+  port: envInt('PORT', 18400),
   host: env('HOST', '0.0.0.0'),
   logLevel: env('LOG_LEVEL', isProd ? 'info' : 'debug'),
 

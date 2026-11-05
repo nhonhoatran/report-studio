@@ -67,7 +67,7 @@ Report Studio đăng nhập qua Entra ID bằng OpenID Connect (authorization co
 2. **Overview**: copy *Application (client) ID* → `ENTRA_CLIENT_ID`, *Directory (tenant) ID* → `ENTRA_TENANT_ID`.
 3. **Certificates & secrets → New client secret**: copy *Value* → `ENTRA_CLIENT_SECRET`.
 4. (Nên làm) **Token configuration → Add optional claim → ID → `email`** để tài khoản có e-mail; **App roles** tạo ví dụ `ReportStudio.Admin`, `ReportStudio.Editor`, `ReportStudio.Viewer` rồi gán người dùng/nhóm trong **Enterprise applications → Users and groups**, và khai báo `ENTRA_ADMIN_ROLES=ReportStudio.Admin` … Người không có role nào được gán sẽ nhận `ENTRA_DEFAULT_ROLE`; admin vẫn đổi được vai trò trong ứng dụng khi không dùng ánh xạ.
-5. Điền các biến `ENTRA_*` vào `.env`, khởi động lại. Khi chạy dev (Vite :5173) đặt `ENTRA_REDIRECT_URI=http://localhost:5173/api/auth/entra/callback` và đăng ký đúng URI đó.
+5. Điền các biến `ENTRA_*` vào `.env`, khởi động lại. Khi chạy dev (Vite :18401) đặt `ENTRA_REDIRECT_URI=http://localhost:18401/api/auth/entra/callback` và đăng ký đúng URI đó.
 
 Giới hạn ai được vào: bật *Assignment required* trên Enterprise application, hoặc `ENTRA_ALLOWED_DOMAINS=congty.vn`, hoặc `ENTRA_AUTO_PROVISION=false` (chỉ tài khoản đã được admin tạo trước với tên đăng nhập = UPN/e-mail mới vào được; lần đầu đăng nhập tài khoản đó được liên kết với Entra và vẫn giữ mật khẩu cũ). Khi SSO đã chạy ổn và có ít nhất một admin đăng nhập qua Entra, đặt `AUTH_LOCAL_LOGIN=false` để ẩn form mật khẩu.
 
@@ -78,7 +78,7 @@ Yêu cầu: Node.js ≥ 20, MariaDB 10.6+ (hoặc chạy `docker compose up -d m
 ```bash
 npm install
 cp server/.env.example server/.env   # chỉnh META_DB_* nếu cần
-npm run dev                          # API :4000 + Vite :5173 (proxy /api)
+npm run dev                          # API :18400 + Vite :18401 (proxy /api)
 ```
 
 Lệnh khác:

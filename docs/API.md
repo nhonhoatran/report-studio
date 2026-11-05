@@ -136,6 +136,6 @@ Users carry `permissions` (what their role grants) and `attributes` (`{ key: [va
 Example session with curl:
 
 ```bash
-curl -c c.txt -H 'content-type: application/json' -d '{"username":"admin","password":"admin123"}' http://localhost:4000/api/auth/login
-curl -b c.txt -H 'content-type: application/json' -d '{"datasourceId":1,"source":{"type":"table","table":"v_sales"},"dimensions":[{"field":"region"}],"measures":[{"field":"revenue","agg":"sum"}]}' http://localhost:4000/api/query
+curl -c c.txt -H 'content-type: application/json' -d '{"username":"admin","password":"admin123"}' http://localhost:18400/api/auth/login
+curl -b c.txt -H 'content-type: application/json' -d '{"datasourceId":1,"source":{"type":"table","table":"v_sales"},"dimensions":[{"field":"region"}],"measures":[{"field":"revenue","agg":"sum"}]}' http://localhost:18400/api/query
 ```
