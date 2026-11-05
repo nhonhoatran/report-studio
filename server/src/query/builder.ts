@@ -263,8 +263,9 @@ export function buildSelect(req: QueryRequest, fromClause: string, maxRows: numb
     return a;
   };
 
+  const offset = req.offset ? ` OFFSET ${Math.floor(req.offset)}` : '';
   if (req.dimensions.length === 0 && req.measures.length === 0) {
-    const sql = `SELECT * FROM ${fromClause}${where} LIMIT ${limit + 1}`;
+    const sql = `SELECT * FROM ${fromClause}${where} LIMIT ${limit + 1}${offset}`;
     return { sql, params: whereParams, columns: [], limit };
   }
 
@@ -335,7 +336,7 @@ export function buildSelect(req: QueryRequest, fromClause: string, maxRows: numb
     ? buildOrderBy(req.orderBy, orderable)
     : req.dimensions.length ? ` ORDER BY ${req.dimensions.map((_, i) => i + 1).join(', ')}` : '';
 
-  const sql = `SELECT ${distinct}${selects.join(', ')} FROM ${fromClause}${where}${groupBy}${orderBy} LIMIT ${limit + 1}`;
+  const sql = `SELECT ${distinct}${selects.join(', ')} FROM ${fromClause}${where}${groupBy}${orderBy} LIMIT ${limit + 1}${offset}`;
   return { sql, params: [...selectParams, ...whereParams], columns, limit, totals, subtotals };
 }
 

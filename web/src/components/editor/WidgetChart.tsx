@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Code2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Widget } from '@/api/types';
-import { useT } from '@/i18n';
+import { useI18nStore, useT } from '@/i18n';
+import { formatDateTime } from '@/lib/format';
 import { useEditor, usePageFilters } from '@/store/editor';
 import { CHART_SPECS, invalidFormula, isRunnable, missingWells, toQueryRequest, widgetQueryKey } from '@/lib/widget';
 import { applyDashboardFilters, needsSourceFields } from '@/lib/filters';
@@ -14,9 +15,14 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 
 /** Runs the widget's query and renders it with loading / error / empty states. */
-export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showMeta?: boolean }) {
+/** A refresh pressed this recently makes the next fetch skip the server's result cache. */
+const REFRESH_WINDOW_MS = 5_000;
+
+export function WidgetChart({ widget, showMeta = true }: { widget: Widget; /** the editor's extras: the SQL button */ showMeta?: boolean }) {
   const t = useT();
+  const lang = useI18nStore((s) => s.lang);
   const [sqlOpen, setSqlOpen] = useState(false);
+  const refreshedAt = useEditor((s) => s.refreshedAt);
   const runnable = isRunnable(widget);
   const missing = missingWells(widget);
   // a formula that does not parse or names a missing measure is reported in the pane; the query waits
@@ -29,8 +35,8 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
   const extras = useMemo(() => applyDashboardFilters(widget, dashboardFilters, filterValues, fields.data), [widget, dashboardFilters, filterValues, fields.data]);
   const fieldsSettled = !wantFields || fields.isSuccess || fields.isError;
   const query = useQuery({
-    queryKey: widgetQueryKey(widget, extras),
-    queryFn: ({ signal }) => api.query.run(toQueryRequest(widget, extras)!, signal),
+    queryKey: [...widgetQueryKey(widget, extras), refreshedAt],
+    queryFn: ({ signal }) => api.query.run({ ...toQueryRequest(widget, extras)!, fresh: Date.now() - refreshedAt < REFRESH_WINDOW_MS || undefined }, signal),
     enabled: runnable && !missing && !brokenFormula && fieldsSettled,
     staleTime: 30_000,
     retry: false,
@@ -48,13 +54,14 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
       <div className={['widget__body', query.isFetching && 'widget__body--refreshing'].filter(Boolean).join(' ')}>
         <ChartRenderer widget={widget} result={result} />
       </div>
-      {showMeta && (
-        // editors only: row count, duration and the SQL, in a chip that appears on hover
-        <div className="widget__meta">
-          <span>{result.truncated ? t('editor.truncated', { count: result.rowCount }) : t('editor.rows', { count: result.rowCount })}, {t('editor.ms', { ms: result.durationMs })}</span>
-          <Button variant="ghost" size="sm" iconOnly icon={<Code2 size={13} />} onClick={() => setSqlOpen(true)}>{t('editor.showSql')}</Button>
-        </div>
-      )}
+      {/* row count, duration and when the data was read, in a chip that appears on hover; the SQL for editors */}
+      <div className="widget__meta">
+        <span>
+          {result.truncated ? t('editor.truncated', { count: result.rowCount }) : t('editor.rows', { count: result.rowCount })}, {t('editor.ms', { ms: result.durationMs })}
+          {result.dataAt && ` · ${t('editor.dataAt', { time: formatDateTime(result.dataAt, lang) })}${result.fromCache ? ` (${t('editor.fromCache')})` : ''}`}
+        </span>
+        {showMeta && <Button variant="ghost" size="sm" iconOnly icon={<Code2 size={13} />} onClick={() => setSqlOpen(true)}>{t('editor.showSql')}</Button>}
+      </div>
       <Modal open={sqlOpen} title={t('editor.sqlTitle')} onClose={() => setSqlOpen(false)} wide>
         <pre className="sql-box">{result.sql}</pre>
       </Modal>

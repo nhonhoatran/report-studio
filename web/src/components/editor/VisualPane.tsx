@@ -358,6 +358,9 @@ export function VisualPane() {
         {has('showValues') && (
           <Checkbox label={t('editor.showValues')} checked={!!o.showValues} onChange={(e) => setOptions({ showValues: e.target.checked })} />
         )}
+        {has('series') && (
+          <Checkbox label={t('editor.sharedAxis')} checked={!!o.sharedAxis} onChange={(e) => setOptions({ sharedAxis: e.target.checked })} />
+        )}
         {has('totals') && (
           <Checkbox label={t('editor.showTotals')} checked={!!o.showTotals} onChange={(e) => setOptions({ showTotals: e.target.checked })} />
         )}

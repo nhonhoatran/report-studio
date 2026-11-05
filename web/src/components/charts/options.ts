@@ -208,20 +208,22 @@ function combo(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
   // each axis reads as percents when every series drawn on it is a percent measure
   const columnAliases = shaped.series.filter((s) => roleOf(s.alias) === 'column').map((s) => s.alias);
   const lineAliases = shaped.series.filter((s) => roleOf(s.alias) === 'line').map((s) => s.alias);
-  const val = valueAxis(ctx, allPercent(widget, hasColumn ? columnAliases : lineAliases, ctx), false);
+  // columns and lines of one unit (actual against plan) read truly only on one axis
+  const twoAxes = hasLine && hasColumn && !widget.options.sharedAxis;
+  const val = valueAxis(ctx, allPercent(widget, twoAxes && hasColumn ? columnAliases : [...columnAliases, ...lineAliases], ctx), false);
   const lineAxis = valueAxis(ctx, allPercent(widget, lineAliases, ctx), false);
   return {
     ...base(widget, ctx, showLegend, 'axis'),
     grid: gridOption(showLegend, pos, th),
     xAxis: categoryAxis(shaped.categories, th),
-    yAxis: hasLine && hasColumn ? [val, { ...lineAxis, splitLine: { show: false } }] : val,
+    yAxis: twoAxes ? [val, { ...lineAxis, splitLine: { show: false } }] : val,
     series: shaped.series.map((s, i): SeriesOption => {
       const line = roleOf(s.alias) === 'line';
       const fmt = fmtOf(widget, s.alias, ctx);
       return {
         name: s.name,
         type: line ? 'line' : 'bar',
-        yAxisIndex: line && hasColumn ? 1 : 0,
+        yAxisIndex: line && twoAxes ? 1 : 0,
         data: s.data,
         smooth: line ? LINE_SMOOTHNESS : undefined,
         barMaxWidth: BAR_MAX_WIDTH,

@@ -155,4 +155,12 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
       ) ENGINE=InnoDB`,
     ],
   },
+  {
+    version: 7,
+    name: 'datasource_cache_ttl',
+    sql: [
+      // seconds the server keeps a query result of this source; NULL = the QUERY_CACHE_TTL_SECONDS default
+      `ALTER TABLE datasources ADD COLUMN IF NOT EXISTS cache_ttl_seconds INT NULL AFTER use_ssl`,
+    ],
+  },
 ];

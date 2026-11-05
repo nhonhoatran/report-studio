@@ -108,7 +108,7 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
     if (ed.dirty) setLeaveTo(to);
     else navigate(to);
   };
-  const refresh = () => qc.invalidateQueries({ queryKey: ['widget-query'] });
+  const refresh = () => { ed.refresh(); void qc.invalidateQueries({ queryKey: ['widget-query'] }); };
 
   if (dashboard.isLoading || dashboard.error) {
     return (

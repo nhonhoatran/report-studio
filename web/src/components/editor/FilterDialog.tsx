@@ -100,6 +100,9 @@ export function FilterDialog({ open, initial, onClose }: { open: boolean; initia
           {form.kind === 'list' && (
             <Checkbox className="span-2" label={t('filters.multi')} checked={form.multi !== false} onChange={(e) => set({ multi: e.target.checked })} />
           )}
+          {form.kind === 'list' && (
+            <Checkbox className="span-2" label={t('filters.independent')} checked={form.independent === true} onChange={(e) => set({ independent: e.target.checked || undefined })} />
+          )}
         </div>
       </form>
     </Modal>

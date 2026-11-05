@@ -96,6 +96,12 @@ export const config = {
     maxRows: envInt('QUERY_MAX_ROWS', 5000),
     timeoutSeconds: envInt('QUERY_TIMEOUT_SECONDS', 30),
     poolSizePerSource: envInt('QUERY_POOL_SIZE', 4),
+    // result cache: seconds a data source's answers are kept unless the source sets its own; 0 = off
+    cacheTtlSeconds: envInt('QUERY_CACHE_TTL_SECONDS', 0),
+    cacheMaxEntries: envInt('QUERY_CACHE_MAX_ENTRIES', 500),
+    // how many distinct values a list filter loads per page, and how many rows an export may hold
+    filterValueLimit: envInt('FILTER_VALUE_LIMIT', 200),
+    exportMaxRows: envInt('EXPORT_MAX_ROWS', 50000),
   },
 
   // AI suggestions: how long one provider call may take.

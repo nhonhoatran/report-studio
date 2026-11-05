@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, RotateCcw, Settings2, X } from 'lucide-react';
 import { api } from '@/api/client';
@@ -6,26 +6,51 @@ import type { DashboardFilter, DateBucket, DatePreset, FilterValue } from '@/api
 import { DATE_PRESETS } from '@/api/types';
 import { useT } from '@/i18n';
 import { useEditor, usePageFilters } from '@/store/editor';
-import { GRAIN_BUCKETS, defaultFilterValue, isFilterActive, isFilterComplete } from '@/lib/filters';
+import { GRAIN_BUCKETS, defaultFilterValue, filtersForChoices, isFilterActive, isFilterComplete } from '@/lib/filters';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { FilterDialog } from './FilterDialog';
-import { sourceKeyOf } from './useSourceFields';
+import { sourceKeyOf, useSourceFields } from './useSourceFields';
 
-const VALUE_LIMIT = 500;
+/** How long typing may pause before the choices are searched on the server. */
+const SEARCH_DEBOUNCE_MS = 300;
+/** The server's page size, until GET /config answers. */
+const FALLBACK_VALUE_LIMIT = 200;
 
-/** The distinct values of a list filter's column, read through the ordinary query route. */
-function useFilterValues(filter: DashboardFilter) {
+function useDebounced<T>(value: T, ms: number): T {
+  const [out, setOut] = useState(value);
+  useEffect(() => { const h = setTimeout(() => setOut(value), ms); return () => clearTimeout(h); }, [value, ms]);
+  return out;
+}
+
+/**
+ * The distinct values of a list filter's column, read through the ordinary query route: narrowed
+ * by the report's other filters (so "Nhóm" only lists the groups of the chosen "Kênh"), searched
+ * on the server with `contains`, and read a page at a time.
+ */
+function useFilterValues(filter: DashboardFilter, search: string, pages: number) {
+  const filters = useEditor((s) => s.definition.filters);
+  const values = useEditor((s) => s.filterValues);
+  const fields = useSourceFields(filter.datasourceId ?? null, filter.source);
+  const limit = useQuery({ queryKey: ['client-config'], queryFn: () => api.config.get(), staleTime: Infinity }).data?.filterValueLimit ?? FALLBACK_VALUE_LIMIT;
+  const narrowing = useMemo(() => filtersForChoices(filter, filters, values, fields.data), [filter, filters, values, fields.data]);
+  const term = search.trim();
   return useQuery({
-    queryKey: ['filter-values', filter.datasourceId, sourceKeyOf(filter.source), filter.field],
+    queryKey: ['filter-values', filter.datasourceId, sourceKeyOf(filter.source), filter.field, narrowing, term, pages, limit],
     queryFn: async () => {
-      const r = await api.query.run({ datasourceId: filter.datasourceId!, source: filter.source!, dimensions: [{ field: filter.field!, bucket: 'none' }], measures: [], filters: [], orderBy: [], limit: VALUE_LIMIT });
+      const r = await api.query.run({
+        datasourceId: filter.datasourceId!, source: filter.source!, dimensions: [{ field: filter.field!, bucket: 'none' }], measures: [],
+        filters: [...narrowing.map(({ field, op, value, values: vs }) => ({ field, op, value, values: vs })), ...(term ? [{ field: filter.field!, op: 'contains' as const, value: term }] : [])],
+        orderBy: [], limit: limit * pages,
+      });
       const alias = r.columns[0]?.alias;
-      return alias ? r.rows.map((row) => row[alias]).filter((v): v is string | number => typeof v === 'string' || typeof v === 'number') : [];
+      const list = alias ? r.rows.map((row) => row[alias]).filter((v): v is string | number => typeof v === 'string' || typeof v === 'number') : [];
+      return { values: list, more: r.truncated };
     },
     enabled: filter.kind === 'list' && isFilterComplete(filter),
     staleTime: 60_000,
+    placeholderData: (prev) => prev,
   });
 }
 
@@ -58,26 +83,28 @@ function GrainControl({ filter, value, onChange }: { filter: DashboardFilter; va
 
 function ListControl({ filter, value, onChange }: { filter: DashboardFilter; value: FilterValue; onChange: (v: FilterValue) => void }) {
   const t = useT();
-  const choices = useFilterValues(filter);
-  const options = choices.data ?? [];
+  const [search, setSearch] = useState('');
+  const [pages, setPages] = useState(1);
+  const term = useDebounced(search, SEARCH_DEBOUNCE_MS);
+  const choices = useFilterValues(filter, term, pages);
+  const options = choices.data?.values ?? [];
   const selected = value.values ?? [];
-  // a saved choice that the data no longer returns stays selectable, so the filter keeps acting
+  // a saved choice that the data no longer returns stays selectable, so the filter keeps acting; the reader is told
   const all = Array.from(new Set<string | number>([...options, ...selected]));
-  if (filter.multi) {
-    return (
-      <MultiSelect size="sm" label={filter.label} value={selected} onChange={(values) => onChange({ values })}
-        options={all.map((v) => ({ value: v, label: String(v) }))} allLabel={choices.isLoading ? t('filters.loadingValues') : t('filters.all')} summary={t('common.selected', { count: selected.length })} />
-    );
-  }
+  const missing = term ? 0 : selected.filter((v) => !options.includes(v)).length;
+  const more = choices.data?.more === true;
   return (
-    <Select size="sm" label={filter.label} value={selected.length ? String(selected[0]) : ''} onChange={(e) => {
-      const raw = e.target.value;
-      const match = all.find((v) => String(v) === raw);
-      onChange({ values: raw === '' || match === undefined ? [] : [match] });
-    }}>
-      <option value="">{choices.isLoading ? t('filters.loadingValues') : t('filters.all')}</option>
-      {all.map((v) => <option key={String(v)} value={String(v)}>{String(v)}</option>)}
-    </Select>
+    <MultiSelect size="sm" label={filter.label} value={selected} single={!filter.multi} onChange={(values) => onChange({ values })}
+      options={all.map((v) => ({ value: v, label: String(v) }))}
+      allLabel={choices.isLoading ? t('filters.loadingValues') : t('filters.all')} summary={t('common.selected', { count: selected.length })}
+      search={{ value: search, onChange: (v) => { setSearch(v); setPages(1); }, placeholder: t('filters.search') }}
+      footer={more && (
+        <div className="multiselect__more">
+          <span className="text-sm text-muted">{t('filters.more')}</span>
+          <Button variant="ghost" size="sm" onClick={() => setPages((p) => p + 1)} loading={choices.isFetching}>{t('filters.loadMore')}</Button>
+        </div>
+      )}
+      help={missing > 0 && !choices.isLoading ? t('filters.missingSelected', { count: missing }) : undefined} />
   );
 }
 

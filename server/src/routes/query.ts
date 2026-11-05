@@ -5,6 +5,7 @@ import { forbidden } from '../lib/errors.js';
 import { parse } from '../lib/validate.js';
 import { buildSelect, extractSubtotals, extractTotals, quoteQualified } from '../query/builder.js';
 import { poolForDatasource, runOnPool } from '../query/executor.js';
+import { ResultCache, resultCache } from '../query/cache.js';
 import { fieldsFromPackets } from '../query/introspect.js';
 import { assertReadOnlySelect } from '../query/sqlGuard.js';
 import { queryRequestSchema, type QueryRequest, type QueryResult } from '../query/types.js';
@@ -46,6 +47,13 @@ export async function executeQuery(req: QueryRequest, user: RequestUser): Promis
   const secured: QueryRequest = { ...req, filters: [...req.filters, ...(await rowFilters(user, req.datasourceId))] };
   const from = await resolveFrom(secured, user);
   const built = buildSelect(secured, from, config.query.maxRows);
+  // the cache key holds the SQL and every parameter, the row filters of this user's policies included
+  const ttl = ds.cache_ttl_seconds === null || ds.cache_ttl_seconds === undefined ? config.query.cacheTtlSeconds : Number(ds.cache_ttl_seconds);
+  const key = ResultCache.key(req.datasourceId, built.sql, built.params);
+  if (!req.fresh && ttl > 0) {
+    const hit = resultCache.get(key);
+    if (hit) return { ...hit.value, fromCache: true };
+  }
   const { rows, fields, durationMs } = await runOnPool(poolForDatasource(ds), built.sql, built.params);
   const truncated = rows.length > built.limit;
   const kept = (truncated ? rows.slice(0, built.limit) : rows) as Record<string, unknown>[];
@@ -55,7 +63,9 @@ export async function executeQuery(req: QueryRequest, user: RequestUser): Promis
   const columns = built.columns.length
     ? built.columns
     : fieldsFromPackets(fields).map((f) => ({ alias: f.name, role: 'column' as const, source: f.name }));
-  return { columns, rows: data, rowCount: data.length, truncated, durationMs, sql: built.sql, totals, subtotals };
+  const result: QueryResult = { columns, rows: data, rowCount: data.length, truncated, durationMs, sql: built.sql, totals, subtotals, dataAt: new Date().toISOString() };
+  if (ttl > 0) resultCache.set(key, result, ttl);
+  return result;
 }
 
 /** Run one visual's query. */

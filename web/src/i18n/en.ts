@@ -55,7 +55,8 @@ export const en: Dictionary = {
     showTotals: 'Show totals', dataBars: 'Data bars in cells', gaugeMin: 'Minimum', gaugeMax: 'Maximum', target: 'Target', showTarget: 'Show target',
     // matrix hierarchy
     matrixExpand: 'Levels open at first', expandToLevel: { one: '{count} level', other: '{count} levels' }, expandAllLevels: 'All', expandAll: 'Expand all', collapseAll: 'Collapse all', expandRow: 'Expand {name}', collapseRow: 'Collapse {name}', levelJoin: ' / ',
-    analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line',
+    analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line', sharedAxis: 'Lines share the columns\' axis',
+    dataAt: 'data as of {time}', fromCache: 'cached',
     // inside the visuals
     total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',
     // field settings on a chip: display name, show as, format; calculated measures
@@ -84,6 +85,8 @@ export const en: Dictionary = {
     label: 'Label', field: 'Field', multi: 'Allow several values', all: 'All', from: 'From', to: 'To',
     reset: 'Reset', loadingValues: 'Loading values…', incomplete: 'No field chosen', active: { one: '{count} filter applied', other: '{count} filters applied' }, noDateFields: 'This table has no date column',
     scope: 'Scope', scopeAll: 'Whole report', scopePage: 'Page "{name}" only', scopePageHint: 'A report-wide filter keeps its selection across pages.',
+    search: 'Search values…', more: 'More values exist; type to narrow them', loadMore: 'Load more', missingSelected: { one: '{count} selected value is no longer in the data', other: '{count} selected values are no longer in the data' },
+    independent: 'Do not narrow by the other filters (always list every value)',
     scopeHint: 'Applies to every visual on the same data source whose table has this column. The choice at save time is the default viewers start from.',
     grainHint: 'Changes how dates are grouped (year / quarter / month…) on every visual with a time axis.',
     presets: { all: 'All time', today: 'Today', last_7_days: 'Last 7 days', last_30_days: 'Last 30 days', this_month: 'This month', last_month: 'Last month', this_quarter: 'This quarter', this_year: 'This year', custom: 'Custom…' },
@@ -104,7 +107,7 @@ export const en: Dictionary = {
   datasources: {
     title: 'Data sources', add: 'Add source', empty: 'No data sources yet', emptyHint: 'Connect your first MariaDB database to get started.',
     host: 'Host', port: 'Port', database: 'Database', username: 'Username', password: 'Password', passwordKeep: 'Leave blank to keep the current password',
-    ssl: 'Use SSL', test: 'Test connection', testing: 'Testing…', testOk: 'Connected · {version} · {ms} ms', testFail: 'Connection failed: {error}',
+    ssl: 'Use SSL', cacheTtl: 'Keep query results for (seconds)', cacheTtlHelp: 'Within this time the same query answers from the kept result instead of the source; Refresh skips it. 0 = keep nothing.', cacheTtlDefault: 'Server default', test: 'Test connection', testing: 'Testing…', testOk: 'Connected · {version} · {ms} ms', testFail: 'Connection failed: {error}',
     editTitle: 'Edit data source', addTitle: 'Add MariaDB data source', readonlyHint: 'Use an account with SELECT privileges only. The password is encrypted at rest.',
     tables: 'Tables & views', rowsEst: '~{count} rows', rowsHeader: 'Rows (estimate)', columns: 'Columns', view: 'view', table: 'table', detail: 'Details', typeMaria: 'MariaDB',
     primaryKey: 'Key', hostPlaceholder: 'e.g. db.internal.local', noTables: 'No tables in this database',

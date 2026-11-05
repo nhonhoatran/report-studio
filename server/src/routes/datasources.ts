@@ -6,11 +6,12 @@ import { decrypt, encrypt } from '../lib/crypto.js';
 import { HttpError, conflict, forbidden, notFound } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
 import { dropPool, poolForDatasource, testConnection, translateDbError } from '../query/executor.js';
+import { resultCache } from '../query/cache.js';
 import { listColumns, listTables } from '../query/introspect.js';
 
 export interface DatasourceRow extends Row {
   id: number; name: string; type: string; host: string; port: number; database_name: string;
-  username: string; password_enc: string; use_ssl: number; created_by: number | null; created_at: string; updated_at: string;
+  username: string; password_enc: string; use_ssl: number; cache_ttl_seconds: number | null; created_by: number | null; created_at: string; updated_at: string;
 }
 
 export const datasourcesRouter = Router();
@@ -23,6 +24,8 @@ const connectionSchema = z.object({
   username: z.string().min(1).max(128),
   password: z.string().max(500).default(''),
   ssl: z.boolean().default(false),
+  /** seconds a query result of this source is served from the cache; null = the server default */
+  cacheTtlSeconds: z.number().int().min(0).max(86_400).nullable().optional(),
 });
 
 const createSchema = connectionSchema.extend({ name: z.string().min(1).max(120) });
@@ -32,6 +35,7 @@ function publicView(r: DatasourceRow) {
   return {
     id: Number(r.id), name: r.name, type: r.type, host: r.host, port: Number(r.port),
     database: r.database_name, username: r.username, ssl: Boolean(Number(r.use_ssl)),
+    cacheTtlSeconds: r.cache_ttl_seconds === null || r.cache_ttl_seconds === undefined ? null : Number(r.cache_ttl_seconds),
     createdAt: r.created_at, updatedAt: r.updated_at,
   };
 }
@@ -82,9 +86,9 @@ datasourcesRouter.post('/', requirePermission('datasources.manage'), async (req,
   const body = parse(createSchema, req.body);
   if (await queryOne('SELECT id FROM datasources WHERE name = ?', [body.name])) throw conflict('A data source with this name already exists', 'datasource_name_exists');
   const result = await execute(
-    `INSERT INTO datasources (name, type, host, port, database_name, username, password_enc, use_ssl, created_by)
-     VALUES (?, 'mariadb', ?, ?, ?, ?, ?, ?, ?)`,
-    [body.name, body.host, body.port, body.database, body.username, encrypt(body.password), body.ssl ? 1 : 0, req.user!.id],
+    `INSERT INTO datasources (name, type, host, port, database_name, username, password_enc, use_ssl, cache_ttl_seconds, created_by)
+     VALUES (?, 'mariadb', ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [body.name, body.host, body.port, body.database, body.username, encrypt(body.password), body.ssl ? 1 : 0, body.cacheTtlSeconds ?? null, req.user!.id],
   );
   res.status(201).json({ datasource: publicView(await loadDatasource(result.insertId)) });
 });
@@ -99,15 +103,17 @@ datasourcesRouter.put('/:id', requirePermission('datasources.manage'), async (re
     if (await queryOne('SELECT id FROM datasources WHERE name = ? AND id <> ?', [body.name, id])) throw conflict('A data source with this name already exists', 'datasource_name_exists');
   }
   await execute(
-    `UPDATE datasources SET name = ?, host = ?, port = ?, database_name = ?, username = ?, password_enc = ?, use_ssl = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    `UPDATE datasources SET name = ?, host = ?, port = ?, database_name = ?, username = ?, password_enc = ?, use_ssl = ?, cache_ttl_seconds = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
     [
       body.name ?? current.name, body.host ?? current.host, body.port ?? current.port,
       body.database ?? current.database_name, body.username ?? current.username,
       body.password ? encrypt(body.password) : current.password_enc,
-      (body.ssl ?? Boolean(Number(current.use_ssl))) ? 1 : 0, id,
+      (body.ssl ?? Boolean(Number(current.use_ssl))) ? 1 : 0,
+      body.cacheTtlSeconds === undefined ? current.cache_ttl_seconds ?? null : body.cacheTtlSeconds, id,
     ],
   );
   dropPool(id);
+  resultCache.clear();
   res.json({ datasource: publicView(await loadDatasource(id)) });
 });
 
@@ -118,6 +124,7 @@ datasourcesRouter.delete('/:id', requirePermission('datasources.manage'), async 
   await authorize(req.user!, 'datasource', id, 'manage');
   await execute('DELETE FROM datasources WHERE id = ?', [id]);
   dropPool(id);
+  resultCache.clear();
   res.status(204).end();
 });
 

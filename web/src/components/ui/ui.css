@@ -122,6 +122,8 @@ select.field__control { padding-right: var(--space-6); appearance: auto; }
 .multiselect[open] .multiselect__summary { border-color: var(--color-focus); }
 .multiselect__menu { position: absolute; top: calc(100% + var(--space-1)); left: 0; z-index: 20; min-width: 100%; max-height: calc(var(--space-8) * 6); overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--color-raised); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
 .multiselect__menu .field__label { white-space: nowrap; }
+/* under the choices: a note that more exist, and the button that loads the next page */
+.multiselect__more { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding-top: var(--space-1); border-top: 1px solid var(--color-border); }
 
 /* Segmented control: sized to its options, the pressed one lifted onto the surface */
 .segmented { display: inline-flex; width: fit-content; max-width: 100%; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1); background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); }

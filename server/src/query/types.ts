@@ -80,6 +80,10 @@ export const queryRequestSchema = z.object({
   filters: z.array(filterSchema).max(30).default([]),
   orderBy: z.array(orderBySchema).max(5).default([]),
   limit: z.number().int().positive().max(100_000).optional(),
+  /** rows to skip before the first returned one (a table's page) */
+  offset: z.number().int().min(0).max(10_000_000).optional(),
+  /** skip the result cache for this run (the "refresh" button) */
+  fresh: z.boolean().optional(),
   /** also compute every measure over all groups (and, with two or more dimensions, per first and per second dimension value) */
   totals: z.boolean().optional(),
   /**
@@ -143,4 +147,7 @@ export interface QueryResult {
   sql: string;
   totals?: QueryTotals;
   subtotals?: QuerySubtotals;
+  /** when the rows were read from the source (ISO); a cached answer keeps its original stamp */
+  dataAt?: string;
+  fromCache?: boolean;
 }

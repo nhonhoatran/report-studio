@@ -23,6 +23,8 @@ interface EditorState {
   activeFields: FieldInfo[];
   /** what each dashboard filter selects right now; starts from the saved value, a viewer's changes stay here */
   filterValues: Record<string, FilterValue>;
+  /** when "refresh" was last pressed: fetches right after it skip the server's result cache */
+  refreshedAt: number;
 
   /** `pageId` (from the URL) picks the page to open when the report has it; otherwise the first */
   load: (d: Dashboard & { definition: NonNullable<Dashboard['definition']> }, pageId?: string | null) => void;
@@ -46,6 +48,7 @@ interface EditorState {
   setFilterValue: (id: string, value: FilterValue) => void;
   /** back to the saved defaults */
   resetFilterValues: () => void;
+  refresh: () => void;
   // pages
   setActivePage: (id: string) => void;
   addPage: () => string;
@@ -136,6 +139,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   activeDataset: null,
   activeFields: [],
   filterValues: {},
+  refreshedAt: 0,
 
   load: (d, pageId) => {
     const definition = normalize(d.definition);
@@ -233,6 +237,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     ? { filterValues: { ...s.filterValues, [id]: value }, definition: { ...s.definition, filters: s.definition.filters.map((f) => (f.id === id ? { ...f, value } : f)) }, dirty: true }
     : { filterValues: { ...s.filterValues, [id]: value } })),
   resetFilterValues: () => set((s) => ({ filterValues: valuesOf(s.definition.filters) })),
+  refresh: () => set({ refreshedAt: Date.now() }),
 
   // the selection belongs to a page, so it is dropped on every switch
   setActivePage: (id) => set((s) => (s.definition.pages.some((p) => p.id === id) && id !== s.activePageId ? { activePageId: id, selectedId: null } : s)),

@@ -17,7 +17,7 @@ import { EmptyState, ErrorBox, Notice, Spinner } from '@/components/ui/Feedback'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import '@/components/layout/layout.css';
 
-const blank: DatasourceInput = { name: '', host: '', port: 3306, database: '', username: '', password: '', ssl: false };
+const blank: DatasourceInput = { name: '', host: '', port: 3306, database: '', username: '', password: '', ssl: false, cacheTtlSeconds: null };
 
 const FORM_ID = 'datasource-form';
 
@@ -72,6 +72,8 @@ export function DatasourceModal({ open, initial, onClose }: { open: boolean; ini
         <Input label={t('datasources.username')} required autoComplete="off" value={form.username} onChange={(e) => set('username', e.target.value)} />
         <Input label={t('datasources.password')} type="password" autoComplete="new-password" hint={initial ? t('common.optional') : undefined} help={initial ? t('datasources.passwordKeep') : undefined} value={form.password ?? ''} onChange={(e) => set('password', e.target.value)} />
         <Checkbox label={t('datasources.ssl')} checked={form.ssl} onChange={(e) => set('ssl', e.target.checked)} />
+        <Input label={t('datasources.cacheTtl')} type="number" min={0} max={86400} hint={t('common.optional')} help={t('datasources.cacheTtlHelp')} placeholder={t('datasources.cacheTtlDefault')}
+          value={form.cacheTtlSeconds ?? ''} onChange={(e) => set('cacheTtlSeconds', e.target.value === '' ? null : Math.max(0, Number(e.target.value)))} />
       </div>
       <div className="row row--wrap">
         <Button icon={<Plug size={16} />} onClick={() => test.mutate()} loading={test.isPending} disabled={!form.host || !form.database || !form.username}>{test.isPending ? t('datasources.testing') : t('datasources.test')}</Button>

@@ -1,6 +1,6 @@
 import type {
   AccessPolicy, AccessPolicyInput, AiProvider, AiProviderInput, AiSuggestRequest, AiSuggestResponse, Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo,
-  Permission, PolicyAction, QueryRequest, QueryResult, ResourceType, RoleDefinition, TableInfo, TestResult, User, UserAttributes, AuthProviders, UserPreferences,
+  Permission, PolicyAction, QueryRequest, QueryResult, ResourceType, RoleDefinition, TableInfo, TestResult, User, UserAttributes, AuthProviders, UserPreferences, ClientConfig,
 } from './types';
 
 /** `code` is the server's stable error code; `lib/errors.ts` translates it. `message` is the English fallback. */
@@ -93,6 +93,9 @@ export const api = {
     update: (id: number, input: DashboardInput) => request<{ dashboard: Dashboard }>('PUT', `/dashboards/${id}`, input),
     duplicate: (id: number) => request<{ dashboard: Dashboard }>('POST', `/dashboards/${id}/duplicate`),
     remove: (id: number) => request<void>('DELETE', `/dashboards/${id}`),
+  },
+  config: {
+    get: () => request<ClientConfig>('GET', '/config'),
   },
   query: {
     run: (req: QueryRequest, signal?: AbortSignal) => request<QueryResult>('POST', '/query', req, { signal }),

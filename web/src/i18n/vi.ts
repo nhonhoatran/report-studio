@@ -52,7 +52,8 @@ export const vi = {
     showTotals: 'Hiện dòng tổng', dataBars: 'Thanh dữ liệu trong ô', gaugeMin: 'Nhỏ nhất', gaugeMax: 'Lớn nhất', target: 'Mục tiêu', showTarget: 'Hiện mục tiêu',
     // matrix hierarchy
     matrixExpand: 'Số cấp mở sẵn', expandToLevel: '{count} cấp', expandAllLevels: 'Tất cả', expandAll: 'Mở tất cả', collapseAll: 'Thu gọn tất cả', expandRow: 'Mở {name}', collapseRow: 'Thu gọn {name}', levelJoin: ' / ',
-    analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình',
+    analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình', sharedAxis: 'Đường dùng chung trục Y với cột',
+    dataAt: 'dữ liệu lúc {time}', fromCache: 'từ cache',
     // inside the visuals
     total: 'Tổng cộng', increase: 'Tăng', decrease: 'Giảm', vsPrevious: 'so với kỳ trước', targetLabel: 'Mục tiêu {value}', sortColumn: 'Sắp xếp theo cột này',
     // field settings on a chip: display name, show as, format; calculated measures
@@ -81,6 +82,8 @@ export const vi = {
     label: 'Nhãn', field: 'Trường', multi: 'Cho chọn nhiều giá trị', all: 'Tất cả', from: 'Từ ngày', to: 'Đến ngày',
     reset: 'Về mặc định', loadingValues: 'Đang tải giá trị…', incomplete: 'Chưa chọn trường', active: '{count} bộ lọc đang áp dụng', noDateFields: 'Bảng này không có cột ngày giờ',
     scope: 'Phạm vi', scopeAll: 'Cả báo cáo', scopePage: 'Chỉ trang "{name}"', scopePageHint: 'Bộ lọc của cả báo cáo giữ nguyên lựa chọn khi chuyển trang.',
+    search: 'Tìm giá trị…', more: 'Còn nhiều giá trị hơn, gõ để thu hẹp', loadMore: 'Tải thêm', missingSelected: '{count} giá trị đã chọn không còn trong dữ liệu',
+    independent: 'Không thu hẹp theo bộ lọc khác (luôn hiện mọi giá trị)',
     scopeHint: 'Áp dụng cho mọi biểu đồ cùng nguồn dữ liệu mà bảng của nó có cột này. Giá trị đang chọn khi lưu sẽ là mặc định cho người xem.',
     grainHint: 'Đổi cách nhóm ngày (năm / quý / tháng…) của mọi biểu đồ có trục thời gian.',
     presets: { all: 'Toàn bộ thời gian', today: 'Hôm nay', last_7_days: '7 ngày qua', last_30_days: '30 ngày qua', this_month: 'Tháng này', last_month: 'Tháng trước', this_quarter: 'Quý này', this_year: 'Năm nay', custom: 'Tùy chọn…' },
@@ -101,7 +104,7 @@ export const vi = {
   datasources: {
     title: 'Nguồn dữ liệu', add: 'Thêm nguồn', empty: 'Chưa có nguồn dữ liệu', emptyHint: 'Kết nối MariaDB đầu tiên để bắt đầu.',
     host: 'Máy chủ', port: 'Cổng', database: 'Cơ sở dữ liệu', username: 'Tài khoản', password: 'Mật khẩu', passwordKeep: 'Để trống để giữ mật khẩu cũ',
-    ssl: 'Dùng SSL', test: 'Kiểm tra kết nối', testing: 'Đang kiểm tra…', testOk: 'Kết nối thành công · {version} · {ms} ms', testFail: 'Kết nối thất bại: {error}',
+    ssl: 'Dùng SSL', cacheTtl: 'Giữ kết quả truy vấn (giây)', cacheTtlHelp: 'Trong thời gian này, cùng một truy vấn trả lại kết quả đã có thay vì hỏi nguồn; nút Làm mới bỏ qua. 0 = không giữ.', cacheTtlDefault: 'Theo máy chủ', test: 'Kiểm tra kết nối', testing: 'Đang kiểm tra…', testOk: 'Kết nối thành công · {version} · {ms} ms', testFail: 'Kết nối thất bại: {error}',
     editTitle: 'Sửa nguồn dữ liệu', addTitle: 'Thêm nguồn dữ liệu MariaDB', readonlyHint: 'Nên dùng tài khoản chỉ có quyền SELECT. Mật khẩu được mã hóa khi lưu.',
     tables: 'Bảng & view', rowsEst: '~{count} dòng', rowsHeader: 'Số dòng (ước tính)', columns: 'Cột', view: 'view', table: 'bảng', detail: 'Chi tiết', typeMaria: 'MariaDB',
     primaryKey: 'Khóa', hostPlaceholder: 'vd: db.noi-bo.local', noTables: 'Không có bảng nào trong database này',

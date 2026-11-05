@@ -109,6 +109,17 @@ export function applyDashboardFilters(widget: Widget, filters: DashboardFilter[]
   return out;
 }
 
+/**
+ * What the other filters of the report add when one list filter reads its choices: every field
+ * filter on the same source (or whose column the source has), except the filter itself and the
+ * grain. A filter marked independent reads its choices unnarrowed.
+ */
+export function filtersForChoices(filter: DashboardFilter, filters: DashboardFilter[], values: Record<string, FilterValue>, sourceFields: FieldInfo[] | undefined, today = new Date()): Filter[] {
+  if (filter.independent || !filter.datasourceId || !filter.source) return [];
+  const probe = { datasourceId: filter.datasourceId, source: filter.source, query: { dimensions: [] } } as unknown as Widget;
+  return applyDashboardFilters(probe, filters.filter((f) => f.id !== filter.id && f.kind !== 'grain'), values, sourceFields, today).filters;
+}
+
 /** Is any filter on the dashboard going to need the widget's field list before it can decide? */
 export function needsSourceFields(widget: Widget, filters: DashboardFilter[]): boolean {
   return filters.some((f) => f.kind !== 'grain' && filterConcerns(f, widget) && !sameSource(f.source, widget.source));

@@ -36,11 +36,15 @@ export interface AuthProviders { local: boolean; entra: boolean }
 
 export interface Datasource {
   id: number; name: string; type: string; host: string; port: number; database: string; username: string; ssl: boolean;
+  /** seconds a query result is served from the server cache; null = the server default */
+  cacheTtlSeconds?: number | null;
   createdAt: string; updatedAt: string;
 }
 export interface DatasourceInput {
-  name: string; host: string; port: number; database: string; username: string; password?: string; ssl: boolean;
+  name: string; host: string; port: number; database: string; username: string; password?: string; ssl: boolean; cacheTtlSeconds?: number | null;
 }
+/** The server's limits the client sizes its controls by (`GET /config`). */
+export interface ClientConfig { filterValueLimit: number; exportMaxRows: number; cacheTtlSeconds: number }
 export interface TableInfo { name: string; type: 'table' | 'view'; rows: number | null; comment: string }
 export type FieldKind = 'number' | 'date' | 'string' | 'boolean' | 'other';
 export interface FieldInfo { name: string; kind: FieldKind; dataType: string; nullable: boolean; isKey: boolean; comment?: string }
@@ -100,6 +104,10 @@ export interface QueryRequest {
   filters: Omit<Filter, 'id'>[];
   orderBy: OrderBy[];
   limit?: number;
+  /** rows to skip (a table's page) */
+  offset?: number;
+  /** skip the server's result cache (the refresh button) */
+  fresh?: boolean;
   /** ask the server for every measure over all groups, and per first / second dimension value */
   totals?: boolean;
   /** subtotals: every measure over the groups sharing these dimensions' values, one list per set (the matrix's levels) */
@@ -114,6 +122,9 @@ export interface QueryResult {
   columns: QueryResultColumn[]; rows: Record<string, unknown>[]; rowCount: number; truncated: boolean; durationMs: number; sql: string;
   totals?: QueryTotals;
   subtotals?: QuerySubtotals;
+  /** when the rows were read from the source (ISO); a cached answer keeps its stamp and says so */
+  dataAt?: string;
+  fromCache?: boolean;
 }
 
 /**
@@ -155,6 +166,8 @@ export interface WidgetOptions {
   gaugeMin?: number; gaugeMax?: number; showTarget?: boolean; target?: number;
   /** cartesian analytics: a constant line and the series average */
   referenceLine?: number; averageLine?: boolean;
+  /** combo: lines share the columns' axis instead of a second one */
+  sharedAxis?: boolean;
 }
 export interface WidgetQuery { dimensions: Dimension[]; measures: Measure[]; filters: Filter[]; orderBy: OrderBy[]; limit?: number }
 export interface Widget {
@@ -187,6 +200,8 @@ export interface DashboardFilter {
   source?: QuerySource | null;
   /** list: several values at once */
   multi?: boolean;
+  /** list: do not narrow the choices by the other filters of the same source */
+  independent?: boolean;
   /** the saved selection, which every viewer starts from */
   value?: FilterValue;
 }
