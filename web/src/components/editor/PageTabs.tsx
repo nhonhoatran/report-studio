@@ -64,14 +64,16 @@ export function PageTabs({ editable }: { editable: boolean }) {
   };
 
   return (
-    <nav className="page-tabs" aria-label={t('pages.title')}>
-      <ul className="page-tabs__list">
-        {pages.map((p, i) => (
-          <li key={p.id}>
-            <Link className="page-tabs__link" to={{ search: searchFor(i, p) }} aria-current={p.id === active.id ? 'page' : undefined}>{p.name}</Link>
-          </li>
-        ))}
-      </ul>
+    <div className="page-tabs">
+      <nav className="page-tabs__nav" aria-label={t('pages.title')}>
+        <ul className="page-tabs__list">
+          {pages.map((p, i) => (
+            <li key={p.id}>
+              <Link className="page-tabs__link" to={{ search: searchFor(i, p) }} aria-current={p.id === active.id ? 'page' : undefined}>{p.name}</Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
       {editable && (
         <div className="page-tabs__tools">
           <Button variant="ghost" size="sm" iconOnly icon={<Pencil size={14} />} onClick={() => setRenaming(active)}>{t('pages.rename')}</Button>
@@ -84,9 +86,9 @@ export function PageTabs({ editable }: { editable: boolean }) {
       )}
       {editable && <PageNameDialog key={renaming?.id ?? 'closed'} page={renaming} onClose={() => setRenaming(null)} />}
       {editable && (
-        <ConfirmDialog open={!!removing} title={t('pages.remove')} message={t('pages.confirmRemove', { name: removing?.name ?? '', count: removing?.widgets.length ?? 0 })}
+        <ConfirmDialog open={!!removing} title={t('common.delete')} message={t('pages.confirmRemove', { name: removing?.name ?? '', count: removing?.widgets.length ?? 0 })}
           confirmLabel={t('common.delete')} onConfirm={() => { if (removing) removePage(removing.id); setRemoving(null); }} onClose={() => setRemoving(null)} />
       )}
-    </nav>
+    </div>
   );
 }

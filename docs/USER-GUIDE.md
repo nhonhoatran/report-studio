@@ -70,12 +70,12 @@ Khi đổi loại, các trường thừa so với ô của loại mới bị b�
 Mỗi trường trong ô *Trục / Hàng / Cột / Giá trị* có nút **Tùy chỉnh trường** (biểu tượng thanh trượt) mở phần cài đặt ngay dưới trường:
 
 - **Tên hiển thị**: tên nghiệp vụ ("Doanh số") thay cho tên kỹ thuật ("Tổng doanh_so") ở tiêu đề cột, chú giải, tooltip, trục và thẻ. Xóa tên thì quay về tên tự sinh.
-- **Hiển thị dưới dạng** (measure): *Giá trị*, *% trên tổng chung*, *% trên tổng nhóm cha (hàng)* hoặc *% trên tổng cột*. Tỷ trọng tính ở nguồn dữ liệu theo dữ liệu đã lọc; các dòng của một nhóm cộng lại bằng 100%.
-- **Định dạng số của trường**: riêng cho measure này (tiền cho doanh số, phần trăm cho tỷ lệ) thay vì định dạng chung của biểu đồ.
+- **Hiển thị dưới dạng** (trường ở ô *Giá trị*): *Giá trị*, *% trên tổng chung*, *% trên tổng nhóm cha (hàng)* hoặc *% trên tổng cột*. Tỷ trọng tính ở nguồn dữ liệu theo dữ liệu đã lọc; các dòng của một nhóm cộng lại bằng 100%.
+- **Định dạng số của trường**: riêng cho trường này (tiền cho doanh số, phần trăm cho tỷ lệ) thay vì định dạng chung của biểu đồ.
 
-**Thêm phép tính** (nút ở cuối ô *Giá trị*) tạo một measure tính từ các measure khác của biểu đồ, ví dụ tỷ lệ lãi gộp `[sum_lai_gop] / [Doanh số]` hoặc `sum(thuc_hien) / sum(ke_hoach) * 100`:
+**Thêm phép tính** (nút ở cuối ô *Giá trị*) tạo một giá trị tính từ các giá trị khác của biểu đồ, ví dụ tỷ lệ lãi gộp `[sum_lai_gop] / [Doanh số]` hoặc `sum(thuc_hien) / sum(ke_hoach) * 100`:
 
-- tham chiếu measure khác bằng `[tên]` (bí danh hoặc tên hiển thị; nhấn tên measure dưới ô công thức để chèn), hoặc gộp thẳng một cột: `sum(cot)`, `avg(cot)`, `count(*)`, `count_distinct(cot)`, `min(cot)`, `max(cot)`;
+- tham chiếu giá trị khác bằng `[tên]` (bí danh hoặc tên hiển thị; nhấn tên giá trị dưới ô công thức để chèn), hoặc gộp thẳng một cột: `sum(cot)`, `avg(cot)`, `count(*)`, `count_distinct(cot)`, `min(cot)`, `max(cot)`;
 - phép toán `+ − × ÷` (hoặc `* /`), hằng số và ngoặc;
 - phép tính thực hiện **sau khi gộp**, nên ở dòng tổng là tỷ lệ của các tổng chứ không phải tổng các tỷ lệ; chia cho 0 hoặc trống cho ô trống;
 - gõ sai thì báo ngay dưới ô công thức kèm vị trí; biểu đồ chờ đến khi công thức hợp lệ.

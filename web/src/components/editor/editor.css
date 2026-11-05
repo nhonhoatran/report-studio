@@ -34,12 +34,13 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 .editor__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .editor__main .canvas { flex: 1; }
 
-/* Page tabs: one link per page, the current one underlined in the accent; the active page's tools follow in edit mode */
-.page-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: 0 var(--space-2); padding: 0 var(--space-4); background: var(--color-surface); border-bottom: 1px solid var(--color-border); flex: none; min-height: var(--control-h); }
-.page-tabs__list { display: flex; align-items: stretch; gap: var(--space-1); flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
-.page-tabs__link { display: inline-flex; align-items: center; height: var(--control-h); padding: 0 var(--space-3); border-bottom: 2px solid transparent; color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 500; white-space: nowrap; transition: color 120ms, border-color 120ms; }
-.page-tabs__link:hover { color: var(--color-text); text-decoration: none; }
-.page-tabs__link[aria-current="page"] { color: var(--color-primary-text); border-bottom-color: var(--color-primary); }
+/* Page tabs: the navigation (one link per page, the current one filled like the app's nav links) and, in edit mode, the active page's tools beside it */
+.page-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-2); padding: var(--space-1) var(--space-4); background: var(--color-surface); border-bottom: 1px solid var(--color-border); flex: none; min-height: var(--control-h); }
+.page-tabs__nav { flex: 1 1 auto; min-width: 0; }
+.page-tabs__list { display: flex; align-items: center; gap: var(--space-1); overflow-x: auto; scrollbar-width: thin; }
+.page-tabs__link { display: inline-flex; align-items: center; height: var(--control-h-sm); padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 500; white-space: nowrap; transition: background-color 120ms, color 120ms; }
+.page-tabs__link:hover { background: var(--color-raised); color: var(--color-text); text-decoration: none; }
+.page-tabs__link[aria-current="page"] { background: var(--color-primary-soft); color: var(--color-primary-text); }
 .page-tabs__tools { display: flex; align-items: center; gap: var(--space-1); flex: none; }
 
 /* Filter bar: one labelled control per dashboard filter, the editor's tools over each on hover */
@@ -85,10 +86,9 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 .well-chip .field__control { height: calc(var(--space-6) + var(--space-1)); padding: 0 var(--space-1); font-size: var(--text-xs); max-width: 96px; }
 /* a chip and, while its settings toggle is pressed, the block of its settings under it */
 .well-item { display: flex; flex-direction: column; gap: var(--space-1); }
-.well-details { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-2); }
+.well-details { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 .well-details__formula .field__control { font-family: var(--font-mono); }
-/* the widget's other measures, each a button that writes its reference into the formula */
-.well-details__refs { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+/* the widget's other measures, each a button that writes its reference (an identifier, so mono) into the formula */
 .well-details__refs .btn { font-family: var(--font-mono); font-weight: 400; }
 
 /* Filters */

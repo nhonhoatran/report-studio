@@ -5,7 +5,7 @@ import { api } from '@/api/client';
 import type { Widget } from '@/api/types';
 import { useT } from '@/i18n';
 import { useEditor, usePageFilters } from '@/store/editor';
-import { invalidFormula, isRunnable, missingWells, toQueryRequest, widgetQueryKey } from '@/lib/widget';
+import { CHART_SPECS, invalidFormula, isRunnable, missingWells, toQueryRequest, widgetQueryKey } from '@/lib/widget';
 import { applyDashboardFilters, needsSourceFields } from '@/lib/filters';
 import { useSourceFields } from './useSourceFields';
 import { ChartRenderer } from '@/components/charts/ChartRenderer';
@@ -39,7 +39,7 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
 
   if (!runnable) return <div className="widget__center"><EmptyState compact title={t('editor.needsFields')} /></div>;
   if (missing) return <div className="widget__center"><EmptyState compact title={t(missing.message, { well: t(missing.well) })} /></div>;
-  if (brokenFormula) return <div className="widget__center"><EmptyState compact title={t('editor.formulaBroken')} /></div>;
+  if (brokenFormula) return <div className="widget__center"><EmptyState compact title={t('editor.formulaBroken', { well: t(CHART_SPECS[widget.type].wells.measures) })} /></div>;
   if (query.isPending) return <div className="widget__center"><Spinner /></div>;
   if (query.error) return <div className="widget__body"><ErrorBox error={query.error} /></div>;
   const result = query.data!;

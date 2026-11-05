@@ -62,7 +62,7 @@ export const en: Dictionary = {
     showAsShort: { percent_of_total: '% of total', percent_of_parent: '% of parent', percent_of_column: '% of column' },
     calculation: 'Calculation', addCalculation: 'Add calculation', formula: 'Formula', formulaPlaceholder: 'e.g. [sum_profit] / [sum_revenue]',
     formulaHelp: 'Refer to another measure as [name], or aggregate a column directly: sum(col), count(*). Operators + − × ÷ and parentheses. Dividing by zero leaves the cell empty.',
-    formulaInsert: 'Insert a measure', formulaBroken: 'A formula is not valid yet; see the Values well',
+    formulaInsert: 'Insert a measure', formulaBroken: 'A formula in {well} is not valid yet',
   },
   formula: {
     at: 'Position {position}: {message}', empty: 'The formula is empty.', too_long: 'The formula is too long.', too_deep: 'Too many nested parentheses.',

@@ -54,7 +54,8 @@ function Slot({ keyName }: { keyName: TKey | undefined }) {
 /** The toggle at the end of a chip that opens its settings (display name, show as, format). */
 function DetailsToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const t = useT();
-  return <Button variant="ghost" size="sm" iconOnly icon={<Settings2 size={12} />} active={open} aria-expanded={open} title={t('editor.fieldSettings')} onClick={onToggle}>{t('editor.fieldSettings')}</Button>;
+  // open / closed is one state: `aria-expanded` says it, the pressed look follows it (not `active`, which would add aria-pressed)
+  return <Button variant="ghost" size="sm" iconOnly icon={<Settings2 size={12} />} className={open ? 'btn--active' : undefined} aria-expanded={open} title={t('editor.fieldSettings')} onClick={onToggle}>{t('editor.fieldSettings')}</Button>;
 }
 
 function DimensionChip({ d, slot, onChange, onRemove }: { d: Dimension; slot?: TKey; onChange: (d: Dimension) => void; onRemove: () => void }) {
@@ -176,7 +177,7 @@ function FormulaChip({ m, slot, others, error, combo, onChange, onRemove }: {
             spellCheck={false} autoComplete="off" maxLength={FORMULA_MAX_LENGTH} error={error ? describeFormulaError(error, t) : undefined} help={error ? undefined : t('editor.formulaHelp')}
             onChange={(e) => onChange({ ...m, formula: e.target.value })} />
           {others.length > 0 && (
-            <div className="well-details__refs" role="group" aria-label={t('editor.formulaInsert')}>
+            <div className="row row--wrap well-details__refs" role="group" aria-label={t('editor.formulaInsert')}>
               {others.map((o) => <Button key={measureAlias(o)} variant="ghost" size="sm" onClick={() => insert(`[${measureAlias(o)}]`)}>{measureName(o, t)}</Button>)}
             </div>
           )}

@@ -57,7 +57,8 @@ export function DashboardsPage() {
               <h2 className="card__title truncate"><Link to={`/dashboards/${d.id}`}>{d.name}</Link></h2>
               {d.description && <p className="text-sm text-muted">{d.description}</p>}
               <div className="card__meta">
-                <span>{t('dashboards.widgets', { count: d.widgetCount })}{(d.pageCount ?? 1) > 1 && ` · ${t('dashboards.pages', { count: d.pageCount! })}`}</span>
+                <span>{t('dashboards.widgets', { count: d.widgetCount })}</span>
+                {(d.pageCount ?? 1) > 1 && <span>{t('dashboards.pages', { count: d.pageCount! })}</span>}
                 <span>{t('common.updatedAt')} {formatDateTime(d.updatedAt, lang)}</span>
               </div>
               <div className="card__actions">
