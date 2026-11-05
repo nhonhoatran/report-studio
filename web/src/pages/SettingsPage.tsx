@@ -1,20 +1,19 @@
 import { useState, type FormEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2 } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import type { Role } from '@/api/types';
-import { useAuth } from '@/store/auth';
+import { can, useAuth } from '@/store/auth';
 import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { Panel } from '@/components/ui/Panel';
 import { Button } from '@/components/ui/Button';
-import { Input, Select } from '@/components/ui/Field';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ErrorBox, Spinner } from '@/components/ui/Feedback';
-import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Field';
+import { ErrorBox } from '@/components/ui/Feedback';
 import { AiProvidersPanel } from '@/components/settings/AiProvidersPanel';
 import { AppearancePanel } from '@/components/settings/AppearancePanel';
+import { UsersPanel } from '@/components/settings/UsersPanel';
+import { RolesPanel } from '@/components/settings/RolesPanel';
+import { PoliciesPanel } from '@/components/settings/PoliciesPanel';
 import '@/components/layout/layout.css';
 
 function ChangePassword() {
@@ -35,75 +34,6 @@ function ChangePassword() {
   );
 }
 
-function Users() {
-  const t = useT();
-  const qc = useQueryClient();
-  const me = useAuth((s) => s.user);
-  const [open, setOpen] = useState(false);
-  const [toDelete, setToDelete] = useState<{ id: number; username: string } | null>(null);
-  const [form, setForm] = useState({ username: '', displayName: '', password: '', role: 'editor' as Role });
-  const users = useQuery({ queryKey: ['users'], queryFn: () => api.auth.users().then((r) => r.users) });
-  const create = useMutation({
-    mutationFn: () => api.auth.createUser(form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setOpen(false); setForm({ username: '', displayName: '', password: '', role: 'editor' }); },
-  });
-  const update = useMutation({
-    mutationFn: ({ id, role }: { id: number; role: Role }) => api.auth.updateUser(id, { role }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
-    onError: (e) => toast.error(e),
-  });
-  const remove = useMutation({
-    mutationFn: (id: number) => api.auth.deleteUser(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setToDelete(null); toast.success(t('common.deleted')); },
-    onError: (e) => toast.error(e),
-  });
-  const roles: Role[] = ['admin', 'editor', 'viewer'];
-  const roleLabel = (r: Role) => t(r === 'admin' ? 'settings.roleAdmin' : r === 'editor' ? 'settings.roleEditor' : 'settings.roleViewer');
-
-  return (
-    <Panel title={t('settings.users')} actions={<Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setOpen(true)}>{t('settings.addUser')}</Button>} flush>
-      {users.isLoading && <Spinner block />}
-      {users.error && <div className="panel__body"><ErrorBox error={users.error} /></div>}
-      {users.data && (
-        <div className="table-wrap">
-          <table className="table">
-            <thead><tr><th>{t('login.username')}</th><th>{t('settings.displayName')}</th><th>{t('settings.loginMethod')}</th><th>{t('settings.role')}</th><th className="num">{t('common.actions')}</th></tr></thead>
-            <tbody>
-              {users.data.map((u) => (
-                <tr key={u.id}>
-                  <td className="mono">{u.username}</td>
-                  <td>{u.displayName}</td>
-                  <td><span className="badge">{u.provider === 'entra' ? t('settings.providerEntra') : t('settings.providerLocal')}</span></td>
-                  <td>
-                    <Select size="sm" className="field--auto" value={u.role} disabled={u.id === me?.id} aria-label={t('settings.role')} onChange={(e) => update.mutate({ id: u.id, role: e.target.value as Role })}>
-                      {roles.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
-                    </Select>
-                  </td>
-                  <td className="num"><div className="row row--end">{u.id !== me?.id && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete({ id: u.id, username: u.username })}>{t('common.delete')}</Button>}</div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <Modal open={open} title={t('settings.addUser')} onClose={() => setOpen(false)}
-        footer={<><Button variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button><Button type="submit" form="user-form" variant="primary" loading={create.isPending} disabled={!form.username || !form.displayName || form.password.length < 8}>{t('common.save')}</Button></>}>
-        <form id="user-form" className="stack" onSubmit={(e: FormEvent) => { e.preventDefault(); create.mutate(); }}>
-          <Input label={t('login.username')} required autoComplete="off" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <Input label={t('settings.displayName')} required value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
-          <Input label={t('login.password')} type="password" autoComplete="new-password" required minLength={8} help={t('settings.minPassword')} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <Select label={t('settings.role')} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
-            {roles.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
-          </Select>
-          {create.error && <ErrorBox error={create.error} />}
-        </form>
-      </Modal>
-      <ConfirmDialog open={!!toDelete} title={t('common.delete')} message={t('common.confirmDelete', { name: toDelete?.username ?? '' })} confirmLabel={t('common.delete')}
-        loading={remove.isPending} onConfirm={() => toDelete && remove.mutate(toDelete.id)} onClose={() => setToDelete(null)} />
-    </Panel>
-  );
-}
-
 export function SettingsPage() {
   const t = useT();
   const me = useAuth((s) => s.user);
@@ -115,8 +45,10 @@ export function SettingsPage() {
         <Panel title={t('settings.account')} actions={<span className="text-sm text-muted mono">{me?.username}</span>}>
           {me?.hasPassword === false ? <p className="text-sm text-muted">{t('settings.managedByEntra')}</p> : <ChangePassword />}
         </Panel>
-        {me?.role === 'admin' && <div className="panel-grid__full"><Users /></div>}
-        {me?.role === 'admin' && <div className="panel-grid__full"><AiProvidersPanel /></div>}
+        {can(me, 'users.manage') && <div className="panel-grid__full"><UsersPanel /></div>}
+        {can(me, 'roles.manage') && <div className="panel-grid__full"><RolesPanel /></div>}
+        {can(me, 'policies.manage') && <div className="panel-grid__full"><PoliciesPanel /></div>}
+        {can(me, 'ai.manage') && <div className="panel-grid__full"><AiProvidersPanel /></div>}
       </div>
     </>
   );

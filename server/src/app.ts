@@ -16,6 +16,8 @@ import { datasetsRouter } from './routes/datasets.js';
 import { dashboardsRouter } from './routes/dashboards.js';
 import { queryRouter } from './routes/query.js';
 import { aiRouter } from './routes/ai.js';
+import { rolesRouter } from './routes/roles.js';
+import { policiesRouter } from './routes/policies.js';
 
 export function createApp() {
   const app = express();
@@ -54,6 +56,8 @@ export function createApp() {
   app.use('/api/dashboards', wrapAsync(dashboardsRouter));
   app.use('/api/query', wrapAsync(queryRouter));
   app.use('/api/ai', wrapAsync(aiRouter));
+  app.use('/api/roles', wrapAsync(rolesRouter));
+  app.use('/api/policies', wrapAsync(policiesRouter));
   app.all('/api/*', (_req, res) => res.status(404).json({ error: 'Not found', code: 'not_found' }));
 
   // Production: serve the built SPA and fall back to index.html for client routes.

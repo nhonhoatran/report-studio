@@ -54,6 +54,15 @@ export const vi = {
     // inside the visuals
     total: 'Tổng cộng', increase: 'Tăng', decrease: 'Giảm', vsPrevious: 'so với kỳ trước', targetLabel: 'Mục tiêu {value}', sortColumn: 'Sắp xếp theo cột này',
   },
+  filters: {
+    title: 'Bộ lọc bảng điều khiển', add: 'Thêm bộ lọc', edit: 'Sửa bộ lọc', remove: 'Xóa bộ lọc', addTitle: 'Thêm bộ lọc bảng điều khiển', editTitle: 'Sửa bộ lọc bảng điều khiển',
+    kind: 'Loại bộ lọc', kinds: { date_range: 'Khoảng thời gian', grain: 'Loại thời gian', list: 'Danh sách giá trị' },
+    label: 'Nhãn', field: 'Trường', multi: 'Cho chọn nhiều giá trị', all: 'Tất cả', selected: '{count} đã chọn', from: 'Từ ngày', to: 'Đến ngày',
+    reset: 'Về mặc định', loadingValues: 'Đang tải giá trị…', incomplete: 'Chưa chọn trường', active: '{count} bộ lọc đang áp dụng', noDateFields: 'Bảng này không có cột ngày giờ',
+    scopeHint: 'Áp dụng cho mọi biểu đồ cùng nguồn dữ liệu mà bảng của nó có cột này. Giá trị đang chọn khi lưu sẽ là mặc định cho người xem.',
+    grainHint: 'Đổi cách nhóm ngày (năm / quý / tháng…) của mọi biểu đồ có trục thời gian.',
+    presets: { all: 'Toàn bộ thời gian', today: 'Hôm nay', last_7_days: '7 ngày qua', last_30_days: '30 ngày qua', this_month: 'Tháng này', last_month: 'Tháng trước', this_quarter: 'Quý này', this_year: 'Năm nay', custom: 'Tùy chọn…' },
+  },
   agg: { sum: 'Tổng', avg: 'Trung bình', count: 'Số lượng', count_distinct: 'Số lượng khác nhau', min: 'Nhỏ nhất', max: 'Lớn nhất' },
   bucket: { none: 'Nguyên gốc', year: 'Năm', quarter: 'Quý', month: 'Tháng', week: 'Tuần', day: 'Ngày', hour: 'Giờ' },
   chart: {
@@ -86,6 +95,26 @@ export const vi = {
     roleAdmin: 'Quản trị', roleEditor: 'Biên tập', roleViewer: 'Chỉ xem', minPassword: 'Tối thiểu 8 ký tự', appearance: 'Hiển thị',
     loginMethod: 'Đăng nhập', providerLocal: 'Mật khẩu', providerEntra: 'Microsoft Entra ID',
     managedByEntra: 'Tài khoản này đăng nhập bằng Microsoft Entra ID; mật khẩu do tổ chức của bạn quản lý.',
+    editUser: 'Sửa người dùng', attributes: 'Thuộc tính', attributesHint: 'Dùng cho chính sách truy cập (ABAC): mỗi khóa một hoặc nhiều giá trị, cách nhau bằng dấu phẩy (vd: region = Hà Nội, Đà Nẵng).',
+    attributeKey: 'Khóa', attributeValues: 'Giá trị', addAttribute: 'Thêm thuộc tính', noAttributes: 'Chưa có thuộc tính', attributeCount: '{count} thuộc tính',
+    roles: 'Vai trò & quyền', rolesHint: 'Mỗi cột là một vai trò, mỗi dòng là một quyền. Quản trị luôn có mọi quyền.', addRole: 'Thêm vai trò', addRoleTitle: 'Thêm vai trò',
+    roleName: 'Mã vai trò', roleNameHint: '2–32 ký tự: chữ thường, số, _ hoặc -', roleLabel: 'Tên hiển thị', builtin: 'Có sẵn', deleteRole: 'Xóa vai trò', permission: 'Quyền',
+    permissionLabels: {
+      dashboards_view: 'Xem bảng điều khiển', dashboards_edit: 'Tạo / sửa / xóa bảng điều khiển', dashboards_filters: 'Thêm / sửa / xóa bộ lọc bảng điều khiển',
+      datasources_view: 'Xem nguồn dữ liệu, bảng và cột', datasources_manage: 'Thêm / sửa / xóa nguồn dữ liệu', datasets_manage: 'Quản lý bộ dữ liệu SQL (và SQL tự do)',
+      ai_suggest: 'Gợi ý biểu đồ bằng AI', ai_manage: 'Quản lý nhà cung cấp AI', users_manage: 'Quản lý người dùng', roles_manage: 'Quản lý vai trò & quyền', policies_manage: 'Quản lý chính sách truy cập',
+    },
+  },
+  policies: {
+    title: 'Chính sách truy cập (ABAC)', add: 'Thêm chính sách', addTitle: 'Thêm chính sách truy cập', editTitle: 'Sửa chính sách truy cập',
+    empty: 'Chưa có chính sách', emptyHint: 'Không có chính sách thì quyền của vai trò quyết định tất cả. Thêm chính sách để giới hạn theo thuộc tính người dùng: ai xem được bảng nào, truy vấn nguồn nào, thấy những dòng nào.',
+    howItWorks: 'Từ chối luôn thắng. Khi một chính sách cho phép nêu đích danh một đối tượng, chỉ người khớp chính sách đó mới truy cập được đối tượng ấy. Ngoài ra, quyền của vai trò quyết định.',
+    name: 'Tên', enabled: 'Đang bật', disabled: 'Đang tắt', effect: 'Hiệu lực', effectAllow: 'Cho phép', effectDeny: 'Từ chối',
+    subject: 'Áp dụng cho ai', subjectRoles: 'Vai trò (để trống = mọi vai trò)', subjectAttributes: 'Thuộc tính người dùng (phải khớp tất cả; * = có giá trị bất kỳ)', anyone: 'Mọi người dùng',
+    resource: 'Áp dụng cho gì', resourceType: 'Loại đối tượng', resourceTypes: { dashboard: 'Bảng điều khiển', datasource: 'Nguồn dữ liệu' }, resourceIds: 'Đối tượng (để trống = tất cả)', allResources: 'Tất cả',
+    actions: 'Hành động', actionLabels: { view: 'Xem', edit: 'Sửa', query: 'Truy vấn dữ liệu', manage: 'Quản lý' },
+    rowFilters: 'Lọc dòng theo thuộc tính (row-level security)', rowFiltersHint: 'Mỗi dòng: cột trong nguồn dữ liệu phải nằm trong giá trị thuộc tính của người dùng. Người dùng không có thuộc tính sẽ không thấy dòng nào.',
+    rowField: 'Cột', rowAttribute: 'Thuộc tính', addRowFilter: 'Thêm điều kiện dòng', rowFilterCount: '{count} điều kiện dòng',
   },
   appearance: {
     title: 'Giao diện của bạn', mode: 'Chế độ màu', accent: 'Màu nhấn', palette: 'Bảng màu biểu đồ', textSize: 'Cỡ chữ', corners: 'Góc bo',
@@ -112,6 +141,9 @@ export const vi = {
     resultMeta: '{provider} · {model} · {ms} ms', dataset: 'Bộ dữ liệu: {label}', fieldsCount: '{count} trường',
   },
   errors: {
+    permission_denied: 'Bạn không có quyền "{permission}".', access_denied: 'Chính sách truy cập không cho phép thao tác này.',
+    invalid_role: 'Vai trò "{role}" không tồn tại.', role_not_found: 'Không tìm thấy vai trò.', role_name_exists: 'Đã có vai trò cùng mã.', role_in_use: 'Vẫn còn người dùng mang vai trò này.', role_builtin: 'Không thể xóa vai trò có sẵn.',
+    policy_not_found: 'Không tìm thấy chính sách.', policy_invalid: 'Chính sách không hợp lệ: hành động phải thuộc loại đối tượng, lọc dòng chỉ dùng cho chính sách cho phép trên nguồn dữ liệu.',
     unauthorized: 'Bạn cần đăng nhập.', forbidden: 'Bạn không có quyền thực hiện thao tác này.', not_found: 'Không tìm thấy.', validation_failed: 'Dữ liệu gửi lên không hợp lệ.',
     invalid_id: 'Mã không hợp lệ.', malformed_json: 'Nội dung gửi lên không đúng định dạng JSON.', internal: 'Lỗi máy chủ. Vui lòng thử lại.',
     invalid_credentials: 'Tên đăng nhập hoặc mật khẩu không đúng', password_incorrect: 'Mật khẩu hiện tại không đúng.', username_exists: 'Tên đăng nhập đã tồn tại.',

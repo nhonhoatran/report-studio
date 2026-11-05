@@ -1,4 +1,4 @@
-import type { Dimension, FieldInfo, Measure, QueryRequest, Stacking, Widget, WidgetType } from '@/api/types';
+import type { DateBucket, Dimension, FieldInfo, Filter, Measure, QueryRequest, Stacking, Widget, WidgetType } from '@/api/types';
 import type { TKey } from '@/i18n';
 import { newId } from './id';
 
@@ -201,7 +201,10 @@ export function stackingOf(widget: Widget): Stacking {
   return widget.options.stacking ?? (widget.options.stacked ? 'stacked' : 'none');
 }
 
-export function toQueryRequest(widget: Widget): QueryRequest | null {
+/** What the dashboard's filters add to the query (see lib/filters.ts); nothing when the dashboard has none. */
+export interface QueryExtras { filters?: Filter[]; bucket?: DateBucket }
+
+export function toQueryRequest(widget: Widget, extras: QueryExtras = {}): QueryRequest | null {
   if (!widget.datasourceId || !widget.source) return null;
   const q = widget.query;
   const orderBy = [...q.orderBy];
@@ -213,9 +216,10 @@ export function toQueryRequest(widget: Widget): QueryRequest | null {
   return {
     datasourceId: widget.datasourceId,
     source: widget.source,
-    dimensions: q.dimensions.map(({ field, bucket, alias }) => ({ field, bucket: bucket ?? 'none', alias })),
+    // a grain filter re-buckets every date dimension that already has a bucket; raw dates stay raw
+    dimensions: q.dimensions.map(({ field, bucket, alias, kind }) => ({ field, bucket: extras.bucket && kind === 'date' && bucket && bucket !== 'none' ? extras.bucket : bucket ?? 'none', alias })),
     measures: q.measures.map(({ field, agg, alias }) => ({ field, agg, alias })),
-    filters: q.filters.filter((f) => f.field).map(({ field, op, value, values }) => ({ field, op, value, values })),
+    filters: [...q.filters, ...(extras.filters ?? [])].filter((f) => f.field).map(({ field, op, value, values }) => ({ field, op, value, values })),
     orderBy,
     limit: q.limit ?? CHART_SPECS[widget.type].limit,
   };
@@ -232,8 +236,8 @@ export function measureAlias(m: Measure): string {
 }
 
 /** A stable cache key for react-query. */
-export function widgetQueryKey(widget: Widget): unknown[] {
-  return ['widget-query', toQueryRequest(widget)];
+export function widgetQueryKey(widget: Widget, extras: QueryExtras = {}): unknown[] {
+  return ['widget-query', toQueryRequest(widget, extras)];
 }
 
 /** Title shown when the author left it blank: "Sum revenue by region". */

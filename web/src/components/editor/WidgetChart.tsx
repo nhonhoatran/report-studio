@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Code2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Widget } from '@/api/types';
 import { useT } from '@/i18n';
+import { useEditor } from '@/store/editor';
 import { isRunnable, missingWells, toQueryRequest, widgetQueryKey } from '@/lib/widget';
+import { applyDashboardFilters, needsSourceFields } from '@/lib/filters';
+import { useSourceFields } from './useSourceFields';
 import { ChartRenderer } from '@/components/charts/ChartRenderer';
 import { EmptyState, ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { Button } from '@/components/ui/Button';
@@ -16,10 +19,17 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
   const [sqlOpen, setSqlOpen] = useState(false);
   const runnable = isRunnable(widget);
   const missing = missingWells(widget);
+  // dashboard filters: a field filter from another source applies only when this source has the column
+  const dashboardFilters = useEditor((s) => s.definition.filters);
+  const filterValues = useEditor((s) => s.filterValues);
+  const wantFields = needsSourceFields(widget, dashboardFilters);
+  const fields = useSourceFields(wantFields ? widget.datasourceId : null, wantFields ? widget.source : null);
+  const extras = useMemo(() => applyDashboardFilters(widget, dashboardFilters, filterValues, fields.data), [widget, dashboardFilters, filterValues, fields.data]);
+  const fieldsSettled = !wantFields || fields.isSuccess || fields.isError;
   const query = useQuery({
-    queryKey: widgetQueryKey(widget),
-    queryFn: ({ signal }) => api.query.run(toQueryRequest(widget)!, signal),
-    enabled: runnable && !missing,
+    queryKey: widgetQueryKey(widget, extras),
+    queryFn: ({ signal }) => api.query.run(toQueryRequest(widget, extras)!, signal),
+    enabled: runnable && !missing && fieldsSettled,
     staleTime: 30_000,
     retry: false,
     placeholderData: (prev) => prev,

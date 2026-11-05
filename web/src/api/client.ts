@@ -1,6 +1,6 @@
 import type {
-  AiProvider, AiProviderInput, AiSuggestRequest, AiSuggestResponse, Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo,
-  QueryRequest, QueryResult, TableInfo, TestResult, User, AuthProviders, UserPreferences,
+  AccessPolicy, AccessPolicyInput, AiProvider, AiProviderInput, AiSuggestRequest, AiSuggestResponse, Dashboard, DashboardInput, Dataset, Datasource, DatasourceInput, FieldInfo,
+  Permission, PolicyAction, QueryRequest, QueryResult, ResourceType, RoleDefinition, TableInfo, TestResult, User, UserAttributes, AuthProviders, UserPreferences,
 } from './types';
 
 /** `code` is the server's stable error code; `lib/errors.ts` translates it. `message` is the English fallback. */
@@ -48,9 +48,21 @@ export const api = {
     me: () => request<{ user: User }>('GET', '/auth/me'),
     changePassword: (currentPassword: string, newPassword: string) => request<void>('POST', '/auth/change-password', { currentPassword, newPassword }),
     users: () => request<{ users: User[] }>('GET', '/auth/users'),
-    createUser: (input: { username: string; displayName: string; password: string; role: string }) => request<{ id: number }>('POST', '/auth/users', input),
-    updateUser: (id: number, input: { displayName?: string; password?: string; role?: string }) => request<void>('PUT', `/auth/users/${id}`, input),
+    createUser: (input: { username: string; displayName: string; password: string; role: string; attributes?: UserAttributes }) => request<{ id: number }>('POST', '/auth/users', input),
+    updateUser: (id: number, input: { displayName?: string; password?: string; role?: string; attributes?: UserAttributes }) => request<void>('PUT', `/auth/users/${id}`, input),
     deleteUser: (id: number) => request<void>('DELETE', `/auth/users/${id}`),
+  },
+  roles: {
+    list: () => request<{ roles: RoleDefinition[]; permissions: Permission[] }>('GET', '/roles'),
+    create: (input: { name: string; label: string; permissions: Permission[] }) => request<{ role: RoleDefinition }>('POST', '/roles', input),
+    update: (name: string, input: { label?: string; permissions?: Permission[] }) => request<{ role: RoleDefinition }>('PUT', `/roles/${encodeURIComponent(name)}`, input),
+    remove: (name: string) => request<void>('DELETE', `/roles/${encodeURIComponent(name)}`),
+  },
+  policies: {
+    list: () => request<{ policies: AccessPolicy[]; actions: Record<ResourceType, PolicyAction[]> }>('GET', '/policies'),
+    create: (input: AccessPolicyInput) => request<{ policy: AccessPolicy }>('POST', '/policies', input),
+    update: (id: number, input: AccessPolicyInput) => request<{ policy: AccessPolicy }>('PUT', `/policies/${id}`, input),
+    remove: (id: number) => request<void>('DELETE', `/policies/${id}`),
   },
   preferences: {
     get: () => request<{ preferences: UserPreferences }>('GET', '/preferences'),

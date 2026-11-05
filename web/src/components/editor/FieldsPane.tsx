@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { KindIcon } from '@/components/ui/KindBadge';
+import { useSourceFields } from './useSourceFields';
 
 export const FIELD_DRAG_PREFIX = 'field:';
 
@@ -62,13 +63,7 @@ export function FieldsPane() {
     return kind === 'table' ? { type: 'table', table: rest! } : { type: 'dataset', datasetId: Number(rest) };
   }, [sourceKey]);
 
-  const fields = useQuery({
-    queryKey: ['fields', datasourceId, sourceKey],
-    queryFn: () => source!.type === 'table'
-      ? api.datasources.columns(Number(datasourceId), source!.table).then((r) => r.columns)
-      : api.datasets.fields(source!.datasetId).then((r) => r.fields),
-    enabled: datasourceId !== '' && !!source,
-  });
+  const fields = useSourceFields(datasourceId, source);
 
   useEffect(() => {
     if (datasourceId !== '' && source && fields.data) {

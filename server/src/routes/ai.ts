@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { execute, query, queryOne, withTransaction, type Row } from '../db/metadata.js';
-import { requireAuth, requireRole } from '../auth/middleware.js';
+import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { decrypt, encrypt } from '../lib/crypto.js';
 import { HttpError, conflict, notFound } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
@@ -42,13 +42,14 @@ async function loadProvider(id: number): Promise<AiProviderRow> {
 const toConfig = (r: AiProviderRow): ProviderConfig => ({ kind: r.kind, model: r.model, baseUrl: r.base_url, apiKey: decrypt(r.api_key_enc) });
 
 /** Every signed-in user may list providers (names only) so the editor can offer a choice. */
-aiRouter.get('/providers', async (_req, res) => {
+/** Whoever may ask for suggestions needs the provider list to pick one; admins manage it. */
+aiRouter.get('/providers', requirePermission('ai.suggest', 'ai.manage'), async (_req, res) => {
   const rows = await query<AiProviderRow>('SELECT * FROM ai_providers ORDER BY is_default DESC, name');
   res.json({ providers: rows.map(publicView) });
 });
 
 /** Admin only: a provider call with a trivial prompt, so a wrong key fails here and not in the editor. */
-aiRouter.post('/providers/test', requireRole('admin'), async (req, res) => {
+aiRouter.post('/providers/test', requirePermission('ai.manage'), async (req, res) => {
   const body = parse(updateSchema.extend({ id: z.number().int().positive().optional(), kind: z.enum(PROVIDER_KINDS), model: z.string().min(1).max(160) }), req.body);
   let apiKey = body.apiKey ?? '';
   if (!apiKey && body.id) apiKey = decrypt((await loadProvider(body.id)).api_key_enc);
@@ -65,7 +66,7 @@ aiRouter.post('/providers/test', requireRole('admin'), async (req, res) => {
   }
 });
 
-aiRouter.post('/providers', requireRole('admin'), async (req, res) => {
+aiRouter.post('/providers', requirePermission('ai.manage'), async (req, res) => {
   const body = parse(providerSchema, req.body);
   if (await queryOne('SELECT id FROM ai_providers WHERE name = ?', [body.name])) throw conflict('An AI provider with this name already exists', 'ai_provider_name_exists');
   const count = await queryOne<Row & { c: number }>('SELECT COUNT(*) AS c FROM ai_providers');
@@ -81,7 +82,7 @@ aiRouter.post('/providers', requireRole('admin'), async (req, res) => {
   res.status(201).json({ provider: publicView(await loadProvider(id)) });
 });
 
-aiRouter.put('/providers/:id', requireRole('admin'), async (req, res) => {
+aiRouter.put('/providers/:id', requirePermission('ai.manage'), async (req, res) => {
   const id = parseId(req.params.id);
   const body = parse(updateSchema, req.body);
   const current = await loadProvider(id);
@@ -104,7 +105,7 @@ aiRouter.put('/providers/:id', requireRole('admin'), async (req, res) => {
   res.json({ provider: publicView(await loadProvider(id)) });
 });
 
-aiRouter.delete('/providers/:id', requireRole('admin'), async (req, res) => {
+aiRouter.delete('/providers/:id', requirePermission('ai.manage'), async (req, res) => {
   const id = parseId(req.params.id);
   const current = await loadProvider(id);
   await execute('DELETE FROM ai_providers WHERE id = ?', [id]);
@@ -131,7 +132,7 @@ const suggestSchema = z.object({
 });
 
 /** Editors ask for visuals; the answer is validated against `fields` before it is returned. */
-aiRouter.post('/suggest', requireRole('editor'), async (req, res) => {
+aiRouter.post('/suggest', requirePermission('ai.suggest'), async (req, res) => {
   const body = parse(suggestSchema, req.body);
   const row = body.providerId
     ? await loadProvider(body.providerId)

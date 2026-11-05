@@ -5,7 +5,7 @@ import { Check, Plus, Sparkles } from 'lucide-react';
 import { api } from '@/api/client';
 import type { AiSuggestResponse, AiSuggestion } from '@/api/types';
 import { useI18nStore, useT } from '@/i18n';
-import { useAuth } from '@/store/auth';
+import { can, useAuth } from '@/store/auth';
 import { useEditor } from '@/store/editor';
 import { toast } from '@/store/toast';
 import { newId } from '@/lib/id';
@@ -96,7 +96,7 @@ export function AiSuggestDialog({ open, onClose }: { open: boolean; onClose: () 
       {providers.error && <ErrorBox error={providers.error} />}
       {providers.data && providers.data.length === 0 && (
         <EmptyState compact title={t('ai.noProvider')} hint={t('ai.noProviderHint')}
-          action={user?.role === 'admin' && <Link className="btn btn--secondary btn--sm" to="/settings">{t('common.openSettings')}</Link>} />
+          action={can(user, 'ai.manage') && <Link className="btn btn--secondary btn--sm" to="/settings">{t('common.openSettings')}</Link>} />
       )}
       {providers.data && providers.data.length > 0 && !hasFields && <EmptyState compact title={t('ai.needDataset')} />}
       {providers.data && providers.data.length > 0 && hasFields && activeDataset && (

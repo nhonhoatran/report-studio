@@ -60,6 +60,10 @@
 .form-grid .span-2 { grid-column: span 2; }
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .form-grid .span-2 { grid-column: span 1; } }
 
+/* Settings › users and policies: a key = values row, and a permission with its id under it */
+.attr-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; gap: var(--space-2); align-items: center; }
+.stack-tight { display: flex; flex-direction: column; gap: 0; }
+
 /* Settings › your look: the controls, and beside them a sample widget drawn from the same tokens */
 .look { display: grid; grid-template-columns: minmax(0, 1fr) var(--pane-width); gap: var(--space-6); align-items: start; }
 .look__preview { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); background: var(--color-canvas); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }

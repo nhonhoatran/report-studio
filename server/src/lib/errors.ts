@@ -7,6 +7,8 @@ export type ErrorCode =
   | 'unauthorized' | 'forbidden' | 'not_found' | 'validation_failed' | 'invalid_id' | 'malformed_json' | 'internal'
   | 'invalid_credentials' | 'password_incorrect' | 'username_exists' | 'user_not_found' | 'cannot_delete_self'
   | 'local_login_disabled' | 'account_has_no_password' | 'preferences_too_large'
+  | 'permission_denied' | 'access_denied' | 'invalid_role' | 'role_not_found' | 'role_name_exists' | 'role_in_use' | 'role_builtin'
+  | 'policy_not_found' | 'policy_invalid'
   | 'dashboard_not_found'
   | 'dataset_not_found' | 'dataset_name_exists' | 'dataset_wrong_datasource' | 'adhoc_sql_forbidden'
   | 'datasource_not_found' | 'datasource_name_exists' | 'table_not_found'
@@ -30,6 +32,6 @@ export class HttpError extends Error {
 
 export const badRequest = (message: string, code?: ErrorCode, details?: unknown) => new HttpError(400, message, code, details);
 export const unauthorized = (message = 'Unauthorized', code: ErrorCode = 'unauthorized') => new HttpError(401, message, code);
-export const forbidden = (message = 'Forbidden', code: ErrorCode = 'forbidden') => new HttpError(403, message, code);
+export const forbidden = (message = 'Forbidden', code: ErrorCode = 'forbidden', details?: unknown) => new HttpError(403, message, code, details);
 export const notFound = (message = 'Not found', code: ErrorCode = 'not_found') => new HttpError(404, message, code);
 export const conflict = (message: string, code?: ErrorCode) => new HttpError(409, message, code);

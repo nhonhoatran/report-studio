@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { execute, query, queryOne, type Row } from '../db/metadata.js';
-import { requireAuth, requireRole } from '../auth/middleware.js';
+import { allowed, authorize, requireAuth, requirePermission } from '../auth/middleware.js';
 import { decrypt, encrypt } from '../lib/crypto.js';
 import { HttpError, conflict, notFound } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
@@ -42,16 +42,22 @@ export async function loadDatasource(id: number): Promise<DatasourceRow> {
   return row;
 }
 
-datasourcesRouter.get('/', async (_req, res) => {
+/** Only the sources the policies let this user query are listed. */
+datasourcesRouter.get('/', requirePermission('datasources.view'), async (req, res) => {
   const rows = await query<DatasourceRow>('SELECT * FROM datasources ORDER BY name');
-  res.json({ datasources: rows.map(publicView) });
+  const out = [];
+  for (const r of rows) if (await allowed(req.user!, 'datasource', Number(r.id), 'query')) out.push(publicView(r));
+  res.json({ datasources: out });
 });
 
-datasourcesRouter.get('/:id', async (req, res) => {
-  res.json({ datasource: publicView(await loadDatasource(parseId(req.params.id))) });
+datasourcesRouter.get('/:id', requirePermission('datasources.view'), async (req, res) => {
+  const id = parseId(req.params.id);
+  const row = await loadDatasource(id);
+  await authorize(req.user!, 'datasource', id, 'query');
+  res.json({ datasource: publicView(row) });
 });
 
-datasourcesRouter.post('/test', requireRole('editor'), async (req, res) => {
+datasourcesRouter.post('/test', requirePermission('datasources.manage'), async (req, res) => {
   const body = parse(connectionSchema.extend({ id: z.number().int().positive().optional() }), req.body);
   let password = body.password;
   if (!password && body.id) {
@@ -68,7 +74,7 @@ datasourcesRouter.post('/test', requireRole('editor'), async (req, res) => {
   }
 });
 
-datasourcesRouter.post('/', requireRole('editor'), async (req, res) => {
+datasourcesRouter.post('/', requirePermission('datasources.manage'), async (req, res) => {
   const body = parse(createSchema, req.body);
   if (await queryOne('SELECT id FROM datasources WHERE name = ?', [body.name])) throw conflict('A data source with this name already exists', 'datasource_name_exists');
   const result = await execute(
@@ -79,10 +85,11 @@ datasourcesRouter.post('/', requireRole('editor'), async (req, res) => {
   res.status(201).json({ datasource: publicView(await loadDatasource(result.insertId)) });
 });
 
-datasourcesRouter.put('/:id', requireRole('editor'), async (req, res) => {
+datasourcesRouter.put('/:id', requirePermission('datasources.manage'), async (req, res) => {
   const id = parseId(req.params.id);
   const body = parse(updateSchema, req.body);
   const current = await loadDatasource(id);
+  await authorize(req.user!, 'datasource', id, 'manage');
   if (body.name && body.name !== current.name) {
     if (await queryOne('SELECT id FROM datasources WHERE name = ? AND id <> ?', [body.name, id])) throw conflict('A data source with this name already exists', 'datasource_name_exists');
   }
@@ -99,21 +106,27 @@ datasourcesRouter.put('/:id', requireRole('editor'), async (req, res) => {
   res.json({ datasource: publicView(await loadDatasource(id)) });
 });
 
-datasourcesRouter.delete('/:id', requireRole('editor'), async (req, res) => {
+datasourcesRouter.delete('/:id', requirePermission('datasources.manage'), async (req, res) => {
   const id = parseId(req.params.id);
   await loadDatasource(id);
+  await authorize(req.user!, 'datasource', id, 'manage');
   await execute('DELETE FROM datasources WHERE id = ?', [id]);
   dropPool(id);
   res.status(204).end();
 });
 
-datasourcesRouter.get('/:id/tables', async (req, res) => {
-  const ds = await loadDatasource(parseId(req.params.id));
+datasourcesRouter.get('/:id/tables', requirePermission('datasources.view'), async (req, res) => {
+  const id = parseId(req.params.id);
+  const ds = await loadDatasource(id);
+  await authorize(req.user!, 'datasource', id, 'query');
   res.json({ tables: await listTables(poolForDatasource(ds)) });
 });
 
+/** Column names of a source the user may query: a viewer's dashboard needs them to apply its filters. */
 datasourcesRouter.get('/:id/tables/:table/columns', async (req, res) => {
-  const ds = await loadDatasource(parseId(req.params.id));
+  const id = parseId(req.params.id);
+  const ds = await loadDatasource(id);
+  await authorize(req.user!, 'datasource', id, 'query');
   const columns = await listColumns(poolForDatasource(ds), String(req.params.table));
   if (columns.length === 0) throw notFound('Table not found or has no columns', 'table_not_found');
   res.json({ columns });

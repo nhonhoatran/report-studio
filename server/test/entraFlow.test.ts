@@ -27,6 +27,14 @@ function fakeQuery(sql: string, params: unknown[] = []): unknown[] {
   }
   if (s.startsWith('SELECT id FROM users WHERE username = ?')) return users.filter((u) => u.username === params[0]).map((u) => ({ id: u.id }));
   if (s.startsWith('SELECT * FROM users WHERE id = ?')) return users.filter((u) => u.id === Number(params[0]));
+  if (s.startsWith('SELECT name, label, permissions, builtin FROM roles')) {
+    return [
+      { name: 'admin', label: 'Administrator', permissions: '[]', builtin: 1 },
+      { name: 'editor', label: 'Editor', permissions: '["dashboards.view","dashboards.edit"]', builtin: 1 },
+      { name: 'viewer', label: 'Viewer', permissions: '["dashboards.view"]', builtin: 1 },
+    ];
+  }
+  if (s.startsWith('SELECT * FROM access_policies')) return [];
   if (s.startsWith('SELECT * FROM users WHERE username = ?')) return users.filter((u) => u.username === params[0]);
   throw new Error(`fake db: unexpected query ${s}`);
 }

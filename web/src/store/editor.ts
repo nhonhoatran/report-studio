@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { Dashboard, DashboardDefinition, FieldInfo, QuerySource, Widget, WidgetType } from '@/api/types';
+import type { Dashboard, DashboardDefinition, DashboardFilter, FieldInfo, FilterValue, QuerySource, Widget, WidgetType } from '@/api/types';
 import { autoPlace, coerceForType, newWidget } from '@/lib/widget';
+import { defaultFilterValue } from '@/lib/filters';
 import { newId } from '@/lib/id';
 
 export interface DatasetChoice { datasourceId: number; source: QuerySource; label: string }
@@ -16,6 +17,8 @@ interface EditorState {
   /** dataset currently shown in the fields pane */
   activeDataset: DatasetChoice | null;
   activeFields: FieldInfo[];
+  /** what each dashboard filter selects right now; starts from the saved value, a viewer's changes stay here */
+  filterValues: Record<string, FilterValue>;
 
   load: (d: Dashboard & { definition: DashboardDefinition }) => void;
   reset: () => void;
@@ -31,6 +34,13 @@ interface EditorState {
   dropField: (widgetId: string, field: FieldInfo, well?: 'dimensions' | 'measures') => void;
   setActiveDataset: (choice: DatasetChoice | null, fields: FieldInfo[]) => void;
   markSaved: () => void;
+  addFilter: (filter: DashboardFilter) => void;
+  updateFilter: (id: string, patch: Partial<DashboardFilter>) => void;
+  removeFilter: (id: string) => void;
+  /** in edit mode the choice becomes the saved default; in view mode it lives only in this session */
+  setFilterValue: (id: string, value: FilterValue) => void;
+  /** back to the saved defaults */
+  resetFilterValues: () => void;
 }
 
 const empty = (): DashboardDefinition => ({ version: 1, widgets: [], filters: [], settings: {} });
@@ -50,8 +60,15 @@ function normalize(def: Partial<DashboardDefinition> | null | undefined): Dashbo
     },
     options: normalizeOptions(w.options),
   }));
-  return { version: 1, widgets, filters: def?.filters ?? [], settings: def?.settings ?? {} };
+  const filters = (def?.filters ?? []).filter(isDashboardFilter).map((f) => ({ ...f, value: f.value ?? defaultFilterValue(f.kind) }));
+  return { version: 1, widgets, filters, settings: def?.settings ?? {} };
 }
+/** Only a filter the editor can show survives loading; anything else in the array is dropped. */
+function isDashboardFilter(f: unknown): f is DashboardFilter {
+  const o = f as Partial<DashboardFilter> | null;
+  return !!o && typeof o === 'object' && typeof o.id === 'string' && (o.kind === 'date_range' || o.kind === 'grain' || o.kind === 'list');
+}
+const valuesOf = (filters: DashboardFilter[]): Record<string, FilterValue> => Object.fromEntries(filters.map((f) => [f.id, f.value ?? defaultFilterValue(f.kind)]));
 /** Defaults, plus the pre-0.2 `stacked: true` read as the `stacking` choice it meant. */
 function normalizeOptions(o: Partial<Widget['options']> | undefined): Widget['options'] {
   const { stacked, ...rest } = o ?? {};
@@ -70,12 +87,16 @@ export const useEditor = create<EditorState>((set, get) => ({
   mode: 'edit',
   activeDataset: null,
   activeFields: [],
+  filterValues: {},
 
-  load: (d) => set({
-    dashboardId: d.id, name: d.name, description: d.description, definition: normalize(d.definition),
-    selectedId: null, dirty: false, activeDataset: null, activeFields: [],
-  }),
-  reset: () => set({ dashboardId: null, name: '', description: '', definition: empty(), selectedId: null, dirty: false, activeDataset: null, activeFields: [] }),
+  load: (d) => {
+    const definition = normalize(d.definition);
+    set({
+      dashboardId: d.id, name: d.name, description: d.description, definition,
+      selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: valuesOf(definition.filters),
+    });
+  },
+  reset: () => set({ dashboardId: null, name: '', description: '', definition: empty(), selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: {} }),
   setName: (name) => set({ name, dirty: true }),
   setMode: (mode) => set({ mode, selectedId: mode === 'view' ? null : get().selectedId }),
   select: (id) => set({ selectedId: id }),
@@ -140,6 +161,23 @@ export const useEditor = create<EditorState>((set, get) => ({
   },
   setActiveDataset: (choice, fields) => set({ activeDataset: choice, activeFields: fields }),
   markSaved: () => set({ dirty: false }),
+  addFilter: (filter) => set((s) => ({
+    definition: { ...s.definition, filters: [...s.definition.filters, filter] },
+    filterValues: { ...s.filterValues, [filter.id]: filter.value ?? defaultFilterValue(filter.kind) }, dirty: true,
+  })),
+  updateFilter: (id, patch) => set((s) => {
+    const filters = s.definition.filters.map((f) => (f.id === id ? { ...f, ...patch } : f));
+    const next = filters.find((f) => f.id === id);
+    return { definition: { ...s.definition, filters }, filterValues: next ? { ...s.filterValues, [id]: next.value ?? defaultFilterValue(next.kind) } : s.filterValues, dirty: true };
+  }),
+  removeFilter: (id) => set((s) => {
+    const { [id]: _gone, ...rest } = s.filterValues;
+    return { definition: { ...s.definition, filters: s.definition.filters.filter((f) => f.id !== id) }, filterValues: rest, dirty: true };
+  }),
+  setFilterValue: (id, value) => set((s) => (s.mode === 'edit'
+    ? { filterValues: { ...s.filterValues, [id]: value }, definition: { ...s.definition, filters: s.definition.filters.map((f) => (f.id === id ? { ...f, value } : f)) }, dirty: true }
+    : { filterValues: { ...s.filterValues, [id]: value } })),
+  resetFilterValues: () => set((s) => ({ filterValues: valuesOf(s.definition.filters) })),
 }));
 
 export const useSelectedWidget = () => useEditor((s) => s.definition.widgets.find((w) => w.id === s.selectedId) ?? null);

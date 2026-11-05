@@ -66,12 +66,33 @@ Khi đổi loại, các trường thừa so với ô của loại mới bị b�
 - Biểu tượng `</>` ở chân mỗi biểu đồ hiển thị câu SQL đã sinh ra — tiện để kiểm tra hoặc copy sang công cụ khác.
 - Kết quả bị cắt ở `QUERY_MAX_ROWS` (mặc định 5.000 dòng); hãy gộp/lọc thay vì vẽ dữ liệu thô.
 
+### Bộ lọc bảng điều khiển (slicer)
+Thanh lọc nằm trên khung vẽ và áp dụng cho **mọi biểu đồ** trên bảng, như slicer của Power BI. Người có quyền *Thêm / sửa / xóa bộ lọc bảng điều khiển* (mặc định: Quản trị) nhấn **Thêm bộ lọc** và chọn một trong ba loại:
+
+| Loại | Lọc gì | Cách áp dụng |
+|---|---|---|
+| Khoảng thời gian | một cột ngày | Hôm nay / 7 ngày / 30 ngày / tháng này / tháng trước / quý này / năm nay / tùy chọn từ–đến |
+| Loại thời gian | cách nhóm ngày | mọi biểu đồ có trục thời gian chuyển sang năm / quý / tháng / tuần / ngày |
+| Danh sách giá trị | một cột bất kỳ | giá trị riêng biệt đọc từ dữ liệu, "Tất cả" mặc định; chọn một hoặc nhiều |
+
+Một bộ lọc theo cột áp dụng cho mọi biểu đồ **cùng nguồn dữ liệu** mà bảng / bộ dữ liệu của biểu đồ có cột cùng tên, nên không bao giờ sinh SQL lỗi. Giá trị đang chọn lúc **Lưu** là mặc định cho người xem; người xem đổi giá trị chỉ trong phiên của họ và nhấn **Về mặc định** để quay lại.
+
 ## 4. Người dùng & quyền
-| Vai trò | Quyền |
+Phân quyền gồm hai lớp:
+
+**Vai trò (RBAC)** — mỗi vai trò là một tập quyền; *Cài đặt → Vai trò & quyền* cho phép bật / tắt từng quyền cho vai trò và thêm vai trò mới. Ba vai trò có sẵn:
+
+| Vai trò | Quyền mặc định |
 |---|---|
-| Chỉ xem (viewer) | mở bảng điều khiển đã lưu |
-| Biên tập (editor) | thêm nguồn dữ liệu, bộ dữ liệu, tạo/sửa bảng điều khiển |
-| Quản trị (admin) | tất cả + quản lý người dùng |
+| Chỉ xem (viewer) | xem bảng điều khiển |
+| Biên tập (editor) | + tạo/sửa/xóa bảng điều khiển, xem và quản lý nguồn dữ liệu, bộ dữ liệu SQL, gợi ý AI |
+| Quản trị (admin) | mọi quyền, luôn luôn (không tắt được): + bộ lọc bảng điều khiển, nhà cung cấp AI, người dùng, vai trò, chính sách |
+
+**Chính sách truy cập (ABAC)** — *Cài đặt → Chính sách truy cập*: mỗi chính sách nói **ai** (vai trò và/hoặc thuộc tính người dùng, ví dụ `region = Hà Nội`), **cái gì** (bảng điều khiển hoặc nguồn dữ liệu, tất cả hoặc một danh sách), **hành động** nào (xem / sửa; truy vấn / quản lý) và **cho phép hay từ chối**. Thuộc tính của từng người dùng đặt ở *Cài đặt → Người dùng*.
+
+Quy tắc quyết định: (1) từ chối luôn thắng; (2) khi một chính sách *cho phép* nêu đích danh một đối tượng, chỉ người khớp chính sách đó mới truy cập được đối tượng ấy; (3) còn lại, quyền của vai trò quyết định.
+
+**Lọc dòng (row-level security)**: một chính sách cho phép trên nguồn dữ liệu có thể kèm điều kiện *cột = thuộc tính của người dùng* (vd. `region` = thuộc tính `region`). Mọi truy vấn của người đó trên nguồn ấy được thêm `WHERE region IN (…giá trị thuộc tính…)`; người không có thuộc tính sẽ không thấy dòng nào.
 
 Admin tạo tài khoản ở **Cài đặt → Người dùng**. Mỗi người tự đổi mật khẩu ở **Cài đặt → Tài khoản**.
 

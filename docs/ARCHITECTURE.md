@@ -23,7 +23,9 @@ Report Studio is a two-package npm workspace that ships as one container.
 |---|---|
 | `config.ts` | env parsing with safe defaults; refuses to boot in production without `APP_SECRET` / `ADMIN_PASSWORD`, with a half-configured `ENTRA_*` block, or with password login off and no Entra |
 | `db/metadata.ts`, `db/migrations.ts` | pool to the metadata DB, ordered migrations recorded in `schema_migrations`, first-admin seed |
-| `auth/` | bcrypt passwords, HS256 JWT in an `httpOnly` cookie (`rs_session`), `requireAuth` / `requireRole`; `users.ts` is the account row → API shape; `preferences.ts` validates the per-user UI bag stored in `user_preferences` (flat scalars, ≤ 4 KB, client-owned like a dashboard definition) |
+| `auth/` | bcrypt passwords, HS256 JWT in an `httpOnly` cookie (`rs_session`); `middleware.ts` resolves the signed-in user on every request (role, permissions and attributes from the database through a 15 s cache, so an admin's change applies without a new login) and offers `requireAuth`, `requirePermission(...)`, `authorize()` / `allowed()` (ABAC decision) and `rowFilters()`; `users.ts` is the account row → API shape; `preferences.ts` validates the per-user UI bag stored in `user_preferences` (flat scalars, ≤ 4 KB, client-owned like a dashboard definition) |
+| `auth/permissions.ts`, `auth/roles.ts`, `routes/roles.ts` | RBAC: the permission catalogue (`dashboards.view/edit/filters`, `datasources.view/manage`, `datasets.manage`, `ai.suggest/manage`, `users/roles/policies.manage`), the `roles` table (three built-in rows seeded; admin always holds everything), admin CRUD of roles |
+| `auth/abac.ts`, `auth/policies.ts`, `routes/policies.ts` | ABAC: `access_policies` rows (subject = roles and/or attribute values; resource = dashboards or data sources, all or by id; actions; allow/deny; optional row filters). `decide()` = deny overrides → an allow policy that lists a resource by id closes it to everybody else → otherwise RBAC stands. `rowFiltersFor()` turns `{ field, attribute }` into `field IN (user's attribute values)` and `routes/query.ts` appends them to every query on that source |
 | `auth/entra.ts`, `auth/entraMapping.ts`, `auth/entraUsers.ts`, `routes/entra.ts` | Microsoft Entra ID sign-in: OIDC discovery (cached 24 h), authorization-code flow with PKCE, ID-token verification through the tenant's JWKS (`jose`), claim → account mapping (domain allow-list, app roles / groups → role), find-link-or-provision against `users` (`auth_provider`, `external_id`). The pending attempt (state, nonce, verifier, destination) lives in an AES-GCM encrypted `rs_entra` cookie, so there is no server-side session store |
 | `routes/datasources.ts` | CRUD, connection test, table & column introspection (`information_schema`) |
 | `routes/datasets.ts` | saved SQL datasets; SQL validated by `sqlGuard` and described with `SELECT … LIMIT 0` |
@@ -74,6 +76,10 @@ LIMIT 1001          -- one extra row to detect truncation
 
 A dataset source is wrapped as `FROM (<dataset sql>) AS __rs_src`.
 
+### Dashboard filters (slicers)
+
+`definition.filters` holds the dashboard's own filters: `{ id, kind: 'date_range' | 'grain' | 'list', label, field?, datasourceId?, source?, multi?, value? }`. `web/src/lib/filters.ts` turns them into what a widget's query needs (`applyDashboardFilters`): a date range becomes `field >= from AND field < to + 1 day` (so DATE and DATETIME columns both get the whole last day), a list becomes `field IN (...)`, a grain re-buckets every bucketed date dimension. A field filter applies to a widget on the same data source whose source has the column: the widget's own source, or any source whose column list (`useSourceFields`, the same cache the fields pane fills) names it. The saved `value` is the default every viewer starts from; a viewer's choices live in the editor store's `filterValues` for the session. The server lets only a user with `dashboards.filters` add, change or remove a filter (it compares the filters without their values on save).
+
 ### Dashboard document
 
 Stored as JSON in `dashboards.definition` and owned by the web client:
@@ -113,7 +119,7 @@ Drag and drop: dnd-kit for *field → widget / well* (`DndContext` in `Dashboard
 3. Each physical connection runs `SET SESSION TRANSACTION READ ONLY` and `SET SESSION max_statement_time`.
 4. Every generated statement carries `LIMIT ≤ QUERY_MAX_ROWS`; the client timeout also kills long queries.
 5. Data-source passwords are AES-256-GCM encrypted with a key derived from `APP_SECRET`.
-6. Viewers can run saved dashboards but cannot send ad-hoc SQL; editors manage sources, datasets and dashboards; admins manage users.
+6. Every route is guarded by a permission (`requirePermission`), every dashboard and data source by the access policies (`authorize`), and every query on a data source carries the policies' row filters. The built-in roles keep their old meaning (viewers run saved dashboards and cannot send ad-hoc SQL; editors manage sources, datasets and dashboards; admins manage everything), but an admin can change what editor and viewer grant, add roles, and write policies that narrow access by user attributes.
 7. Entra sign-in trusts only an ID token that verifies against the tenant's published keys, carries this app as audience, the expected issuer for its tenant and the nonce of the current attempt; `returnTo` is restricted to same-origin paths. Accounts provisioned from Entra have `password_hash = NULL`, so the password form cannot be used against them.
 8. AI provider keys are encrypted like data-source passwords and are write-only through the API; only admins manage them, only editors call `/ai/suggest`, and model output is reduced to the semantic query model before anything runs.
 

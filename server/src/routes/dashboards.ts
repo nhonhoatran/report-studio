@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { execute, query, queryOne, type Row } from '../db/metadata.js';
-import { requireAuth, requireRole } from '../auth/middleware.js';
-import { notFound } from '../lib/errors.js';
+import { allowed, authorize, hasPermission, requireAuth, requirePermission, type RequestUser } from '../auth/middleware.js';
+import { forbidden, notFound } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
 
 interface DashboardRow extends Row {
@@ -37,13 +37,29 @@ const bodySchema = z.object({
   definition: definitionSchema,
 });
 
-function view(r: DashboardRow, withDefinition: boolean) {
+function view(r: DashboardRow, withDefinition: boolean, canEdit: boolean) {
   const definition = withDefinition ? JSON.parse(r.definition) : undefined;
   return {
     id: Number(r.id), name: r.name, description: r.description ?? '',
     widgetCount: withDefinition ? (definition.widgets?.length ?? 0) : Number(r.widget_count ?? 0),
-    createdAt: r.created_at, updatedAt: r.updated_at, definition,
+    createdAt: r.created_at, updatedAt: r.updated_at, definition, canEdit,
   };
+}
+
+/** May this user edit the dashboard: the permission, and no policy against it. */
+async function editable(user: RequestUser, id: number): Promise<boolean> {
+  return hasPermission(user, 'dashboards.edit') && (await allowed(user, 'dashboard', id, 'edit'));
+}
+
+/** The dashboard's own filters, without their current values: changing those is editing, changing the rest is `dashboards.filters`. */
+const filterShapes = (def: { filters?: unknown[] } | null | undefined) =>
+  JSON.stringify((def?.filters ?? []).map((f) => { const { value: _v, ...rest } = (f ?? {}) as Record<string, unknown>; return rest; }));
+
+function assertMayChangeFilters(user: RequestUser, before: unknown, after: unknown): void {
+  if (hasPermission(user, 'dashboards.filters')) return;
+  if (filterShapes(before as { filters?: unknown[] }) !== filterShapes(after as { filters?: unknown[] })) {
+    throw forbidden('Only a user with the dashboards.filters permission may add, change or remove dashboard filters', 'permission_denied', { permission: 'dashboards.filters' });
+  }
 }
 
 async function load(id: number): Promise<DashboardRow> {
@@ -52,49 +68,64 @@ async function load(id: number): Promise<DashboardRow> {
   return row;
 }
 
-dashboardsRouter.get('/', async (_req, res) => {
+/** Only the dashboards the policies let this user view are listed. */
+dashboardsRouter.get('/', requirePermission('dashboards.view'), async (req, res) => {
   const rows = await query<DashboardRow>(
     `SELECT id, name, description, created_by, created_at, updated_at, '' AS definition,
             JSON_LENGTH(JSON_EXTRACT(definition, '$.widgets')) AS widget_count
        FROM dashboards ORDER BY updated_at DESC`);
-  res.json({ dashboards: rows.map((r) => view(r, false)) });
+  const out = [];
+  for (const r of rows) {
+    if (!(await allowed(req.user!, 'dashboard', Number(r.id), 'view'))) continue;
+    out.push(view(r, false, await editable(req.user!, Number(r.id))));
+  }
+  res.json({ dashboards: out });
 });
 
-dashboardsRouter.get('/:id', async (req, res) => {
-  res.json({ dashboard: view(await load(parseId(req.params.id)), true) });
+dashboardsRouter.get('/:id', requirePermission('dashboards.view'), async (req, res) => {
+  const id = parseId(req.params.id);
+  const row = await load(id);
+  await authorize(req.user!, 'dashboard', id, 'view');
+  res.json({ dashboard: view(row, true, await editable(req.user!, id)) });
 });
 
-dashboardsRouter.post('/', requireRole('editor'), async (req, res) => {
+dashboardsRouter.post('/', requirePermission('dashboards.edit'), async (req, res) => {
   const body = parse(bodySchema, req.body);
+  assertMayChangeFilters(req.user!, { filters: [] }, body.definition);
   const result = await execute(
     'INSERT INTO dashboards (name, description, definition, created_by) VALUES (?, ?, ?, ?)',
     [body.name, body.description ?? null, JSON.stringify(body.definition), req.user!.id],
   );
-  res.status(201).json({ dashboard: view(await load(result.insertId), true) });
+  res.status(201).json({ dashboard: view(await load(result.insertId), true, true) });
 });
 
-dashboardsRouter.put('/:id', requireRole('editor'), async (req, res) => {
+dashboardsRouter.put('/:id', requirePermission('dashboards.edit'), async (req, res) => {
   const id = parseId(req.params.id);
-  await load(id);
+  const before = await load(id);
+  await authorize(req.user!, 'dashboard', id, 'edit');
   const body = parse(bodySchema, req.body);
+  assertMayChangeFilters(req.user!, JSON.parse(before.definition), body.definition);
   await execute('UPDATE dashboards SET name = ?, description = ?, definition = ? WHERE id = ?', [
     body.name, body.description ?? null, JSON.stringify(body.definition), id,
   ]);
-  res.json({ dashboard: view(await load(id), true) });
+  res.json({ dashboard: view(await load(id), true, true) });
 });
 
-dashboardsRouter.post('/:id/duplicate', requireRole('editor'), async (req, res) => {
-  const src = await load(parseId(req.params.id));
+dashboardsRouter.post('/:id/duplicate', requirePermission('dashboards.edit'), async (req, res) => {
+  const id = parseId(req.params.id);
+  const src = await load(id);
+  await authorize(req.user!, 'dashboard', id, 'view');
   const result = await execute(
     'INSERT INTO dashboards (name, description, definition, created_by) VALUES (?, ?, ?, ?)',
     [`${src.name} (copy)`, src.description, src.definition, req.user!.id],
   );
-  res.status(201).json({ dashboard: view(await load(result.insertId), true) });
+  res.status(201).json({ dashboard: view(await load(result.insertId), true, true) });
 });
 
-dashboardsRouter.delete('/:id', requireRole('editor'), async (req, res) => {
+dashboardsRouter.delete('/:id', requirePermission('dashboards.edit'), async (req, res) => {
   const id = parseId(req.params.id);
   await load(id);
+  await authorize(req.user!, 'dashboard', id, 'edit');
   await execute('DELETE FROM dashboards WHERE id = ?', [id]);
   res.status(204).end();
 });

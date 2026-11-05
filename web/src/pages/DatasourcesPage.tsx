@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Database, Pencil, Plug, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Datasource, DatasourceInput } from '@/api/types';
-import { useAuth, canEdit } from '@/store/auth';
+import { useAuth, can } from '@/store/auth';
 import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
 import { describeError, describeServerError } from '@/lib/errors';
@@ -86,7 +86,7 @@ export function DatasourceModal({ open, initial, onClose }: { open: boolean; ini
 export function DatasourcesPage() {
   const t = useT();
   const user = useAuth((s) => s.user);
-  const editable = canEdit(user);
+  const editable = can(user, 'datasources.manage');
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Datasource | null | 'new'>(null);
   const [toDelete, setToDelete] = useState<Datasource | null>(null);

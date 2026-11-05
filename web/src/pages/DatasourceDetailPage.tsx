@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Key, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Dataset, FieldInfo } from '@/api/types';
-import { useAuth, canEdit } from '@/store/auth';
+import { useAuth, can } from '@/store/auth';
 import { toast } from '@/store/toast';
 import { useI18nStore, useT } from '@/i18n';
 import { formatNumber } from '@/lib/format';
@@ -80,7 +80,7 @@ export function DatasourceDetailPage() {
   const lang = useI18nStore((s) => s.lang);
   const id = Number(useParams().id);
   const user = useAuth((s) => s.user);
-  const editable = canEdit(user);
+  const editable = can(user, 'datasets.manage');
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Dataset | null | 'new'>(null);
   const [toDelete, setToDelete] = useState<Dataset | null>(null);

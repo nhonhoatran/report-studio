@@ -57,6 +57,15 @@ export const en: Dictionary = {
     // inside the visuals
     total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',
   },
+  filters: {
+    title: 'Dashboard filters', add: 'Add filter', edit: 'Edit filter', remove: 'Remove filter', addTitle: 'Add dashboard filter', editTitle: 'Edit dashboard filter',
+    kind: 'Filter kind', kinds: { date_range: 'Date range', grain: 'Time grain', list: 'Value list' },
+    label: 'Label', field: 'Field', multi: 'Allow several values', all: 'All', selected: { one: '{count} selected', other: '{count} selected' }, from: 'From', to: 'To',
+    reset: 'Reset', loadingValues: 'Loading values…', incomplete: 'No field chosen', active: { one: '{count} filter applied', other: '{count} filters applied' }, noDateFields: 'This table has no date column',
+    scopeHint: 'Applies to every visual on the same data source whose table has this column. The choice at save time is the default viewers start from.',
+    grainHint: 'Changes how dates are grouped (year / quarter / month…) on every visual with a time axis.',
+    presets: { all: 'All time', today: 'Today', last_7_days: 'Last 7 days', last_30_days: 'Last 30 days', this_month: 'This month', last_month: 'Last month', this_quarter: 'This quarter', this_year: 'This year', custom: 'Custom…' },
+  },
   agg: { sum: 'Sum', avg: 'Average', count: 'Count', count_distinct: 'Distinct count', min: 'Min', max: 'Max' },
   bucket: { none: 'Raw', year: 'Year', quarter: 'Quarter', month: 'Month', week: 'Week', day: 'Day', hour: 'Hour' },
   chart: {
@@ -89,6 +98,26 @@ export const en: Dictionary = {
     roleAdmin: 'Admin', roleEditor: 'Editor', roleViewer: 'Viewer', minPassword: 'At least 8 characters', appearance: 'Appearance',
     loginMethod: 'Sign-in', providerLocal: 'Password', providerEntra: 'Microsoft Entra ID',
     managedByEntra: 'This account signs in with Microsoft Entra ID; its password is managed by your organisation.',
+    editUser: 'Edit user', attributes: 'Attributes', attributesHint: 'Read by access policies (ABAC): one or more values per key, comma separated (e.g. region = Hà Nội, Đà Nẵng).',
+    attributeKey: 'Key', attributeValues: 'Values', addAttribute: 'Add attribute', noAttributes: 'No attributes', attributeCount: { one: '{count} attribute', other: '{count} attributes' },
+    roles: 'Roles & permissions', rolesHint: 'One column per role, one row per permission. Admin always holds every permission.', addRole: 'Add role', addRoleTitle: 'Add role',
+    roleName: 'Role id', roleNameHint: '2–32 characters: lower-case letters, digits, _ or -', roleLabel: 'Display name', builtin: 'Built-in', deleteRole: 'Delete role', permission: 'Permission',
+    permissionLabels: {
+      dashboards_view: 'View dashboards', dashboards_edit: 'Create / edit / delete dashboards', dashboards_filters: 'Add / change / remove dashboard filters',
+      datasources_view: 'Browse data sources, tables and columns', datasources_manage: 'Add / edit / delete data sources', datasets_manage: 'Manage SQL datasets (and ad-hoc SQL)',
+      ai_suggest: 'AI chart suggestions', ai_manage: 'Manage AI providers', users_manage: 'Manage users', roles_manage: 'Manage roles & permissions', policies_manage: 'Manage access policies',
+    },
+  },
+  policies: {
+    title: 'Access policies (ABAC)', add: 'Add policy', addTitle: 'Add access policy', editTitle: 'Edit access policy',
+    empty: 'No policies yet', emptyHint: 'Without policies the role permissions decide everything. Add policies to narrow access by user attributes: who sees which dashboard, who queries which source, which rows they see.',
+    howItWorks: 'A deny always wins. When an allow policy names a resource, only users that policy matches can reach that resource. Otherwise the role permissions decide.',
+    name: 'Name', enabled: 'Enabled', disabled: 'Disabled', effect: 'Effect', effectAllow: 'Allow', effectDeny: 'Deny',
+    subject: 'Who', subjectRoles: 'Roles (empty = any role)', subjectAttributes: 'User attributes (all must match; * = any value)', anyone: 'Everyone',
+    resource: 'What', resourceType: 'Resource type', resourceTypes: { dashboard: 'Dashboards', datasource: 'Data sources' }, resourceIds: 'Resources (empty = all)', allResources: 'All',
+    actions: 'Actions', actionLabels: { view: 'View', edit: 'Edit', query: 'Query data', manage: 'Manage' },
+    rowFilters: 'Row filters by attribute (row-level security)', rowFiltersHint: 'Each row: the column in the data source must be among the values of the user attribute. A user without the attribute sees no rows.',
+    rowField: 'Column', rowAttribute: 'Attribute', addRowFilter: 'Add row condition', rowFilterCount: { one: '{count} row condition', other: '{count} row conditions' },
   },
   appearance: {
     title: 'Your look', mode: 'Colour mode', accent: 'Accent', palette: 'Chart palette', textSize: 'Text size', corners: 'Corners',
@@ -115,6 +144,9 @@ export const en: Dictionary = {
     resultMeta: '{provider} · {model} · {ms} ms', dataset: 'Dataset: {label}', fieldsCount: { one: '{count} field', other: '{count} fields' },
   },
   errors: {
+    permission_denied: 'You do not have the "{permission}" permission.', access_denied: 'An access policy does not allow this.',
+    invalid_role: 'The role "{role}" does not exist.', role_not_found: 'Role not found.', role_name_exists: 'A role with that id already exists.', role_in_use: 'Users still have this role.', role_builtin: 'Built-in roles cannot be deleted.',
+    policy_not_found: 'Policy not found.', policy_invalid: 'The policy is not valid: actions must belong to the resource type, and row filters only go on allow policies for data sources.',
     unauthorized: 'Please sign in.', forbidden: 'You are not allowed to do that.', not_found: 'Not found.', validation_failed: 'The submitted data is invalid.',
     invalid_id: 'Invalid id.', malformed_json: 'The request body is not valid JSON.', internal: 'Server error. Please try again.',
     invalid_credentials: 'Invalid username or password', password_incorrect: 'The current password is incorrect.', username_exists: 'That username already exists.',

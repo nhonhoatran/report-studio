@@ -54,7 +54,7 @@ All endpoints live under `/api`, speak JSON, and (except login/health) require t
 ## Dashboards
 | Method | Path | Role | Body / notes |
 |---|---|---|---|
-| GET | `/dashboards` | any | list without definitions (`widgetCount` included) |
+| GET | `/dashboards` | `dashboards.view` (policies filter the list) | list without definitions (`widgetCount` included) |
 | GET | `/dashboards/:id` | any | with `definition` |
 | POST | `/dashboards` | editor | `{ name, description?, definition }` |
 | PUT | `/dashboards/:id` | editor | same body, full replace |
@@ -113,6 +113,20 @@ A suggestion:
 ```
 
 Every field name has been checked against `fields`; aggregations, buckets and the number of dimensions/measures are already legal for `type`. The server never executes anything on behalf of the model; the client turns a suggestion into a widget and runs it through `/query` like any other visual.
+
+## Roles and access policies
+| Method | Path | Role | Notes |
+|---|---|---|---|
+| GET | `/roles` | any | `{ roles: [{ name, label, permissions, builtin }], permissions }` — the catalogue of permissions is `permissions` |
+| POST | `/roles` | `roles.manage` | `{ name (2–32 chars, `[a-z][a-z0-9_-]*`), label, permissions }` |
+| PUT | `/roles/:name` | `roles.manage` | `{ label?, permissions? }`; admin keeps every permission |
+| DELETE | `/roles/:name` | `roles.manage` | 400 `role_builtin` for the built-in three, 409 `role_in_use` while users have it |
+| GET | `/policies` | `policies.manage` | `{ policies, actions: { dashboard: ['view','edit'], datasource: ['query','manage'] } }` |
+| POST | `/policies` | `policies.manage` | `{ name, enabled, effect: 'allow'|'deny', subject: { roles, attributes }, resource: { type, ids }, actions, rowFilters: [{ field, attribute }] }` |
+| PUT | `/policies/:id` | `policies.manage` | same body |
+| DELETE | `/policies/:id` | `policies.manage` | |
+
+Users carry `permissions` (what their role grants) and `attributes` (`{ key: [values] }`); `POST`/`PUT /auth/users` accept `role` (any role name) and `attributes`. A refused request answers 403 with `code: permission_denied` (`details.permission` names the missing one) or `access_denied` (a policy). Dashboards carry `canEdit` for the calling user.
 
 ## Misc
 | Method | Path | Notes |

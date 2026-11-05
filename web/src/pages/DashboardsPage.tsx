@@ -61,8 +61,8 @@ export function DashboardsPage() {
               </div>
               <div className="card__actions">
                 {editable && <Button variant="ghost" size="sm" iconOnly icon={<Copy size={15} />} onClick={() => duplicate.mutate(d.id)}>{t('common.duplicate')}</Button>}
-                {editable && <Button variant="ghost" size="sm" iconOnly icon={<Pencil size={15} />} onClick={() => navigate(`/dashboards/${d.id}/edit`)}>{t('common.edit')}</Button>}
-                {editable && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete(d)}>{t('common.delete')}</Button>}
+                {editable && d.canEdit !== false && <Button variant="ghost" size="sm" iconOnly icon={<Pencil size={15} />} onClick={() => navigate(`/dashboards/${d.id}/edit`)}>{t('common.edit')}</Button>}
+                {editable && d.canEdit !== false && <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete(d)}>{t('common.delete')}</Button>}
                 <Button variant="primary" size="sm" onClick={() => navigate(`/dashboards/${d.id}`)}>{t('dashboards.open')}</Button>
               </div>
             </article>

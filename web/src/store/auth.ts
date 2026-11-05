@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { api, ApiError } from '@/api/client';
-import type { User } from '@/api/types';
+import type { Permission, User } from '@/api/types';
 
 interface AuthState {
   user: User | null;
@@ -35,4 +35,6 @@ export const useAuth = create<AuthState>((set, get) => ({
   clear: () => set({ user: null, status: 'ready' }),
 }));
 
-export const canEdit = (user: User | null) => !!user && (user.role === 'admin' || user.role === 'editor');
+/** Does the signed-in user's role grant any of these permissions? The server is the judge; this only hides what it would refuse. */
+export const can = (user: User | null, ...any: Permission[]) => !!user && any.some((p) => user.permissions?.includes(p));
+export const canEdit = (user: User | null) => can(user, 'dashboards.edit');

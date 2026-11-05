@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 
-export type Role = 'admin' | 'editor' | 'viewer';
+/** A role name: one of the built-in three or a custom row of the roles table. */
+export type Role = string;
 
 export interface SessionUser {
   id: number;
@@ -28,7 +29,7 @@ export function verifySession(token: string): SessionUser | null {
       id: Number(payload.sub),
       username: String(payload.username),
       displayName: String(payload.displayName ?? payload.username),
-      role: (payload.role as Role) ?? 'viewer',
+      role: typeof payload.role === 'string' ? payload.role : 'viewer',
     };
   } catch {
     return null;

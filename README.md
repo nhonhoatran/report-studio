@@ -10,10 +10,12 @@ Công cụ báo cáo **kéo-thả, tự host** cho đội dev — thay thế Loo
 - **Khung vẽ dạng lưới**: kéo để sắp xếp, kéo góc để đổi kích thước; tự xếp 1 cột trên điện thoại.
 - **19 loại hiển thị** theo bộ biểu đồ của Power BI: cột, thanh ngang, đường, vùng (xếp chồng / 100%), cột & đường (2 trục), phân tán / bong bóng, thác nước, phễu, tròn, vành khuyên, sơ đồ cây, bản đồ nhiệt, radar, đồng hồ đo (có mục tiêu), thẻ số, KPI xu hướng (so với kỳ trước, mục tiêu, sparkline), thẻ nhiều dòng, bảng (sắp xếp theo cột, dòng tổng, thanh dữ liệu), ma trận (pivot hàng × cột, tổng).
 - Tùy chọn từng biểu đồ: vị trí chú giải, nhãn giá trị, đường tham chiếu và đường trung bình, định dạng số, sắp xếp, giới hạn dòng.
+- **Bộ lọc bảng điều khiển** (slicer) áp dụng cho mọi biểu đồ: khoảng thời gian (preset hoặc từ–đến), loại thời gian (năm / quý / tháng…), danh sách giá trị đọc từ dữ liệu (chọn một hoặc nhiều). Giá trị lưu cùng bảng là mặc định cho người xem.
+- **Phân quyền RBAC + ABAC**: vai trò = tập quyền (3 vai trò có sẵn, thêm vai trò tùy ý, bật/tắt từng quyền); chính sách truy cập theo thuộc tính người dùng (ai xem bảng nào, truy vấn nguồn nào, cho phép / từ chối) và **lọc dòng** (row-level security: `region IN (thuộc tính region của người dùng)`).
 - Gộp dữ liệu phía server: `SUM / AVG / COUNT / COUNT DISTINCT / MIN / MAX`, nhóm theo ngày (năm / quý / tháng / tuần / ngày / giờ), bộ lọc, sắp xếp, giới hạn dòng.
 - **Nguồn dữ liệu MariaDB**: thêm nhiều kết nối, kiểm tra kết nối, duyệt bảng/view và cột. Mật khẩu được mã hóa AES-256-GCM khi lưu.
 - **Bộ dữ liệu SQL**: viết câu `SELECT` (JOIN, CTE…) và dùng như một bảng. Server chỉ chấp nhận đúng một câu SELECT; mọi lệnh ghi bị chặn, kết nối đặt `READ ONLY` và có timeout.
-- Đăng nhập, phân quyền `admin / editor / viewer`, đổi mật khẩu, quản lý người dùng.
+- Đăng nhập, đổi mật khẩu, quản lý người dùng, vai trò và chính sách truy cập.
 - **Đăng nhập bằng Microsoft Entra ID** (SSO, OpenID Connect): tự tạo tài khoản lần đầu, ánh xạ app role / group sang vai trò, giới hạn theo domain e-mail; có thể tắt hẳn đăng nhập bằng mật khẩu.
 - Giao diện tiếng Việt (mặc định) và tiếng Anh. Thiết kế "Sổ cái": nền xanh đen, chữ ngà, nhấn đồng thau, font Archivo + JetBrains Mono tự host (không gọi Google Fonts); có chế độ sáng.
 - **Giao diện của bạn**: mỗi người dùng tự chọn chế độ sáng/tối, màu nhấn (6), bảng màu biểu đồ (5), cỡ chữ, góc bo và ngôn ngữ trong *Cài đặt*. Lựa chọn lưu theo tài khoản, áp dụng ngay khi đăng nhập trên mọi thiết bị.

@@ -5,7 +5,7 @@ import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type Dra
 import { ArrowLeft, Eye, Pencil, Plus, RefreshCw, Save, Sparkles } from 'lucide-react';
 import { api } from '@/api/client';
 import type { FieldInfo } from '@/api/types';
-import { useAuth, canEdit } from '@/store/auth';
+import { useAuth, can, canEdit } from '@/store/auth';
 import { useEditor } from '@/store/editor';
 import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
@@ -15,6 +15,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { KindIcon } from '@/components/ui/KindBadge';
 import { FieldsPane, FIELD_DRAG_PREFIX } from '@/components/editor/FieldsPane';
 import { Canvas, WIDGET_DROP_PREFIX } from '@/components/editor/Canvas';
+import { FilterBar } from '@/components/editor/FilterBar';
 import { VisualPane, WELL_DROP_PREFIX } from '@/components/editor/VisualPane';
 import { AiSuggestDialog } from '@/components/editor/AiSuggestDialog';
 import '@/components/editor/editor.css';
@@ -26,7 +27,6 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   const id = Number(params.id);
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);
-  const editable = mode === 'edit' && canEdit(user);
   const ed = useEditor();
   const qc = useQueryClient();
   const [dragging, setDragging] = useState<FieldInfo | null>(null);
@@ -35,6 +35,10 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   const [ai, setAi] = useState<{ open: boolean; key: number }>({ open: false, key: 0 });
 
   const dashboard = useQuery({ queryKey: ['dashboard', id], queryFn: () => api.dashboards.get(id).then((r) => r.dashboard), enabled: Number.isInteger(id) });
+  // the permission, and the server's own answer for this dashboard (a policy may close it to this user)
+  const mayEdit = canEdit(user) && dashboard.data?.canEdit !== false;
+  const editable = mode === 'edit' && mayEdit;
+  const manageFilters = can(user, 'dashboards.filters');
 
   useEffect(() => { if (dashboard.data) ed.load(dashboard.data); }, [dashboard.data]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { ed.setMode(editable ? 'edit' : 'view'); }, [editable]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -117,14 +121,14 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
           {editable ? (
             <>
               <Button icon={<Plus size={16} />} onClick={() => ed.addWidget()}>{t('editor.addVisual')}</Button>
-              <Button icon={<Sparkles size={16} />} onClick={() => setAi((a) => ({ open: true, key: a.key + 1 }))}>{t('ai.suggest')}</Button>
+              {can(user, 'ai.suggest') && <Button icon={<Sparkles size={16} />} onClick={() => setAi((a) => ({ open: true, key: a.key + 1 }))}>{t('ai.suggest')}</Button>}
               <Button icon={<Eye size={16} />} onClick={() => leave(`/dashboards/${id}`)}>{t('editor.view')}</Button>
               <Button variant="primary" icon={<Save size={16} />} onClick={() => save.mutate()} loading={save.isPending} disabled={!ed.dirty && !save.isError}>{t('common.save')}</Button>
             </>
           ) : (
             <>
               <Button icon={<RefreshCw size={16} />} onClick={refresh}>{t('common.refresh')}</Button>
-              {canEdit(user) && <Button variant="primary" icon={<Pencil size={16} />} onClick={() => navigate(`/dashboards/${id}/edit`)}>{t('editor.edit')}</Button>}
+              {mayEdit && <Button variant="primary" icon={<Pencil size={16} />} onClick={() => navigate(`/dashboards/${id}/edit`)}>{t('editor.edit')}</Button>}
             </>
           )}
         </div>
@@ -133,7 +137,10 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
           <div className="editor__body">
             <FieldsPane />
-            <Canvas editable />
+            <div className="editor__main">
+              <FilterBar editable manage={manageFilters} />
+              <Canvas editable />
+            </div>
             <VisualPane />
           </div>
           <DragOverlay dropAnimation={null}>
@@ -142,7 +149,10 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
         </DndContext>
       ) : (
         <div className="editor__body editor__body--view">
-          <Canvas editable={false} />
+          <div className="editor__main">
+            <FilterBar editable={false} manage={false} />
+            <Canvas editable={false} />
+          </div>
         </div>
       )}
       {editable && <AiSuggestDialog key={ai.key} open={ai.open} onClose={() => setAi((a) => ({ ...a, open: false }))} />}

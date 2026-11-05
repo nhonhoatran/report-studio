@@ -3,9 +3,11 @@ import { config } from './config.js';
 import { metaPool, migrate, seedAdmin } from './db/metadata.js';
 import { logger } from './lib/logger.js';
 import { closeAllPools } from './query/executor.js';
+import { seedRoles } from './auth/roles.js';
 
 async function main() {
   await migrate();
+  await seedRoles();
   await seedAdmin();
   const app = createApp();
   const server = app.listen(config.port, config.host, () => {

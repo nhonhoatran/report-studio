@@ -1,10 +1,36 @@
-export type Role = 'admin' | 'editor' | 'viewer';
+/** A role name: one of the built-in three (admin, editor, viewer) or a custom row of the roles table. */
+export type Role = string;
 export type AuthProvider = 'local' | 'entra';
+/** Mirrors server/src/auth/permissions.ts; the server decides, the client only hides what is not allowed. */
+export const PERMISSIONS = [
+  'dashboards.view', 'dashboards.edit', 'dashboards.filters',
+  'datasources.view', 'datasources.manage', 'datasets.manage',
+  'ai.suggest', 'ai.manage',
+  'users.manage', 'roles.manage', 'policies.manage',
+] as const;
+export type Permission = (typeof PERMISSIONS)[number];
+/** The user's ABAC attributes: every value a list ("region": ["Hà Nội"]). */
+export type UserAttributes = Record<string, string[]>;
 export interface User {
   id: number; username: string; displayName: string; role: Role;
   /** Where the account came from; `entra` accounts may have no password. */
   provider: AuthProvider; hasPassword: boolean; email?: string | null; createdAt?: string;
+  permissions: Permission[]; attributes: UserAttributes;
 }
+export interface RoleDefinition { name: string; label: string; permissions: Permission[]; builtin: boolean }
+
+// --- ABAC policies ----------------------------------------------------------------------------------
+export type ResourceType = 'dashboard' | 'datasource';
+export type PolicyAction = 'view' | 'edit' | 'query' | 'manage';
+export const RESOURCE_ACTIONS: Record<ResourceType, PolicyAction[]> = { dashboard: ['view', 'edit'], datasource: ['query', 'manage'] };
+export interface AccessPolicy {
+  id: number; name: string; enabled: boolean; effect: 'allow' | 'deny';
+  subject: { roles: string[]; attributes: Record<string, string[]> };
+  resource: { type: ResourceType; ids: number[] };
+  actions: PolicyAction[];
+  rowFilters: { field: string; attribute: string }[];
+}
+export type AccessPolicyInput = Omit<AccessPolicy, 'id'>;
 /** Sign-in methods the server offers (`GET /auth/providers`). */
 export interface AuthProviders { local: boolean; entra: boolean }
 
@@ -99,9 +125,37 @@ export interface Widget {
   datasourceId: number | null; source: QuerySource | null;
   query: WidgetQuery; options: WidgetOptions;
 }
-export interface DashboardDefinition { version: 1; widgets: Widget[]; filters: unknown[]; settings: Record<string, unknown> }
+// --- Dashboard-level filters (slicers) ------------------------------------------------------------
+export type DashboardFilterKind = 'date_range' | 'grain' | 'list';
+export const DASHBOARD_FILTER_KINDS: DashboardFilterKind[] = ['date_range', 'grain', 'list'];
+export type DatePreset = 'all' | 'today' | 'last_7_days' | 'last_30_days' | 'this_month' | 'last_month' | 'this_quarter' | 'this_year' | 'custom';
+export const DATE_PRESETS: DatePreset[] = ['all', 'today', 'last_7_days', 'last_30_days', 'this_month', 'last_month', 'this_quarter', 'this_year', 'custom'];
+/** What a filter currently selects; which keys are read depends on the filter's kind. */
+export interface FilterValue {
+  /** date_range */ preset?: DatePreset; from?: string; to?: string;
+  /** grain */ bucket?: DateBucket;
+  /** list: empty means "All" */ values?: (string | number)[];
+}
+export interface DashboardFilter {
+  id: string;
+  kind: DashboardFilterKind;
+  label: string;
+  /** date_range and list: the column it filters, on every visual of the data source whose source has it */
+  field?: string;
+  /** list: where its choices are read from; date_range: the data source it belongs to */
+  datasourceId?: number | null;
+  source?: QuerySource | null;
+  /** list: several values at once */
+  multi?: boolean;
+  /** the saved selection, which every viewer starts from */
+  value?: FilterValue;
+}
+
+export interface DashboardDefinition { version: 1; widgets: Widget[]; filters: DashboardFilter[]; settings: Record<string, unknown> }
 export interface Dashboard {
   id: number; name: string; description: string; widgetCount: number; createdAt: string; updatedAt: string; definition?: DashboardDefinition;
+  /** the server's answer for this user: the permission and no policy against it */
+  canEdit?: boolean;
 }
 export interface DashboardInput { name: string; description?: string; definition: DashboardDefinition }
 

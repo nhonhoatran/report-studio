@@ -30,6 +30,20 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 .field-item:hover .field-item__add, .field-item:focus-within .field-item__add { opacity: 1; }
 .drag-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); background: var(--color-raised); border: 1px solid var(--color-primary); border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: var(--text-sm); font-family: var(--font-mono); pointer-events: none; }
 
+/* The centre column: the dashboard's filters above the canvas */
+.editor__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.editor__main .canvas { flex: 1; }
+
+/* Filter bar: one labelled control per dashboard filter, the editor's tools over each on hover */
+.filter-bar { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-3); padding: var(--space-2) var(--space-4); background: var(--color-surface); border-bottom: 1px solid var(--color-border); flex: none; }
+.filter-bar__item { position: relative; display: flex; flex-direction: column; gap: var(--space-1); width: calc(var(--space-8) * 5); max-width: 100%; }
+.filter-bar__item--active .field__label { color: var(--color-primary-text); }
+.filter-bar__tools { position: absolute; top: calc(var(--space-1) * -1); right: 0; display: flex; opacity: 0; transition: opacity 120ms; z-index: 1; }
+.filter-bar__item:hover .filter-bar__tools, .filter-bar__item:focus-within .filter-bar__tools { opacity: 1; }
+.filter-bar__tools .btn { height: var(--space-5); width: var(--space-5); }
+.filter-bar__range { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1); }
+.filter-bar__actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); align-self: flex-end; min-height: var(--control-h-sm); }
+
 /* Canvas */
 .canvas { position: relative; overflow: auto; background: var(--color-canvas); min-height: 0; padding: var(--space-4); }
 .canvas__inner { min-height: 100%; }

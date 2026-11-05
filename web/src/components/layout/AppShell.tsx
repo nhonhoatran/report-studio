@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, Database, LayoutDashboard, LogOut, Menu, Settings } from 'lucide-react';
-import { useAuth } from '@/store/auth';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/client';
+import { can, useAuth } from '@/store/auth';
+import { roleLabel } from '@/components/settings/RolesPanel';
 import { useTheme } from '@/store/theme';
 import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
@@ -39,11 +42,13 @@ export function AppShell() {
   }, [open]);
 
   const nav = [
-    { to: '/dashboards', icon: <LayoutDashboard size={18} />, label: t('nav.dashboards') },
-    { to: '/datasources', icon: <Database size={18} />, label: t('nav.datasources') },
-    { to: '/settings', icon: <Settings size={18} />, label: t('nav.settings') },
-  ];
-  const roleLabel = user ? t(user.role === 'admin' ? 'settings.roleAdmin' : user.role === 'editor' ? 'settings.roleEditor' : 'settings.roleViewer') : '';
+    { to: '/dashboards', icon: <LayoutDashboard size={18} />, label: t('nav.dashboards'), show: true },
+    { to: '/datasources', icon: <Database size={18} />, label: t('nav.datasources'), show: can(user, 'datasources.view') },
+    { to: '/settings', icon: <Settings size={18} />, label: t('nav.settings'), show: true },
+  ].filter((n) => n.show);
+  // a custom role shows the label the roles table gives it
+  const roles = useQuery({ queryKey: ['roles'], queryFn: () => api.roles.list().then((r) => r.roles), enabled: !!user, staleTime: 5 * 60_000 });
+  const roleLabelText = user ? roleLabel(roles.data?.find((r) => r.name === user.role), user.role, t) : '';
 
   const onLogout = async () => {
     try {
@@ -73,7 +78,7 @@ export function AppShell() {
             <span className="app__avatar" aria-hidden>{initials(user.displayName)}</span>
             <div className="app__account-text">
               <span className="app__account-name truncate">{user.displayName}</span>
-              <span className="app__account-role truncate">{roleLabel}</span>
+              <span className="app__account-role truncate">{roleLabelText}</span>
             </div>
             <Button variant="ghost" size="sm" iconOnly icon={<LogOut size={15} />} onClick={onLogout}>{t('nav.logout')}</Button>
           </div>
