@@ -120,10 +120,12 @@ export function FilterBar({ editable, manage }: { /** edit mode: a change of val
   const setFilterValue = useEditor((s) => s.setFilterValue);
   const resetFilterValues = useEditor((s) => s.resetFilterValues);
   const removeFilter = useEditor((s) => s.removeFilter);
+  const crossFilters = useEditor((s) => s.crossFilters);
+  const removeCrossFilter = useEditor((s) => s.removeCrossFilter);
   const [editing, setEditing] = useState<DashboardFilter | 'new' | null>(null);
 
   const manageHere = editable && manage;
-  if (!manageHere && filters.length === 0) return null;
+  if (!manageHere && filters.length === 0 && crossFilters.length === 0) return null;
   const active = filters.filter((f) => isFilterActive(f, values[f.id])).length;
   const saved = filters.some((f) => isFilterActive(f, f.value));
   // "reset" is useful only when the session's choices differ from the saved ones
@@ -151,6 +153,16 @@ export function FilterBar({ editable, manage }: { /** edit mode: a change of val
           </div>
         );
       })}
+      {crossFilters.length > 0 && (
+        <div className="filter-bar__cross" role="group" aria-label={t('editor.crossFiltering')}>
+          {crossFilters.map((cf) => (
+            <span key={cf.widgetId} className="badge">
+              {t('editor.crossFiltering')}: {cf.label}
+              <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={() => removeCrossFilter(cf.widgetId)}>{t('editor.clearCrossFilter')}</Button>
+            </span>
+          ))}
+        </div>
+      )}
       <div className="filter-bar__actions">
         {active > 0 && <span className="text-sm text-muted">{t('filters.active', { count: active })}</span>}
         {(changed || (!editable && saved)) && (

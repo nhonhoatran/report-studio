@@ -1,4 +1,4 @@
-import type { DashboardFilter, DateBucket, DatePreset, FieldInfo, Filter, FilterValue, QuerySource, Widget } from '@/api/types';
+import type { CrossFilter, DashboardFilter, DateBucket, DatePreset, FieldInfo, Filter, FilterValue, QuerySource, Widget } from '@/api/types';
 import { newId } from './id';
 
 /*
@@ -126,4 +126,12 @@ export function filtersForChoices(filter: DashboardFilter, filters: DashboardFil
 /** Is any filter on the dashboard going to need the widget's field list before it can decide? */
 export function needsSourceFields(widget: Widget, filters: DashboardFilter[]): boolean {
   return filters.some((f) => f.kind !== 'grain' && filterConcerns(f, widget) && !sameSource(f.source, widget.source));
+}
+
+/** The clicks on other visuals that narrow this one: those naming a column of its source (the field list, else its own wells). */
+export function applyCrossFilters(widget: Widget, cross: CrossFilter[], sourceFields: FieldInfo[] | undefined): Filter[] {
+  if (widget.options.crossFilter === false) return [];
+  const own = new Set([...widget.query.dimensions.map((d) => d.field), ...widget.query.measures.map((m) => m.field), ...widget.query.filters.map((f) => f.field)]);
+  const has = (field: string) => (sourceFields ? sourceFields.some((f) => f.name === field) : own.has(field));
+  return cross.filter((cf) => cf.widgetId !== widget.id && has(cf.field)).map((cf) => ({ id: `x_${cf.widgetId}`, field: cf.field, op: 'eq' as const, value: cf.value }));
 }

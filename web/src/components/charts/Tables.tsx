@@ -7,7 +7,7 @@ import { canTotal, columnFormat, columnLabel, measureAgg, measureAliases, measur
 import { allParents, buildMatrix, colKeyOf, columnGroups, defaultExpanded, visibleNodes, type MatrixNode } from './matrix';
 import { cellFormat, columnStats, type ColumnStats } from './conditional';
 
-import type { Paging } from './ChartRenderer';
+import type { Paging, Pick } from './ChartRenderer';
 
 interface Props { widget: Widget; result: QueryResult }
 
@@ -42,7 +42,7 @@ function grandTotal(widget: Widget, result: QueryResult, alias: string): number 
 }
 
 /** The table visual: every column sortable from its header (by the server when paged), optional totals row, data bars and a pager. */
-export function DataTable({ widget, result, paging }: Props & { paging?: Paging }) {
+export function DataTable({ widget, result, paging, pick }: Props & { paging?: Paging; pick?: Pick }) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const fmt = (alias: string) => columnFormat(widget, alias);
@@ -55,6 +55,8 @@ export function DataTable({ widget, result, paging }: Props & { paging?: Paging 
   };
   const numeric = useMemo(() => new Set(result.columns.filter((c) => c.role === 'measure' || typeof result.rows[0]?.[c.alias] === 'number').map((c) => c.alias)), [result]);
   const rows = useMemo(() => (paging ? result.rows : sortRows(result.rows, sort, numeric)), [paging, result.rows, sort, numeric]);
+  const firstDim = result.columns.find((c) => c.role === 'dimension')?.alias;
+  const pickable = !!pick?.onSelect && !!firstDim;
   const measures = useMemo(() => measureAliases(result), [result]);
   const maxima = useMemo(() => {
     const out = new Map<string, number>();
@@ -95,7 +97,8 @@ export function DataTable({ widget, result, paging }: Props & { paging?: Paging 
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i}>
+            <tr key={i} className={pickable ? 'chart-table__row--pick' : undefined} onClick={pickable ? () => pick!.onSelect!(str(r[firstDim!])) : undefined}
+              onContextMenu={pick?.onDrill && firstDim ? (e) => { e.preventDefault(); pick.onDrill!(str(r[firstDim])); } : undefined}>
               {result.columns.map((c) => {
                 const f = cf(c.alias, r[c.alias]);
                 return (
@@ -140,7 +143,7 @@ export function DataTable({ widget, result, paging }: Props & { paging?: Paging 
  * subtotal) and the totals row and column come from the server with the rest, so a ratio totals as
  * a ratio and nothing is fetched when a level opens.
  */
-export function Matrix({ widget, result }: Props) {
+export function Matrix({ widget, result, pick }: Props & { pick?: Pick }) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const fmt = (alias: string) => columnFormat(widget, alias);
@@ -216,7 +219,9 @@ export function Matrix({ widget, result }: Props) {
             const isOpen = parent && open.has(node.key);
             return (
               <tr key={node.key} className={parent ? 'matrix__parent' : undefined}>
-                <th scope="row" style={{ '--level': node.level - 1 } as CSSProperties}>
+                <th scope="row" style={{ '--level': node.level - 1 } as CSSProperties} className={pick?.onSelect && node.level === 1 ? 'chart-table__row--pick' : undefined}
+                  onClick={pick?.onSelect && node.level === 1 ? () => pick.onSelect!(node.path[0]!) : undefined}
+                  onContextMenu={pick?.onDrill && node.level === 1 ? (e) => { e.preventDefault(); pick.onDrill!(node.path[0]!); } : undefined}>
                   <span className="matrix__row-head">
                     {rowLevels > 1 && (parent
                       ? <button type="button" className="matrix__toggle" aria-expanded={isOpen} title={t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })} onClick={() => toggle(node.key)}>{isOpen ? <Minus size={12} aria-hidden /> : <Plus size={12} aria-hidden />}<span className="sr-only">{t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })}</span></button>

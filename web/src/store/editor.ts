@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Dashboard, DashboardDefinition, DashboardFilter, DashboardPage, FieldInfo, FilterValue, LegacyDashboardDefinition, QuerySource, Widget, WidgetType } from '@/api/types';
+import type { CrossFilter, Dashboard, DashboardDefinition, DashboardFilter, DashboardPage, FieldInfo, FilterValue, LegacyDashboardDefinition, QuerySource, Widget, WidgetType } from '@/api/types';
 import { isFormula } from '@/api/types';
 import { translate, useI18nStore } from '@/i18n';
 import { addDimension, autoPlace, coerceForType, newWidget } from '@/lib/widget';
@@ -25,6 +25,8 @@ interface EditorState {
   filterValues: Record<string, FilterValue>;
   /** when "refresh" was last pressed: fetches right after it skip the server's result cache */
   refreshedAt: number;
+  /** the categories clicked on visuals this session: never saved, one per source visual */
+  crossFilters: CrossFilter[];
 
   /** `pageId` (from the URL) picks the page to open when the report has it; otherwise the first */
   load: (d: Dashboard & { definition: NonNullable<Dashboard['definition']> }, pageId?: string | null) => void;
@@ -49,6 +51,10 @@ interface EditorState {
   /** back to the saved defaults */
   resetFilterValues: () => void;
   refresh: () => void;
+  /** a click on the same category again lifts it; a click elsewhere on the same visual replaces it */
+  toggleCrossFilter: (cf: CrossFilter) => void;
+  removeCrossFilter: (widgetId: string) => void;
+  clearCrossFilters: () => void;
   // pages
   setActivePage: (id: string) => void;
   addPage: () => string;
@@ -140,13 +146,14 @@ export const useEditor = create<EditorState>((set, get) => ({
   activeFields: [],
   filterValues: {},
   refreshedAt: 0,
+  crossFilters: [],
 
   load: (d, pageId) => {
     const definition = normalize(d.definition);
     const activePageId = pageId && definition.pages.some((p) => p.id === pageId) ? pageId : definition.pages[0]!.id;
     set({
       dashboardId: d.id, name: d.name, description: d.description, definition, activePageId,
-      selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: valuesOf(definition.filters),
+      selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: valuesOf(definition.filters), crossFilters: [],
     });
   },
   reset: () => set({ dashboardId: null, name: '', description: '', definition: empty(), activePageId: '', selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: {} }),
@@ -238,9 +245,17 @@ export const useEditor = create<EditorState>((set, get) => ({
     : { filterValues: { ...s.filterValues, [id]: value } })),
   resetFilterValues: () => set((s) => ({ filterValues: valuesOf(s.definition.filters) })),
   refresh: () => set({ refreshedAt: Date.now() }),
+  toggleCrossFilter: (cf) => set((s) => {
+    const same = s.crossFilters.find((x) => x.widgetId === cf.widgetId);
+    const rest = s.crossFilters.filter((x) => x.widgetId !== cf.widgetId);
+    return { crossFilters: same && same.field === cf.field && same.value === cf.value ? rest : [...rest, cf] };
+  }),
+  removeCrossFilter: (widgetId) => set((s) => ({ crossFilters: s.crossFilters.filter((x) => x.widgetId !== widgetId) })),
+  clearCrossFilters: () => set({ crossFilters: [] }),
+  // a page switch drops the clicks too: they belong to the visuals of the page they were made on
 
   // the selection belongs to a page, so it is dropped on every switch
-  setActivePage: (id) => set((s) => (s.definition.pages.some((p) => p.id === id) && id !== s.activePageId ? { activePageId: id, selectedId: null } : s)),
+  setActivePage: (id) => set((s) => (s.definition.pages.some((p) => p.id === id) && id !== s.activePageId ? { activePageId: id, selectedId: null, crossFilters: [] } : s)),
   addPage: () => {
     const { definition } = get();
     const page = newPage(defaultPageName(definition.pages.length + 1));

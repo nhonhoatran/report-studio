@@ -64,6 +64,8 @@ export const en: Dictionary = {
     // export, paging
     export: 'Export data', exportTitle: 'Export the visual\'s data', exportHint: 'With the filters in force; numbers stay numbers in Excel. The server caps the row count.',
     exportCsv: 'Download CSV', exportExcel: 'Download Excel', exportPrint: 'Print / save the page as PDF',
+    crossFilter: 'Cross-filter: a click on this visual filters the others, and the other way round', crossFiltering: 'Filtering', clearCrossFilter: 'Clear this cross-filter',
+    drill: 'See the rows', drillTitle: 'Rows behind: {title} {value}',
     pageSize: 'Rows per page', pageSizeNone: 'No paging', pager: 'Pages', pagePrev: 'Previous page', pageNext: 'Next page', pageLabel: 'Page {n}',
     // conditional formatting
     conditional: 'Conditional formatting', cfAddRule: 'Add rule', cfThreshold: 'Threshold', cfThresholdTo: 'To', cfColor: 'Colour', cfIcon: 'Icon', cfIconNone: 'No icon', cfIconUp: '▲ up / reached', cfIconDown: '▼ down / short',

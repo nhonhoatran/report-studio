@@ -61,6 +61,8 @@ export const vi = {
     // export, paging
     export: 'Xuất dữ liệu', exportTitle: 'Xuất dữ liệu biểu đồ', exportHint: 'Theo đúng bộ lọc đang áp; số là số trong Excel. Số dòng tối đa do máy chủ đặt.',
     exportCsv: 'Tải CSV', exportExcel: 'Tải Excel', exportPrint: 'In / lưu PDF cả trang',
+    crossFilter: 'Lọc chéo: bấm vào biểu đồ này lọc các biểu đồ khác, và ngược lại', crossFiltering: 'Đang lọc', clearCrossFilter: 'Bỏ lọc chéo',
+    drill: 'Xem dòng gốc', drillTitle: 'Dòng gốc: {title} {value}',
     pageSize: 'Số dòng mỗi trang', pageSizeNone: 'Không phân trang', pager: 'Phân trang', pagePrev: 'Trang trước', pageNext: 'Trang sau', pageLabel: 'Trang {n}',
     // conditional formatting
     conditional: 'Định dạng có điều kiện', cfAddRule: 'Thêm quy tắc', cfThreshold: 'Ngưỡng', cfThresholdTo: 'Đến', cfColor: 'Màu', cfIcon: 'Biểu tượng', cfIconNone: 'Không biểu tượng', cfIconUp: '▲ tăng / đạt', cfIconDown: '▼ giảm / chưa đạt',

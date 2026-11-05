@@ -202,6 +202,8 @@ export interface WidgetOptions {
   topN?: number; topNOthers?: boolean;
   /** table: rows per page; the server pages and sorts, the table shows a pager */
   pageSize?: number;
+  /** a click on a category filters the page's other visuals, and this visual follows the others' clicks (default on) */
+  crossFilter?: boolean;
 }
 export interface WidgetQuery { dimensions: Dimension[]; measures: Measure[]; filters: Filter[]; orderBy: OrderBy[]; limit?: number }
 export interface Widget {
@@ -243,6 +245,8 @@ export interface DashboardFilter {
 /** One page of a report: its own widgets and layout; filters are the report's and pick a page or all of them. */
 export interface DashboardPage { id: string; name: string; widgets: Widget[] }
 /** Version 2 of the document: widgets live on pages. A version 1 document (top-level `widgets`) is read as one page. */
+/** A session-only filter raised by a click on a visual: the clicked category, applied to the page's other visuals that have the column. */
+export interface CrossFilter { widgetId: string; field: string; value: string | number; label: string }
 export interface DashboardDefinition { version: 2; pages: DashboardPage[]; filters: DashboardFilter[]; settings: Record<string, unknown> }
 export interface LegacyDashboardDefinition { version: 1; widgets: Widget[]; filters: DashboardFilter[]; settings: Record<string, unknown> }
 export interface Dashboard {

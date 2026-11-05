@@ -454,6 +454,9 @@ export function VisualPane() {
         {has('series') && (
           <Checkbox label={t('editor.sharedAxis')} checked={!!o.sharedAxis} onChange={(e) => setOptions({ sharedAxis: e.target.checked })} />
         )}
+        {spec.maxDimensions > 0 && (
+          <Checkbox label={t('editor.crossFilter')} checked={o.crossFilter !== false} onChange={(e) => setOptions({ crossFilter: e.target.checked ? undefined : false })} />
+        )}
         {has('totals') && (
           <Checkbox label={t('editor.showTotals')} checked={!!o.showTotals} onChange={(e) => setOptions({ showTotals: e.target.checked })} />
         )}

@@ -15,13 +15,15 @@ import './charts.css';
 
 /** A paged table: which page is shown, how to move, which column the reader sorted by, and whether a next page exists. */
 export interface Paging { index: number; setIndex: (i: number) => void; sort?: OrderBy; setSort: (s: OrderBy | undefined) => void; more: boolean }
-interface Props { widget: Widget; result: QueryResult; paging?: Paging }
+/** What a click or a right-click on a mark means: the first dimension's value there. */
+export interface Pick { onSelect?: (value: string) => void; onDrill?: (value: string) => void }
+interface Props { widget: Widget; result: QueryResult; paging?: Paging; pick?: Pick }
 
 /**
  * Draws one widget's result. ECharts types go through `options.ts`; cards and tables are HTML
  * (`Cards.tsx`, `Tables.tsx`). Everything reads the tokens at render time and again on the look stamp.
  */
-export function ChartRenderer({ widget, result: raw, paging }: Props) {
+export function ChartRenderer({ widget, result: raw, paging, pick }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const look = useTheme((s) => s.stamp);
@@ -42,11 +44,17 @@ export function ChartRenderer({ widget, result: raw, paging }: Props) {
     case 'kpi': return <KpiCard widget={widget} result={result} />;
     case 'trend': return <TrendCard widget={widget} result={result} />;
     case 'multirow': return <MultiRowCard widget={widget} result={result} />;
-    case 'table': return <DataTable widget={widget} result={result} paging={paging} />;
-    case 'matrix': return <Matrix widget={widget} result={result} />;
+    case 'table': return <DataTable widget={widget} result={result} paging={paging} pick={pick} />;
+    case 'matrix': return <Matrix widget={widget} result={result} pick={pick} />;
     default: break;
   }
 
   if (!option) return null;
-  return <ReactEChartsCore echarts={echarts} option={option} notMerge lazyUpdate className="chart-fill" style={{ height: '100%', width: '100%' }} />;
+  // the category a mark stands for: its name on most series, the detail name on a scatter point
+  const nameOf = (p: { name?: string; value?: unknown; seriesType?: string }) => (p.seriesType === 'scatter' && Array.isArray(p.value) ? String(p.value[3] ?? '') : String(p.name ?? ''));
+  const events = pick?.onSelect || pick?.onDrill ? {
+    click: (p: { name?: string; value?: unknown; seriesType?: string }) => { const v = nameOf(p); if (v && pick?.onSelect) pick.onSelect(v); },
+    contextmenu: (p: { name?: string; value?: unknown; seriesType?: string; event?: { event?: Event } }) => { p.event?.event?.preventDefault(); const v = nameOf(p); if (v && pick?.onDrill) pick.onDrill(v); },
+  } : undefined;
+  return <ReactEChartsCore echarts={echarts} option={option} notMerge lazyUpdate className={['chart-fill', pick?.onSelect && 'chart-fill--pick'].filter(Boolean).join(' ')} style={{ height: '100%', width: '100%' }} onEvents={events} />;
 }
