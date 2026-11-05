@@ -57,6 +57,10 @@ export const en: Dictionary = {
     matrixExpand: 'Levels open at first', expandToLevel: { one: '{count} level', other: '{count} levels' }, expandAllLevels: 'All', expandAll: 'Expand all', collapseAll: 'Collapse all', expandRow: 'Expand {name}', collapseRow: 'Collapse {name}', levelJoin: ' / ',
     analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line', sharedAxis: 'Lines share the columns\' axis',
     dataAt: 'data as of {time}', fromCache: 'cached',
+    // top N, time comparison
+    topN: 'Keep only the top N', topNAll: 'All', topNOthers: 'Gather the rest into "Others"', others: 'Others',
+    compare: 'Compare with', compares: { previous_period: 'Previous period', same_period_last_year: 'Same period last year' }, comparePreviousShort: 'previous period', compareLastYearShort: 'same period last year', compareChange: '± %',
+    cumulative: 'Running total over the period (by time)',
     // conditional formatting
     conditional: 'Conditional formatting', cfAddRule: 'Add rule', cfThreshold: 'Threshold', cfThresholdTo: 'To', cfColor: 'Colour', cfIcon: 'Icon', cfIconNone: 'No icon', cfIconUp: '▲ up / reached', cfIconDown: '▼ down / short',
     cfScale: 'Scale for the other cells', cfScales: { none: 'None', danger_success: 'Red → green (low → high)', success_danger: 'Green → red (low → high)', muted_primary: 'Light → strong' },

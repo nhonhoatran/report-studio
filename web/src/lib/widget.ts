@@ -17,7 +17,8 @@ export type ChartFeature =
   | 'target'        // a target number when no second measure carries it
   | 'series'        // each measure drawn as a column or a line (combo)
   | 'hierarchy'     // row levels that open and close (matrix): how many are open at first
-  | 'conditional';  // conditional formatting of the measures' cells (tables, matrices)
+  | 'conditional'   // conditional formatting of the measures' cells (tables, matrices)
+  | 'topN';         // keep the first dimension's top n values, the rest as "others"
 
 export interface ChartSpec {
   /** gallery grouping (Power BI order): compare, trend, part-to-whole, relation, single value, tables */
@@ -38,7 +39,7 @@ export interface ChartSpec {
 const AXIS_LEGEND: ChartSpec['wells'] = { dimensions: 'editor.wellAxisLegend', measures: 'editor.wellValues' };
 const CATEGORY_VALUES: ChartSpec['wells'] = { dimensions: 'editor.wellCategory', measures: 'editor.wellValues' };
 const AXIS_SLOTS: TKey[] = ['editor.slotAxis', 'editor.slotLegend'];
-const CARTESIAN_FEATURES: ChartFeature[] = ['legend', 'stacking', 'showValues', 'sort', 'analytics'];
+const CARTESIAN_FEATURES: ChartFeature[] = ['legend', 'stacking', 'showValues', 'sort', 'analytics', 'topN'];
 
 const cartesian: ChartSpec = {
   group: 'compare', minDimensions: 0, maxDimensions: 2, minMeasures: 1, maxMeasures: 20,
@@ -46,7 +47,7 @@ const cartesian: ChartSpec = {
 };
 const radial: ChartSpec = {
   group: 'part', minDimensions: 1, maxDimensions: 1, minMeasures: 1, maxMeasures: 1,
-  wells: CATEGORY_VALUES, features: ['legend', 'showValues', 'sort'], limit: 1000,
+  wells: CATEGORY_VALUES, features: ['legend', 'showValues', 'sort', 'topN'], limit: 1000,
 };
 
 /** One row per visual type: how many fields each well takes, what each slot means, which options apply. */
@@ -72,14 +73,14 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
   },
   funnel: {
     group: 'part', minDimensions: 1, maxDimensions: 1, minMeasures: 1, maxMeasures: 1,
-    wells: { dimensions: 'editor.wellStage', measures: 'editor.wellValues' }, features: ['legend', 'showValues'], limit: 1000,
+    wells: { dimensions: 'editor.wellStage', measures: 'editor.wellValues' }, features: ['legend', 'showValues', 'topN'], limit: 1000,
   },
   pie: radial,
   donut: radial,
   treemap: {
     group: 'part', minDimensions: 1, maxDimensions: 2, minMeasures: 1, maxMeasures: 1,
     wells: { dimensions: 'editor.wellGroupDetail', measures: 'editor.wellValues' },
-    dimensionSlots: ['editor.slotGroup', 'editor.slotDetail'], features: ['showValues', 'sort'], limit: 1000,
+    dimensionSlots: ['editor.slotGroup', 'editor.slotDetail'], features: ['showValues', 'sort', 'topN'], limit: 1000,
   },
   heatmap: {
     group: 'relation', minDimensions: 2, maxDimensions: 2, minMeasures: 1, maxMeasures: 1,
@@ -106,11 +107,11 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
   },
   multirow: {
     group: 'single', minDimensions: 1, maxDimensions: 1, minMeasures: 1, maxMeasures: 20,
-    wells: CATEGORY_VALUES, features: ['sort'], limit: 200,
+    wells: CATEGORY_VALUES, features: ['sort', 'topN'], limit: 200,
   },
   table: {
     group: 'table', minDimensions: 0, maxDimensions: 10, minMeasures: 0, maxMeasures: 20,
-    wells: { dimensions: 'editor.wellColumns', measures: 'editor.wellValues' }, features: ['sort', 'totals', 'dataBars', 'conditional'], limit: 500,
+    wells: { dimensions: 'editor.wellColumns', measures: 'editor.wellValues' }, features: ['sort', 'totals', 'dataBars', 'conditional', 'topN'], limit: 500,
   },
   matrix: {
     group: 'table', minDimensions: 1, maxDimensions: 10, minMeasures: 1, maxMeasures: 20,
@@ -267,10 +268,13 @@ export function isRunnable(widget: Widget): boolean {
 /** What the server reads of a measure: a formula, or a field with its aggregation; the display name goes along for formulas to resolve. */
 function toQueryMeasure(m: Measure): QueryMeasure {
   const label = m.label?.trim() || undefined;
-  const showAs = m.showAs && m.showAs !== 'value' ? m.showAs : undefined;
-  if (isFormula(m)) return { formula: m.formula ?? '', alias: measureAlias(m), label, showAs };
-  return { field: m.field, agg: m.agg, alias: m.alias, label, showAs };
+  const extras = { label, showAs: m.showAs && m.showAs !== 'value' ? m.showAs : undefined, compare: m.compare, cumulative: m.cumulative || undefined };
+  if (isFormula(m)) return { formula: m.formula ?? '', alias: measureAlias(m), ...extras };
+  return { field: m.field, agg: m.agg, alias: m.alias, ...extras };
 }
+
+/** Top N applies to the first dimension when it is a plain column (a bucketed date has no "top"). */
+export const topNApplies = (widget: Widget): boolean => hasFeature(widget.type, 'topN') && !!widget.query.dimensions[0] && (!widget.query.dimensions[0].bucket || widget.query.dimensions[0].bucket === 'none') && widget.query.measures.length > 0;
 
 /** Which well is still short for this type: the message to show instead of the chart and the well it names; null when the query can run. */
 export function missingWells(widget: Widget): { message: TKey; well: TKey } | null {
@@ -289,7 +293,7 @@ export function stackingOf(widget: Widget): Stacking {
 }
 
 /** What the dashboard's filters add to the query (see lib/filters.ts); nothing when the dashboard has none. */
-export interface QueryExtras { filters?: Filter[]; bucket?: DateBucket }
+export interface QueryExtras { filters?: Filter[]; bucket?: DateBucket; period?: { field: string; from?: string; to?: string } }
 
 export function toQueryRequest(widget: Widget, extras: QueryExtras = {}): QueryRequest | null {
   if (!widget.datasourceId || !widget.source) return null;
@@ -313,7 +317,20 @@ export function toQueryRequest(widget: Widget, extras: QueryExtras = {}): QueryR
     totals: widget.type !== 'matrix' && hasFeature(widget.type, 'totals') && widget.options.showTotals === true && q.dimensions.length > 0 && q.measures.length > 0 ? true : undefined,
     // a matrix takes its parent rows and totals the same way, one set per level
     subtotals: matrixSubtotals(widget),
+    topN: topNApplies(widget) && widget.options.topN && widget.options.topN > 0 ? { n: widget.options.topN, others: widget.options.topNOthers !== false } : undefined,
+    period: periodOf(widget, extras),
   };
+}
+
+/** The date column, range and grain a comparison or running total works from: the dashboard's date filter, else the widget's first date dimension. */
+function periodOf(widget: Widget, extras: QueryExtras): QueryRequest['period'] {
+  const needs = widget.query.measures.some((m) => m.compare || m.cumulative);
+  if (!needs) return undefined;
+  const dateDim = widget.query.dimensions.find((d) => d.kind === 'date' || (d.bucket && d.bucket !== 'none'));
+  const field = extras.period?.field ?? dateDim?.field;
+  if (!field) return undefined;
+  const bucket = dateDim?.field === field ? (extras.bucket && dateDim.bucket && dateDim.bucket !== 'none' ? extras.bucket : dateDim.bucket) : undefined;
+  return { field, from: extras.period?.from, to: extras.period?.to, bucket: bucket && bucket !== 'none' ? bucket : undefined };
 }
 
 const safe = (s: string) => (s.replace(/[^A-Za-z0-9_]/g, '_').slice(0, 60) || 'col');

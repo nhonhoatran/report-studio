@@ -45,7 +45,9 @@ function safeAlias(raw: string): string {
 }
 
 function dimensionExpr(d: Dimension): string {
-  const col = quoteIdent(d.field);
+  const raw = quoteIdent(d.field);
+  // the previous period's rows are moved forward onto the current period's keys
+  const col = d.shift && d.shift.n !== 0 ? `DATE_ADD(${raw}, INTERVAL ${Math.trunc(d.shift.n)} ${d.shift.unit})` : raw;
   switch (d.bucket ?? 'none') {
     case 'none': return col;
     case 'year': return `DATE_FORMAT(${col}, '%Y')`;
@@ -171,7 +173,11 @@ function shareDimensions(showAs: ShowAs | undefined, dimensionCount: number): nu
 class MeasureRenderer {
   private readonly asts = new Map<number, FormulaNode>();
   private readonly refs: MeasureRef[];
-  constructor(private readonly measures: Measure[], private readonly aliases: string[], private readonly dimensions: Dimension[], private readonly params: unknown[]) {
+  /** the dimension a running total follows: the period's column, else the first bucketed one */
+  private readonly dateIndex: number;
+  constructor(private readonly measures: Measure[], private readonly aliases: string[], private readonly dimensions: Dimension[], private readonly params: unknown[], periodField?: string) {
+    const byField = periodField ? dimensions.findIndex((d) => d.field === periodField) : -1;
+    this.dateIndex = byField >= 0 ? byField : dimensions.findIndex((d) => d.bucket && d.bucket !== 'none');
     this.refs = measures.map((m, i) => ({ alias: aliases[i]!, label: m.label, formula: isFormulaMeasure(m) ? m.formula : undefined }));
     measures.forEach((m, i) => {
       if (!isFormulaMeasure(m)) return;
@@ -223,12 +229,17 @@ class MeasureRenderer {
     }
   }
 
-  /** What the cell shows per group: the value, or its share of the total the "show as" names. */
+  /** What the cell shows per group: the value, or its share of the total the "show as" names, or its running total along the date. */
   value(index: number): string {
-    const share = shareDimensions(this.measures[index]!.showAs, this.dimensions.length);
+    const m = this.measures[index]!;
+    const share = shareDimensions(m.showAs, this.dimensions.length);
     const base = this.base(index);
-    if (share === null) return base;
-    return `(${base} / NULLIF(SUM(${this.base(index)}) ${this.window(share)}, 0))`;
+    const shown = share === null ? base : `(${base} / NULLIF(SUM(${this.base(index)}) ${this.window(share)}, 0))`;
+    if (!m.cumulative || this.dateIndex < 0) return shown;
+    // a running total: the other dimensions partition it, the date orders it
+    const others = this.dimensions.map((_, i) => i).filter((i) => i !== this.dateIndex);
+    const partition = others.length ? `PARTITION BY ${others.map((i) => dimensionExpr(this.dimensions[i]!)).join(', ')} ` : '';
+    return `SUM(${shown}) OVER (${partition}ORDER BY ${dimensionExpr(this.dimensions[this.dateIndex]!)} ROWS UNBOUNDED PRECEDING)`;
   }
 
   /**
@@ -277,7 +288,7 @@ export function buildSelect(req: QueryRequest, fromClause: string, maxRows: numb
     columns.push({ alias, role: 'dimension', source: d.field });
   }
   const measureAliases = req.measures.map((m, i) => uniq(measureAlias(m, i)));
-  const renderer = new MeasureRenderer(req.measures, measureAliases, req.dimensions, selectParams);
+  const renderer = new MeasureRenderer(req.measures, measureAliases, req.dimensions, selectParams, req.period?.field);
   req.measures.forEach((m, i) => {
     const alias = measureAliases[i]!;
     selects.push(`${renderer.value(i)} AS ${quoteIdent(alias)}`);

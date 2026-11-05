@@ -69,6 +69,8 @@ export interface AppliedFilters {
   filters: Filter[];
   /** a grain filter: the bucket every bucketed date dimension takes */
   bucket?: DateBucket;
+  /** the date range filter in force on this widget: what a time comparison shifts */
+  period?: { field: string; from?: string; to?: string };
 }
 
 const sameSource = (a: QuerySource | null | undefined, b: QuerySource | null | undefined) =>
@@ -99,6 +101,7 @@ export function applyDashboardFilters(widget: Widget, filters: DashboardFilter[]
     if (!(sameSource(f.source, widget.source) || hasColumn(field))) continue;
     if (f.kind === 'date_range') {
       const range = resolveDateRange(v, today);
+      if (!out.period) out.period = { field, from: range?.from, to: range?.to };
       if (!range) continue;
       if (range.from) out.filters.push({ id: `${f.id}_from`, field, op: 'gte', value: range.from });
       if (range.to) out.filters.push({ id: `${f.id}_to`, field, op: 'lt', value: nextDay(range.to) });

@@ -5,11 +5,12 @@ import {
   Hash, LayoutDashboard, Plus, Radar, Rows3, Settings2, Sigma, Table2, TableProperties, TrendingUp, X,
 } from 'lucide-react';
 import type { ConditionalColor, ConditionalFormat, ConditionalOp, Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure, NumberFormat, ShowAs, Stacking, Widget, WidgetType } from '@/api/types';
-import { AGGREGATIONS, CONDITIONAL_COLORS, CONDITIONAL_OPS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STACKINGS, WIDGET_TYPES, isFormula } from '@/api/types';
+import { AGGREGATIONS, COMPARES, CONDITIONAL_COLORS, CONDITIONAL_OPS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STACKINGS, WIDGET_TYPES, isFormula } from '@/api/types';
+import type { Compare } from '@/api/types';
 import { useT, type TFn, type TKey } from '@/i18n';
 import { FORMULA_MAX_LENGTH, checkFormula, type FormulaError } from '@shared/formula';
 import { useEditor, useSelectedWidget } from '@/store/editor';
-import { CHART_SPECS, comboRole, dimensionName, hasFeature, matrixColumnCount, matrixSplit, maxDimensions, maxMeasures, measureAlias, measureName, measureRefs, newFormulaMeasure, stackingOf } from '@/lib/widget';
+import { CHART_SPECS, comboRole, dimensionName, hasFeature, matrixColumnCount, matrixSplit, maxDimensions, maxMeasures, measureAlias, measureName, measureRefs, newFormulaMeasure, stackingOf, topNApplies } from '@/lib/widget';
 import { newId } from '@/lib/id';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Input, Select } from '@/components/ui/Field';
@@ -167,6 +168,13 @@ function MeasureDetails({ m, auto, onChange, children, conditional }: { m: Measu
           <option value="">{t('editor.formatDefault')}</option>
           {NUMBER_FORMATS.map((f) => <option key={f} value={f}>{t(formatKey(f))}</option>)}
         </Select>
+      </div>
+      <div className="option-grid">
+        <Select size="sm" label={t('editor.compare')} value={m.compare ?? ''} onChange={(e) => onChange({ ...m, compare: (e.target.value || undefined) as Compare | undefined })}>
+          <option value="">{t('common.none')}</option>
+          {COMPARES.map((c) => <option key={c} value={c}>{t(`editor.compares.${c}`)}</option>)}
+        </Select>
+        <Checkbox label={t('editor.cumulative')} checked={m.cumulative === true} onChange={(e) => onChange({ ...m, cumulative: e.target.checked || undefined })} />
       </div>
       {conditional && <ConditionalEditor cf={conditional.cf} onChange={conditional.onChange} />}
     </div>
@@ -405,6 +413,12 @@ export function VisualPane() {
         ))}
 
         <div className="pane__section-title">{t('editor.options')}</div>
+        {topNApplies(widget) && (
+          <div className="option-grid">
+            <NumberOption label={t('editor.topN')} value={o.topN} placeholder={t('editor.topNAll')} onChange={(v) => setOptions({ topN: v && v > 0 ? Math.floor(v) : undefined })} />
+            {!!o.topN && <Checkbox label={t('editor.topNOthers')} checked={o.topNOthers !== false} onChange={(e) => setOptions({ topNOthers: e.target.checked })} />}
+          </div>
+        )}
         {has('sort') && q.measures.length > 0 && (
           <Select size="sm" label={t('editor.sort')} value={o.sortBy ?? 'none'} onChange={(e) => setOptions({ sortBy: e.target.value as Widget['options']['sortBy'] })}>
             <option value="none">{t('common.none')}</option>

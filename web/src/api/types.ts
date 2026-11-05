@@ -61,6 +61,8 @@ export const AGGREGATIONS: Aggregation[] = ['sum', 'avg', 'count', 'count_distin
 export const DATE_BUCKETS: DateBucket[] = ['none', 'year', 'quarter', 'month', 'week', 'day', 'hour'];
 export const FILTER_OPS: FilterOp[] = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in', 'contains', 'starts_with', 'between', 'is_null', 'not_null'];
 
+export type Compare = 'previous_period' | 'same_period_last_year';
+export const COMPARES: Compare[] = ['previous_period', 'same_period_last_year'];
 /** How a measure is shown: as is, or as its share of a total the server computes over the same query. */
 export type ShowAs = 'value' | 'percent_of_total' | 'percent_of_parent' | 'percent_of_column';
 export const SHOW_AS: ShowAs[] = ['value', 'percent_of_total', 'percent_of_parent', 'percent_of_column'];
@@ -83,6 +85,10 @@ export interface Measure {
   showAs?: ShowAs;
   /** this measure's own number format, over the widget's; a share is always a percent */
   format?: NumberFormat;
+  /** also shown against an earlier period (`<alias>_prev`, `<alias>_change` columns come back) */
+  compare?: Compare;
+  /** a running total along the date dimension within the other dimensions */
+  cumulative?: boolean;
   /** combo chart only: drawn as a line on the secondary axis instead of a column */
   series?: 'column' | 'line';
 }
@@ -93,9 +99,10 @@ export interface OrderBy { alias: string; direction: 'asc' | 'desc' }
 export type QuerySource = { type: 'table'; table: string } | { type: 'dataset'; datasetId: number };
 
 /** What the server reads of a measure: an aggregation or a formula, each with its alias, display name and show-as. */
+type QueryMeasureExtras = { alias?: string; label?: string; showAs?: ShowAs; compare?: Compare; cumulative?: boolean };
 export type QueryMeasure =
-  | { field: string; agg: Aggregation; alias?: string; label?: string; showAs?: ShowAs }
-  | { formula: string; alias?: string; label?: string; showAs?: ShowAs };
+  | ({ field: string; agg: Aggregation } & QueryMeasureExtras)
+  | ({ formula: string } & QueryMeasureExtras);
 export interface QueryRequest {
   datasourceId: number;
   source: QuerySource;
@@ -108,6 +115,10 @@ export interface QueryRequest {
   offset?: number;
   /** skip the server's result cache (the refresh button) */
   fresh?: boolean;
+  /** keep the first dimension's top n values by the first measure; the rest become one "others" row */
+  topN?: { n: number; others: boolean };
+  /** the date column and range the dashboard filters by, and the grain shown: what a comparison shifts and a running total follows */
+  period?: { field: string; from?: string; to?: string; bucket?: DateBucket };
   /** ask the server for every measure over all groups, and per first / second dimension value */
   totals?: boolean;
   /** subtotals: every measure over the groups sharing these dimensions' values, one list per set (the matrix's levels) */
@@ -187,6 +198,8 @@ export interface WidgetOptions {
   sharedAxis?: boolean;
   /** table / matrix: conditional formatting by measure alias */
   conditional?: Record<string, ConditionalFormat>;
+  /** keep the first dimension's top n values by the first measure; `topNOthers` gathers the rest into one row (default on) */
+  topN?: number; topNOthers?: boolean;
 }
 export interface WidgetQuery { dimensions: Dimension[]; measures: Measure[]; filters: Filter[]; orderBy: OrderBy[]; limit?: number }
 export interface Widget {

@@ -54,6 +54,10 @@ export const vi = {
     matrixExpand: 'Số cấp mở sẵn', expandToLevel: '{count} cấp', expandAllLevels: 'Tất cả', expandAll: 'Mở tất cả', collapseAll: 'Thu gọn tất cả', expandRow: 'Mở {name}', collapseRow: 'Thu gọn {name}', levelJoin: ' / ',
     analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình', sharedAxis: 'Đường dùng chung trục Y với cột',
     dataAt: 'dữ liệu lúc {time}', fromCache: 'từ cache',
+    // top N, time comparison
+    topN: 'Chỉ giữ N mục lớn nhất', topNAll: 'Tất cả', topNOthers: 'Gộp phần còn lại thành "Còn lại"', others: 'Còn lại',
+    compare: 'So sánh với', compares: { previous_period: 'Kỳ trước', same_period_last_year: 'Cùng kỳ năm trước' }, comparePreviousShort: 'kỳ trước', compareLastYearShort: 'cùng kỳ năm trước', compareChange: '± %',
+    cumulative: 'Lũy kế trong kỳ (theo thời gian)',
     // conditional formatting
     conditional: 'Định dạng có điều kiện', cfAddRule: 'Thêm quy tắc', cfThreshold: 'Ngưỡng', cfThresholdTo: 'Đến', cfColor: 'Màu', cfIcon: 'Biểu tượng', cfIconNone: 'Không biểu tượng', cfIconUp: '▲ tăng / đạt', cfIconDown: '▼ giảm / chưa đạt',
     cfScale: 'Thang màu cho ô còn lại', cfScales: { none: 'Không', danger_success: 'Đỏ → xanh (thấp → cao)', success_danger: 'Xanh → đỏ (thấp → cao)', muted_primary: 'Nhạt → đậm' },

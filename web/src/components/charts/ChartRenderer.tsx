@@ -8,6 +8,7 @@ import { useI18nStore, useT } from '@/i18n';
 import { ECHARTS_TYPES } from '@/lib/widget';
 import { EmptyState } from '@/components/ui/Feedback';
 import { buildOption, readChartTheme } from './options';
+import { labelOthers } from './shape';
 import { KpiCard, MultiRowCard, TrendCard } from './Cards';
 import { DataTable, Matrix } from './Tables';
 import './charts.css';
@@ -18,11 +19,13 @@ interface Props { widget: Widget; result: QueryResult }
  * Draws one widget's result. ECharts types go through `options.ts`; cards and tables are HTML
  * (`Cards.tsx`, `Tables.tsx`). Everything reads the tokens at render time and again on the look stamp.
  */
-export function ChartRenderer({ widget, result }: Props) {
+export function ChartRenderer({ widget, result: raw }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const look = useTheme((s) => s.stamp);
   const fmt = widget.options.numberFormat ?? 'auto';
+  // Top N: the server's "others" row gets its word
+  const result = useMemo(() => labelOthers(raw, t('editor.others')), [raw, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const option = useMemo<EChartsOption | null>(() => {
     if (!ECHARTS_TYPES.includes(widget.type) || result.rows.length === 0) return null;

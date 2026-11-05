@@ -23,10 +23,18 @@ const identifier = z
 
 const scalar = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
+export const DATE_UNITS = ['DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR', 'HOUR'] as const;
+export type DateUnit = (typeof DATE_UNITS)[number];
+/** A move along the calendar: the previous period's rows are shifted forward by it so they land on the current keys. */
+export const dateShiftSchema = z.object({ n: z.number().int().min(-3650).max(3650), unit: z.enum(DATE_UNITS) });
+export type DateShift = z.infer<typeof dateShiftSchema>;
+
 export const dimensionSchema = z.object({
   field: identifier,
   bucket: z.enum(DATE_BUCKETS).optional(),
   alias: identifier.optional(),
+  /** applied to the column before bucketing (the comparison query sets it) */
+  shift: dateShiftSchema.optional(),
 });
 
 /** How a measure is shown: as is, or as its share of a total computed over the same query (window functions). */
@@ -35,21 +43,28 @@ export type ShowAs = (typeof SHOW_AS)[number];
 
 /** A display name travels with the measure so a formula may refer to it by that name. */
 const label = z.string().max(200).optional();
+/** Against which earlier period a measure is also shown (`<alias>_prev`, `<alias>_change`). */
+export const COMPARE = ['previous_period', 'same_period_last_year'] as const;
+export type Compare = (typeof COMPARE)[number];
+const measureExtras = {
+  alias: identifier.optional(),
+  label,
+  showAs: z.enum(SHOW_AS).optional(),
+  compare: z.enum(COMPARE).optional(),
+  /** a running total along the date dimension within the other dimensions */
+  cumulative: z.boolean().optional(),
+};
 
 export const aggMeasureSchema = z.object({
   field: identifier.or(z.literal('*')),
   agg: z.enum(AGGREGATIONS),
-  alias: identifier.optional(),
-  label,
-  showAs: z.enum(SHOW_AS).optional(),
+  ...measureExtras,
 });
 
 /** A calculated measure: an expression over the widget's other measures, evaluated after GROUP BY (see shared/formula.ts). */
 export const formulaMeasureSchema = z.object({
   formula: z.string().min(1).max(FORMULA_MAX_LENGTH),
-  alias: identifier.optional(),
-  label,
-  showAs: z.enum(SHOW_AS).optional(),
+  ...measureExtras,
 });
 
 export const measureSchema = z.union([formulaMeasureSchema, aggMeasureSchema]);
@@ -84,6 +99,10 @@ export const queryRequestSchema = z.object({
   offset: z.number().int().min(0).max(10_000_000).optional(),
   /** skip the result cache for this run (the "refresh" button) */
   fresh: z.boolean().optional(),
+  /** keep the first dimension's top `n` values by the first measure; the rest become one "others" row (`__rs_others`) */
+  topN: z.object({ n: z.number().int().min(1).max(1000), others: z.boolean().default(true) }).optional(),
+  /** the date column and range the dashboard filters by, and the grain shown: what a comparison shifts and a running total follows */
+  period: z.object({ field: identifier, from: z.string().max(32).optional(), to: z.string().max(32).optional(), bucket: z.enum(DATE_BUCKETS).optional() }).optional(),
   /** also compute every measure over all groups (and, with two or more dimensions, per first and per second dimension value) */
   totals: z.boolean().optional(),
   /**
