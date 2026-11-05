@@ -9,7 +9,7 @@ import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STAC
 import { useT, type TFn, type TKey } from '@/i18n';
 import { FORMULA_MAX_LENGTH, checkFormula, type FormulaError } from '@shared/formula';
 import { useEditor, useSelectedWidget } from '@/store/editor';
-import { CHART_SPECS, comboRole, dimensionName, hasFeature, maxDimensions, maxMeasures, measureAlias, measureName, measureRefs, newFormulaMeasure, stackingOf } from '@/lib/widget';
+import { CHART_SPECS, comboRole, dimensionName, hasFeature, matrixColumnCount, matrixSplit, maxDimensions, maxMeasures, measureAlias, measureName, measureRefs, newFormulaMeasure, stackingOf } from '@/lib/widget';
 import { newId } from '@/lib/id';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Input, Select } from '@/components/ui/Field';
@@ -255,6 +255,15 @@ export function VisualPane() {
   const refs = measureRefs(q.measures);
   const formulaError = (i: number): FormulaError | null => { const r = checkFormula(refs[i]!, refs); return r.ok ? null : r.error; };
   const canAddMeasure = q.measures.length < maxMeasures(widget.type);
+  // a matrix keeps its row levels and its column dimensions in two wells over one dimension list
+  const split = matrixSplit(widget);
+  const rowDims = spec.columnsWell ? split.rows : q.dimensions;
+  const colDims = spec.columnsWell ? split.columns : [];
+  const removeDimension = (index: number, fromColumns: boolean) => updateWidget(widget.id, (w) => ({
+    ...w,
+    query: { ...w.query, dimensions: w.query.dimensions.filter((_, j) => j !== index) },
+    options: fromColumns ? { ...w.options, matrixColumns: Math.max(0, matrixColumnCount(w) - 1) } : w.options,
+  }));
 
   return (
     <aside className="pane pane--right" aria-label={t('editor.visual')}>
@@ -278,13 +287,25 @@ export function VisualPane() {
           })}
         </div>
 
-        <Well id={`${WELL_DROP_PREFIX}dimensions`} label={t(spec.wells.dimensions)} empty={q.dimensions.length === 0} disabled={maxDimensions(widget.type) === 0}>
-          {q.dimensions.map((d, i) => (
+        <Well id={`${WELL_DROP_PREFIX}dimensions`} label={t(spec.wells.dimensions)} empty={rowDims.length === 0} disabled={maxDimensions(widget.type) === 0}>
+          {rowDims.map((d, i) => (
             <DimensionChip key={`${d.field}-${i}`} d={d} slot={spec.dimensionSlots?.[i]}
               onChange={(nd) => setQuery({ dimensions: q.dimensions.map((x, j) => (j === i ? nd : x)) })}
-              onRemove={() => setQuery({ dimensions: q.dimensions.filter((_, j) => j !== i) })} />
+              onRemove={() => removeDimension(i, false)} />
           ))}
         </Well>
+        {spec.columnsWell && (
+          <Well id={`${WELL_DROP_PREFIX}columns`} label={t(spec.columnsWell)} empty={colDims.length === 0}>
+            {colDims.map((d, i) => {
+              const index = rowDims.length + i;
+              return (
+                <DimensionChip key={`${d.field}-${index}`} d={d}
+                  onChange={(nd) => setQuery({ dimensions: q.dimensions.map((x, j) => (j === index ? nd : x)) })}
+                  onRemove={() => removeDimension(index, true)} />
+              );
+            })}
+          </Well>
+        )}
         <Well id={`${WELL_DROP_PREFIX}measures`} label={t(spec.wells.measures)} empty={q.measures.length === 0} disabled={maxMeasures(widget.type) === 0}
           action={canAddMeasure && <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={() => setQuery({ measures: [...q.measures, newFormulaMeasure()] })}>{t('editor.addCalculation')}</Button>}>
           {q.measures.map((m, i) => {
@@ -339,6 +360,12 @@ export function VisualPane() {
         )}
         {has('totals') && (
           <Checkbox label={t('editor.showTotals')} checked={!!o.showTotals} onChange={(e) => setOptions({ showTotals: e.target.checked })} />
+        )}
+        {has('hierarchy') && rowDims.length > 1 && (
+          // how many row levels a reader sees at first; every deeper level opens with its parent's toggle
+          <Select size="sm" label={t('editor.matrixExpand')} value={Math.min(o.matrixExpand ?? 1, rowDims.length)} onChange={(e) => setOptions({ matrixExpand: Number(e.target.value) })}>
+            {rowDims.map((_, i) => <option key={i} value={i + 1}>{i + 1 === rowDims.length ? t('editor.expandAllLevels') : t('editor.expandToLevel', { n: i + 1 })}</option>)}
+          </Select>
         )}
         {has('dataBars') && (
           <Checkbox label={t('editor.dataBars')} checked={!!o.dataBars} onChange={(e) => setOptions({ dataBars: e.target.checked })} />

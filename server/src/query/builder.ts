@@ -1,6 +1,6 @@
 import { badRequest } from '../lib/errors.js';
 import { checkFormula, type FormulaAggregation, type FormulaNode, type MeasureRef } from '../shared/formula.js';
-import { isFormulaMeasure, type AggMeasure, type Dimension, type Filter, type Measure, type OrderBy, type QueryRequest, type QueryResultColumn, type QueryTotals, type ShowAs } from './types.js';
+import { isFormulaMeasure, type AggMeasure, type Dimension, type Filter, type Measure, type OrderBy, type QueryRequest, type QueryResultColumn, type QuerySubtotals, type QueryTotals, type ShowAs } from './types.js';
 
 export interface BuiltTotals {
   /** result column that holds each measure's total over all groups, by measure alias */
@@ -12,6 +12,10 @@ export interface BuiltTotals {
   colDim?: string;
 }
 
+/** One requested subtotal: the dimensions it is taken over and the result column per measure alias. */
+export interface BuiltSubtotal { dims: number[]; key: string; columns: Record<string, string> }
+export interface BuiltSubtotals { partitions: BuiltSubtotal[]; dimAliases: string[] }
+
 export interface BuiltQuery {
   sql: string;
   params: unknown[];
@@ -19,6 +23,8 @@ export interface BuiltQuery {
   limit: number;
   /** where the totals landed, when the request asked for them (`extractTotals` lifts them out of the rows) */
   totals?: BuiltTotals;
+  /** where the subtotals landed (`extractSubtotals`) */
+  subtotals?: BuiltSubtotals;
 }
 
 export function quoteIdent(name: string): string {
@@ -298,6 +304,27 @@ export function buildSelect(req: QueryRequest, fromClause: string, maxRows: numb
     }
   }
 
+  // subtotals ride along the same way: one windowed column per measure for every requested set of dimensions
+  let subtotals: BuiltSubtotals | undefined;
+  if (req.subtotals?.length && req.measures.length && req.dimensions.length) {
+    subtotals = { partitions: [], dimAliases: columns.filter((c) => c.role === 'dimension').map((c) => c.alias) };
+    const seenKeys = new Set<string>();
+    req.subtotals.forEach((raw, pi) => {
+      const dims = Array.from(new Set(raw)).filter((i) => i < req.dimensions.length).sort((a, b) => a - b);
+      const key = dims.join(',');
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+      const cols: Record<string, string> = {};
+      req.measures.forEach((_, i) => {
+        const alias = measureAliases[i]!;
+        const col = uniq(`__rs_p${pi}_${alias}`);
+        selects.push(`${renderer.total(i, dims)} AS ${quoteIdent(col)}`);
+        cols[alias] = col;
+      });
+      subtotals!.partitions.push({ dims, key, columns: cols });
+    });
+  }
+
   const groupBy = req.dimensions.length && req.measures.length
     ? ` GROUP BY ${req.dimensions.map((_, i) => i + 1).join(', ')}`
     : '';
@@ -309,10 +336,32 @@ export function buildSelect(req: QueryRequest, fromClause: string, maxRows: numb
     : req.dimensions.length ? ` ORDER BY ${req.dimensions.map((_, i) => i + 1).join(', ')}` : '';
 
   const sql = `SELECT ${distinct}${selects.join(', ')} FROM ${fromClause}${where}${groupBy}${orderBy} LIMIT ${limit + 1}`;
-  return { sql, params: [...selectParams, ...whereParams], columns, limit, totals };
+  return { sql, params: [...selectParams, ...whereParams], columns, limit, totals, subtotals };
 }
 
 const text = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
+
+/**
+ * Lifts the subtotal columns out of the rows. Every row carries its own group's subtotals, so each
+ * partition is read once per distinct value tuple (`["Bán buôn","2026-01"]`), and the rows keep only
+ * the dimensions and measures.
+ */
+export function extractSubtotals(rows: Record<string, unknown>[], built: BuiltSubtotals | undefined): { rows: Record<string, unknown>[]; subtotals?: QuerySubtotals } {
+  if (!built) return { rows };
+  const subtotals: QuerySubtotals = {};
+  const extra = new Set<string>();
+  for (const p of built.partitions) {
+    const byValues: Record<string, Record<string, unknown>> = {};
+    for (const r of rows) {
+      const key = JSON.stringify(p.dims.map((i) => text(r[built.dimAliases[i]!])));
+      if (!(key in byValues)) byValues[key] = Object.fromEntries(Object.entries(p.columns).map(([alias, col]) => [alias, r[col] ?? null]));
+    }
+    subtotals[p.key] = byValues;
+    for (const col of Object.values(p.columns)) extra.add(col);
+  }
+  const stripped = rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => !extra.has(k))));
+  return { rows: stripped, subtotals };
+}
 
 /** Lifts the totals columns out of the rows: the rows keep only the dimensions and measures, the totals come back keyed by measure alias. */
 export function extractTotals(rows: Record<string, unknown>[], built: BuiltTotals | undefined): { rows: Record<string, unknown>[]; totals?: QueryTotals } {

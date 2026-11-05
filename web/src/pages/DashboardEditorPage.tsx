@@ -100,7 +100,7 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
       ed.select(widgetId);
       ed.dropField(widgetId, field);
     } else if (overId.startsWith(WELL_DROP_PREFIX) && ed.selectedId) {
-      ed.dropField(ed.selectedId, field, overId.slice(WELL_DROP_PREFIX.length) as 'dimensions' | 'measures');
+      ed.dropField(ed.selectedId, field, overId.slice(WELL_DROP_PREFIX.length) as 'dimensions' | 'columns' | 'measures');
     }
   };
 

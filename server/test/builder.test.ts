@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSelect, extractTotals, quoteIdent, quoteQualified } from '../src/query/builder.js';
+import { buildSelect, extractSubtotals, extractTotals, quoteIdent, quoteQualified } from '../src/query/builder.js';
 import type { QueryRequest } from '../src/query/types.js';
 
 const base = (over: Partial<QueryRequest>): QueryRequest => ({
@@ -179,5 +179,47 @@ describe('show as and totals', () => {
     expect(buildSelect(base({ measures: [{ field: 'x', agg: 'sum' }], totals: true }), '`t`', 10).totals).toBeUndefined();
     expect(buildSelect(base({ dimensions: [{ field: 'r' }], totals: true }), '`t`', 10).totals).toBeUndefined();
     expect(extractTotals([{ a: 1 }], undefined)).toEqual({ rows: [{ a: 1 }] });
+  });
+});
+
+describe('subtotals (hierarchical matrix)', () => {
+  it('adds one windowed column per measure for every requested set of dimensions and lifts them out by value', () => {
+    const q = buildSelect(base({
+      dimensions: [{ field: 'channel' }, { field: 'team' }, { field: 'month', bucket: 'month' }],
+      measures: [{ field: 'x', agg: 'sum' }, { formula: '[sum_x] / 2', alias: 'half' }],
+      // the matrix: level 1 per column, level 1 across columns, columns alone, everything; a duplicate is ignored
+      subtotals: [[0, 2], [0], [2], [], [2, 0]],
+    }), '`t`', 10);
+    expect(q.sql).toContain("SUM(SUM(`x`)) OVER (PARTITION BY `channel`, DATE_FORMAT(`month`, '%Y-%m')) AS `__rs_p0_sum_x`");
+    expect(q.sql).toContain("(SUM(SUM(`x`)) OVER (PARTITION BY `channel`, DATE_FORMAT(`month`, '%Y-%m')) / NULLIF(?, 0)) AS `__rs_p0_half`");
+    expect(q.sql).toContain('SUM(SUM(`x`)) OVER (PARTITION BY `channel`) AS `__rs_p1_sum_x`');
+    expect(q.sql).toContain('SUM(SUM(`x`)) OVER () AS `__rs_p3_sum_x`');
+    expect(q.sql).not.toContain('__rs_p4_');
+    expect(q.columns.map((c) => c.alias)).toEqual(['channel', 'team', 'month_month', 'sum_x', 'half']);
+    expect(q.subtotals?.partitions.map((p) => p.key)).toEqual(['0,2', '0', '2', '']);
+    // the formula's constant is a parameter each time the formula is rendered: once per group, once per partition
+    expect(q.params).toEqual([2, 2, 2, 2, 2]);
+
+    const row = (channel: string, team: string, month: string, x: number, extra: Record<string, unknown>) => ({ channel, team, month_month: month, sum_x: x, half: x / 2, ...extra });
+    const rows = [
+      row('A', 't1', '2026-01', 1, { __rs_p0_sum_x: 3, __rs_p0_half: 1.5, __rs_p1_sum_x: 10, __rs_p1_half: 5, __rs_p2_sum_x: 4, __rs_p2_half: 2, __rs_p3_sum_x: 20, __rs_p3_half: 10 }),
+      row('A', 't2', '2026-01', 2, { __rs_p0_sum_x: 3, __rs_p0_half: 1.5, __rs_p1_sum_x: 10, __rs_p1_half: 5, __rs_p2_sum_x: 4, __rs_p2_half: 2, __rs_p3_sum_x: 20, __rs_p3_half: 10 }),
+      row('B', 't3', '2026-01', 1, { __rs_p0_sum_x: 1, __rs_p0_half: 0.5, __rs_p1_sum_x: 10, __rs_p1_half: 5, __rs_p2_sum_x: 4, __rs_p2_half: 2, __rs_p3_sum_x: 20, __rs_p3_half: 10 }),
+    ];
+    const out = extractSubtotals(rows, q.subtotals);
+    expect(out.rows[0]).toEqual({ channel: 'A', team: 't1', month_month: '2026-01', sum_x: 1, half: 0.5 });
+    expect(out.subtotals).toEqual({
+      '0,2': { '["A","2026-01"]': { sum_x: 3, half: 1.5 }, '["B","2026-01"]': { sum_x: 1, half: 0.5 } },
+      '0': { '["A"]': { sum_x: 10, half: 5 }, '["B"]': { sum_x: 10, half: 5 } },
+      '2': { '["2026-01"]': { sum_x: 4, half: 2 } },
+      '': { '[]': { sum_x: 20, half: 10 } },
+    });
+  });
+
+  it('ignores subtotal dimensions the query does not have, and asks for none without measures', () => {
+    const q = buildSelect(base({ dimensions: [{ field: 'a' }], measures: [{ field: 'x', agg: 'sum' }], subtotals: [[5], [0, 7]] }), '`t`', 10);
+    expect(q.subtotals?.partitions.map((p) => p.key)).toEqual(['', '0']);
+    expect(buildSelect(base({ dimensions: [{ field: 'a' }], subtotals: [[0]] }), '`t`', 10).subtotals).toBeUndefined();
+    expect(extractSubtotals([{ a: 1 }], undefined)).toEqual({ rows: [{ a: 1 }] });
   });
 });

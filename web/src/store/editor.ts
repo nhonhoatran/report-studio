@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Dashboard, DashboardDefinition, DashboardFilter, DashboardPage, FieldInfo, FilterValue, LegacyDashboardDefinition, QuerySource, Widget, WidgetType } from '@/api/types';
 import { isFormula } from '@/api/types';
 import { translate, useI18nStore } from '@/i18n';
-import { autoPlace, coerceForType, newWidget } from '@/lib/widget';
+import { addDimension, autoPlace, coerceForType, newWidget } from '@/lib/widget';
 import { defaultFilterValue } from '@/lib/filters';
 import { newId } from '@/lib/id';
 
@@ -36,7 +36,7 @@ interface EditorState {
   updateWidget: (id: string, patch: Partial<Widget> | ((w: Widget) => Widget)) => void;
   setWidgetType: (id: string, type: WidgetType) => void;
   applyLayout: (layout: { i: string; x: number; y: number; w: number; h: number }[]) => void;
-  dropField: (widgetId: string, field: FieldInfo, well?: 'dimensions' | 'measures') => void;
+  dropField: (widgetId: string, field: FieldInfo, well?: 'dimensions' | 'columns' | 'measures') => void;
   setActiveDataset: (choice: DatasetChoice | null, fields: FieldInfo[]) => void;
   markSaved: () => void;
   addFilter: (filter: DashboardFilter) => void;
@@ -206,9 +206,9 @@ export const useEditor = create<EditorState>((set, get) => ({
       if (!w.source && activeDataset) next = { ...w, datasourceId: activeDataset.datasourceId, source: activeDataset.source };
       if (!well) return autoPlace(next, field);
       const q = next.query;
-      if (well === 'dimensions') {
+      if (well === 'dimensions' || well === 'columns') {
         if (q.dimensions.some((d) => d.field === field.name)) return next;
-        return { ...next, query: { ...q, dimensions: [...q.dimensions, { field: field.name, kind: field.kind, bucket: field.kind === 'date' ? 'month' : undefined }] } };
+        return addDimension(next, { field: field.name, kind: field.kind, bucket: field.kind === 'date' ? 'month' : undefined }, well);
       }
       if (q.measures.some((m) => m.field === field.name)) return next;
       return { ...next, query: { ...q, measures: [...q.measures, { field: field.name, kind: field.kind, agg: field.kind === 'number' ? 'sum' : 'count' }] } };

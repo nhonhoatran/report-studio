@@ -113,26 +113,6 @@ export function toShares(series: Series[]): Series[] {
   return series.map((s) => ({ ...s, data: s.data.map((v, i) => (v === null || !totals[i] ? null : Math.abs(v) / totals[i]!)) }));
 }
 
-export interface Pivot {
-  rowKeys: string[];
-  colKeys: string[];
-  /** the measure values of the cell at (row, col) */
-  cell: (row: string, col: string) => Row | undefined;
-}
-
-/** Matrix: rows by dim 0, columns by dim 1 (a single empty column when there is none). */
-export function pivot(result: QueryResult): Pivot {
-  const [rowDim, colDim] = dimensionAliases(result);
-  const rowKeys = rowDim ? uniq(result.rows.map((r) => str(r[rowDim]))) : [''];
-  const colKeys = colDim ? uniq(result.rows.map((r) => str(r[colDim]))) : [''];
-  const cells = new Map<string, Row>();
-  for (const r of result.rows) {
-    const k = `${rowDim ? str(r[rowDim]) : ''}\u0000${colDim ? str(r[colDim]) : ''}`;
-    if (!cells.has(k)) cells.set(k, r);
-  }
-  return { rowKeys, colKeys, cell: (row, col) => cells.get(`${row}\u0000${col}`) };
-}
-
 /** Only additive aggregations can be totalled on the client; averages, minima and maxima cannot. */
 export const canTotal = (agg: Aggregation | undefined) => agg === 'sum' || agg === 'count';
 

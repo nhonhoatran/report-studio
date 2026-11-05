@@ -82,6 +82,12 @@ export const queryRequestSchema = z.object({
   limit: z.number().int().positive().max(100_000).optional(),
   /** also compute every measure over all groups (and, with two or more dimensions, per first and per second dimension value) */
   totals: z.boolean().optional(),
+  /**
+   * Subtotals: for each list of dimension indices, every measure over the groups that share those
+   * dimensions' values (a matrix asks for one list per row level, with and without its column
+   * dimensions). Computed as window functions in the same statement; see `extractSubtotals`.
+   */
+  subtotals: z.array(z.array(z.number().int().min(0).max(9)).max(10)).max(24).optional(),
 });
 
 export type Dimension = z.infer<typeof dimensionSchema>;
@@ -122,6 +128,12 @@ export interface QueryTotals {
   byColumn?: Record<string, Record<string, unknown>>;
 }
 
+/**
+ * Subtotals, by the dimensions they are taken over ("0,1" = the first two dimensions), then by
+ * those dimensions' values as a JSON array of texts (`["Bán buôn","2026-01"]`), then by measure alias.
+ */
+export type QuerySubtotals = Record<string, Record<string, Record<string, unknown>>>;
+
 export interface QueryResult {
   columns: QueryResultColumn[];
   rows: Record<string, unknown>[];
@@ -130,4 +142,5 @@ export interface QueryResult {
   durationMs: number;
   sql: string;
   totals?: QueryTotals;
+  subtotals?: QuerySubtotals;
 }

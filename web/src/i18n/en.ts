@@ -46,13 +46,15 @@ export const en: Dictionary = {
     filterField: 'Field', filterOp: 'Condition', filterValue: 'Value', filterValues: 'Values (comma separated)',
     // wells per chart type
     wellAxisLegend: 'Axis / Legend', wellComboValues: 'Values (columns & line)', wellDetailLegend: 'Details / Legend', wellScatterValues: 'X axis / Y axis / Size',
-    wellStage: 'Stage', wellGroupDetail: 'Group / Details', wellXY: 'X axis / Y axis', wellValueTarget: 'Value / Target', wellTrendAxis: 'Trend axis', wellRowsColumns: 'Rows / Columns',
-    slotAxis: 'Axis', slotLegend: 'Legend', slotDetail: 'Details', slotX: 'X', slotY: 'Y', slotSize: 'Size', slotGroup: 'Group', slotRows: 'Rows', slotColumns: 'Columns', slotValue: 'Value', slotTarget: 'Target',
+    wellStage: 'Stage', wellGroupDetail: 'Group / Details', wellXY: 'X axis / Y axis', wellValueTarget: 'Value / Target', wellTrendAxis: 'Trend axis', wellRows: 'Rows',
+    slotAxis: 'Axis', slotLegend: 'Legend', slotDetail: 'Details', slotX: 'X', slotY: 'Y', slotSize: 'Size', slotGroup: 'Group', slotValue: 'Value', slotTarget: 'Target',
     needsDimension: 'Drop a text or date field into {well}', needsTwoDimensions: 'This chart needs two fields in {well}', needsTwoMeasures: 'Drop two numeric fields into {well}',
     comboAsLine: 'Draw as a line',
     // options per chart type
     stacking: 'Stacking', stackingStacked: 'Stacked', stackingPercent: '100%', legendPosition: 'Legend position', legendBottom: 'Bottom', legendTop: 'Top', legendRight: 'Right',
     showTotals: 'Show totals', dataBars: 'Data bars in cells', gaugeMin: 'Minimum', gaugeMax: 'Maximum', target: 'Target', showTarget: 'Show target',
+    // matrix hierarchy
+    matrixExpand: 'Open at first to', expandToLevel: 'Level {n}', expandAllLevels: 'All levels', expandAll: 'Expand all', collapseAll: 'Collapse all', expandRow: 'Expand {name}', collapseRow: 'Collapse {name}',
     analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line',
     // inside the visuals
     total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',

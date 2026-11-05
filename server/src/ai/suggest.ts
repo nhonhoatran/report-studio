@@ -40,7 +40,7 @@ export const SHAPES: Record<WidgetType, { dimensions: [number, number]; measures
   trend: { dimensions: [1, 1], measures: [1, 2] },
   multirow: { dimensions: [1, 1], measures: [1, 20] },
   table: { dimensions: [0, 10], measures: [0, 20] },
-  matrix: { dimensions: [1, 2], measures: [1, 20] },
+  matrix: { dimensions: [1, 10], measures: [1, 20] },
 };
 const SORTS = ['none', 'measure_desc', 'measure_asc'] as const;
 
@@ -135,7 +135,7 @@ export function buildPrompt(input: PromptInput): { system: string; user: string 
     '- scatter: 1-2 dimensions (detail, then legend), 2-3 measures (x, y, optional bubble size).',
     '- waterfall, funnel, pie, donut: 1 dimension, 1 measure. treemap: 1-2 dimensions (group, then detail), 1 measure. heatmap: exactly 2 dimensions (x, y), 1 measure. radar: 1-2 dimensions (axis, then legend), 1+ measures.',
     '- kpi: 0 dimensions, 1 measure. gauge: 0 dimensions, 1-2 measures (value, optional target). trend: 1 date dimension, 1-2 measures (value, optional target): a KPI with its sparkline.',
-    '- multirow: 1 dimension, 1+ measures. table: up to 10 dimensions, any measures. matrix: 1-2 dimensions (rows, then columns), 1+ measures.',
+    '- multirow: 1 dimension, 1+ measures. table: up to 10 dimensions, any measures. matrix: 1+ dimensions (row levels, then one for the columns when there are two or more), 1+ measures.',
     'Use field names exactly as listed; never invent fields. Prefer line/area or trend on a date field for trends, column/bar for comparisons, pie/donut/treemap for shares, scatter for two numeric measures, heatmap for two categories, kpi/gauge for a single headline number, matrix for a cross-tab.',
     `Write title and explanation in ${language}. Keep titles under 60 characters and explanations to one sentence.`,
     'Make the suggestions diverse: different chart types and different questions about the data.',

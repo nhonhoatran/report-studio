@@ -43,13 +43,15 @@ export const vi = {
     filterField: 'Trường', filterOp: 'Điều kiện', filterValue: 'Giá trị', filterValues: 'Giá trị (phân cách bằng dấu phẩy)',
     // wells per chart type
     wellAxisLegend: 'Trục / Chú giải', wellComboValues: 'Giá trị (cột & đường)', wellDetailLegend: 'Chi tiết / Chú giải', wellScatterValues: 'Trục X / Trục Y / Kích cỡ',
-    wellStage: 'Giai đoạn', wellGroupDetail: 'Nhóm / Chi tiết', wellXY: 'Trục X / Trục Y', wellValueTarget: 'Giá trị / Mục tiêu', wellTrendAxis: 'Trục thời gian', wellRowsColumns: 'Hàng / Cột',
-    slotAxis: 'Trục', slotLegend: 'Chú giải', slotDetail: 'Chi tiết', slotX: 'X', slotY: 'Y', slotSize: 'Kích cỡ', slotGroup: 'Nhóm', slotRows: 'Hàng', slotColumns: 'Cột', slotValue: 'Giá trị', slotTarget: 'Mục tiêu',
+    wellStage: 'Giai đoạn', wellGroupDetail: 'Nhóm / Chi tiết', wellXY: 'Trục X / Trục Y', wellValueTarget: 'Giá trị / Mục tiêu', wellTrendAxis: 'Trục thời gian', wellRows: 'Hàng',
+    slotAxis: 'Trục', slotLegend: 'Chú giải', slotDetail: 'Chi tiết', slotX: 'X', slotY: 'Y', slotSize: 'Kích cỡ', slotGroup: 'Nhóm', slotValue: 'Giá trị', slotTarget: 'Mục tiêu',
     needsDimension: 'Kéo một trường chữ hoặc ngày vào ô {well}', needsTwoDimensions: 'Biểu đồ này cần hai trường ở ô {well}', needsTwoMeasures: 'Kéo hai trường số vào ô {well}',
     comboAsLine: 'Vẽ dạng đường',
     // options per chart type
     stacking: 'Xếp chồng', stackingStacked: 'Xếp chồng', stackingPercent: '100%', legendPosition: 'Vị trí chú giải', legendBottom: 'Dưới', legendTop: 'Trên', legendRight: 'Phải',
     showTotals: 'Hiện dòng tổng', dataBars: 'Thanh dữ liệu trong ô', gaugeMin: 'Nhỏ nhất', gaugeMax: 'Lớn nhất', target: 'Mục tiêu', showTarget: 'Hiện mục tiêu',
+    // matrix hierarchy
+    matrixExpand: 'Mở sẵn tới cấp', expandToLevel: 'Cấp {n}', expandAllLevels: 'Tất cả các cấp', expandAll: 'Mở tất cả', collapseAll: 'Thu tất cả', expandRow: 'Mở {name}', collapseRow: 'Thu {name}',
     analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình',
     // inside the visuals
     total: 'Tổng cộng', increase: 'Tăng', decrease: 'Giảm', vsPrevious: 'so với kỳ trước', targetLabel: 'Mục tiêu {value}', sortColumn: 'Sắp xếp theo cột này',

@@ -53,7 +53,7 @@ Bảng chọn loại biểu đồ (cột phải) là một lưới biểu tượ
 | | KPI xu hướng | Trục thời gian · Giá trị (+ Mục tiêu) — số mới nhất, chênh lệch so với kỳ trước, sparkline |
 | | Thẻ nhiều dòng | Nhóm · Giá trị — một thẻ nhỏ cho mỗi nhóm |
 | Bảng | Bảng | Cột · Giá trị — nhấn tiêu đề cột để sắp xếp; tùy chọn *Hiện dòng tổng*, *Thanh dữ liệu trong ô* |
-| | Ma trận | Hàng, Cột · Giá trị — bảng chéo có tổng hàng / cột |
+| | Ma trận | Hàng (nhiều cấp), Cột · Giá trị — bảng chéo; mỗi cấp hàng mở / thu được, dòng cha là tổng phụ, tổng hàng / cột / chung |
 
 Khi đổi loại, các trường thừa so với ô của loại mới bị bỏ bớt; nếu còn thiếu, biểu đồ nhắc ô nào cần thêm.
 
@@ -79,6 +79,9 @@ Mỗi trường trong ô *Trục / Hàng / Cột / Giá trị* có nút **Tùy c
 - phép toán `+ − × ÷` (hoặc `* /`), hằng số và ngoặc;
 - phép tính thực hiện **sau khi gộp**, nên ở dòng tổng là tỷ lệ của các tổng chứ không phải tổng các tỷ lệ; chia cho 0 hoặc trống cho ô trống;
 - gõ sai thì báo ngay dưới ô công thức kèm vị trí; biểu đồ chờ đến khi công thức hợp lệ.
+
+### Ma trận nhiều cấp
+Kéo nhiều trường vào ô **Hàng** (vd Khu vực → Kênh → Nhóm) và một hoặc nhiều trường vào ô **Cột** (vd Tháng). Ma trận hiện cấp 1; mỗi dòng cha mang tổng phụ của cấp đó cho từng cột, nhấn **⊞** để mở cấp dưới, **⊟** để thu; hai nút ở góc trên trái **mở tất cả / thu tất cả**. Tùy chọn **Mở sẵn tới cấp** chọn người xem thấy sẵn mấy cấp. Tổng phụ, tổng hàng, tổng cột và tổng chung đều do nguồn dữ liệu tính trong cùng câu lệnh, nên phép tính (tỷ lệ) ở dòng cha là tỷ lệ của các tổng, và mở / thu không truy vấn lại. Giới hạn dòng áp lên cấp chi tiết nhất: khi kết quả bị cắt, dòng cha vẫn đúng nhưng thiếu dòng con, hãy lọc bớt hoặc nâng giới hạn.
 
 ### Báo cáo nhiều trang
 Dãy **trang** nằm trên thanh lọc. Người xem bấm tên trang để chuyển; địa chỉ trang web mang theo trang đang xem (`?page=…`) nên gửi link là mở đúng trang. Người soạn có các nút bên phải dãy trang: **Đổi tên**, **Nhân bản**, **Chuyển trái / phải**, **Xóa trang** (có xác nhận; trang cuối cùng không xóa được) và **Thêm trang**. Mỗi trang có biểu đồ và bố cục riêng; bảng điều khiển tạo trước khi có trang được đọc như một trang.

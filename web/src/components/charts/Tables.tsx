@@ -1,9 +1,10 @@
-import { useMemo, useState, type CSSProperties } from 'react';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { ArrowDown, ArrowUp, ChevronsDownUp, ChevronsUpDown, Minus, Plus } from 'lucide-react';
 import type { QueryResult, Widget } from '@/api/types';
 import { formatCell, formatNumber } from '@/lib/format';
 import { useI18nStore, useT } from '@/i18n';
-import { canTotal, columnFormat, columnLabel, dimensionAliases, measureAgg, measureAliases, measureLabel, num, pivot, str, sum, type Row } from './shape';
+import { canTotal, columnFormat, columnLabel, measureAgg, measureAliases, measureLabel, num, str, sum, type Row } from './shape';
+import { allParents, buildMatrix, colKeyOf, columnGroups, defaultExpanded, visibleNodes, type MatrixNode } from './matrix';
 
 interface Props { widget: Widget; result: QueryResult }
 
@@ -101,76 +102,100 @@ export function DataTable({ widget, result }: Props) {
 }
 
 /**
- * Power BI's matrix: dim 0 down the rows, dim 1 across the columns, every measure in each cell.
- * Totals come from the server when it computed them (so a ratio totals as a ratio); an older
- * answer is added up on the client for the measures that can be (sums and counts).
+ * Power BI's matrix: the leading dimensions are row levels that open and close, the trailing ones
+ * go across the columns, every measure in each cell. A parent row shows its level's values (the
+ * subtotal) and the totals row and column come from the server with the rest, so a ratio totals as
+ * a ratio and nothing is fetched when a level opens.
  */
 export function Matrix({ widget, result }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const fmt = (alias: string) => columnFormat(widget, alias);
-  const pv = useMemo(() => pivot(result), [result]);
-  const [rowDim, colDim] = dimensionAliases(result);
-  const measures = measureAliases(result);
+  const tree = useMemo(() => buildMatrix(result, widget), [result, widget]);
+  const { measures, colKeys, colLevels, rowLevels } = tree;
   const totals = widget.options.showTotals === true;
-  const summable = measures.map((m) => canTotal(measureAgg(widget, m)));
-  const rowDimLabel = rowDim ? columnLabel(widget, result.columns.find((c) => c.alias === rowDim)!, lang) : '';
+  const expandLevel = Math.max(1, widget.options.matrixExpand ?? 1);
+  // null = the author's default; a viewer's clicks live here for the session
+  const [expanded, setExpanded] = useState<Set<string> | null>(null);
+  useEffect(() => setExpanded(null), [expandLevel]);
+  const open = expanded ?? defaultExpanded(tree, expandLevel);
+  const toggle = (key: string) => setExpanded((prev) => { const next = new Set(prev ?? defaultExpanded(tree, expandLevel)); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+  const rows = visibleNodes(tree, open);
+  const dimCols = result.columns.filter((c) => c.role === 'dimension');
+  const rowHead = dimCols.slice(0, rowLevels).map((c) => columnLabel(widget, c, lang)).join(' / ');
   const label = (m: string) => measureLabel(widget, m, lang) ?? m;
-  const cellValue = (row: string, col: string, m: string) => num(pv.cell(row, col)?.[m]);
-  const serverTotals = result.totals;
-  const rowTotal = (row: string, mi: number) => {
-    const m = measures[mi]!;
-    if (serverTotals) return num((colDim ? serverTotals.byRow?.[row] : serverTotals.grand)?.[m]);
-    return summable[mi] ? sum(pv.colKeys.map((c) => cellValue(row, c, m))) : null;
-  };
-  const colTotal = (col: string, mi: number) => {
-    const m = measures[mi]!;
-    if (serverTotals) return num((colDim ? serverTotals.byColumn?.[col] : serverTotals.grand)?.[m]);
-    return summable[mi] ? sum(pv.rowKeys.map((r) => cellValue(r, col, m))) : null;
-  };
-  const grand = (mi: number) => {
-    const m = measures[mi]!;
-    if (serverTotals) return num(serverTotals.grand[m]);
-    return summable[mi] ? sum(pv.rowKeys.map((r) => rowTotal(r, mi))) : null;
-  };
-  const colGroups = colDim ? [...pv.colKeys, ...(totals ? [t('editor.total')] : [])] : [''];
-  const twoHeaderRows = !!colDim && measures.length > 1;
+  const hasColumns = colLevels > 0;
+  const showMeasureRow = !hasColumns || measures.length > 1;
+  const headerRows = (hasColumns ? colLevels : 0) + (showMeasureRow ? 1 : 0);
   const cell = (v: number | null, m: string, key: string) => <td key={key} className="num">{formatNumber(v, fmt(m), lang)}</td>;
+  const cellsOf = (node: MatrixNode) => [
+    ...colKeys.flatMap((tuple) => measures.map((m) => cell(num(node.cells.get(colKeyOf(tuple))?.[m]), m, `${colKeyOf(tuple)}|${m}`))),
+    ...(hasColumns && totals ? measures.map((m) => cell(num(node.rowTotal?.[m]), m, `total|${m}`)) : []),
+  ];
   return (
     <div className="chart-table">
       <table className="table matrix">
         <thead>
-          <tr>
-            <th scope="col" rowSpan={twoHeaderRows ? 2 : 1}>{rowDimLabel}</th>
-            {colDim
-              ? colGroups.map((c) => <th key={c} scope="col" className="num" colSpan={measures.length}>{c}</th>)
-              : measures.map((m) => <th key={m} scope="col" className="num">{label(m)}</th>)}
-          </tr>
-          {twoHeaderRows && (
+          {Array.from({ length: hasColumns ? colLevels : 0 }, (_, level) => (
+            <tr key={`col-${level}`}>
+              {level === 0 && (
+                <th scope="col" rowSpan={headerRows}>
+                  {rowHead}
+                  {rowLevels > 1 && (
+                    <span className="matrix__tools">
+                      <button type="button" className="matrix__toggle" title={t('editor.expandAll')} onClick={() => setExpanded(allParents(tree))}><ChevronsUpDown size={12} aria-hidden /><span className="sr-only">{t('editor.expandAll')}</span></button>
+                      <button type="button" className="matrix__toggle" title={t('editor.collapseAll')} onClick={() => setExpanded(new Set())}><ChevronsDownUp size={12} aria-hidden /><span className="sr-only">{t('editor.collapseAll')}</span></button>
+                    </span>
+                  )}
+                </th>
+              )}
+              {columnGroups(colKeys, level).map((g, i) => <th key={`${level}-${i}`} scope="col" className="num" colSpan={g.span * measures.length}>{g.label}</th>)}
+              {level === 0 && totals && <th scope="col" className="num" rowSpan={colLevels} colSpan={measures.length}>{t('editor.total')}</th>}
+            </tr>
+          ))}
+          {showMeasureRow && (
             <tr>
-              {colGroups.map((c) => measures.map((m) => <th key={`${c}|${m}`} scope="col" className="num">{label(m)}</th>))}
+              {!hasColumns && (
+                <th scope="col">
+                  {rowHead}
+                  {rowLevels > 1 && (
+                    <span className="matrix__tools">
+                      <button type="button" className="matrix__toggle" title={t('editor.expandAll')} onClick={() => setExpanded(allParents(tree))}><ChevronsUpDown size={12} aria-hidden /><span className="sr-only">{t('editor.expandAll')}</span></button>
+                      <button type="button" className="matrix__toggle" title={t('editor.collapseAll')} onClick={() => setExpanded(new Set())}><ChevronsDownUp size={12} aria-hidden /><span className="sr-only">{t('editor.collapseAll')}</span></button>
+                    </span>
+                  )}
+                </th>
+              )}
+              {colKeys.flatMap((tuple) => measures.map((m) => <th key={`${colKeyOf(tuple)}|${m}`} scope="col" className="num">{label(m)}</th>))}
+              {hasColumns && totals && measures.map((m) => <th key={`total|${m}`} scope="col" className="num">{label(m)}</th>)}
             </tr>
           )}
         </thead>
         <tbody>
-          {pv.rowKeys.map((row) => (
-            <tr key={row}>
-              <th scope="row">{row}</th>
-              {colDim
-                ? pv.colKeys.map((col) => measures.map((m) => cell(cellValue(row, col, m), m, `${col}|${m}`)))
-                : measures.map((m) => cell(cellValue(row, '', m), m, m))}
-              {colDim && totals && measures.map((m, mi) => cell(rowTotal(row, mi), m, `total|${m}`))}
-            </tr>
-          ))}
+          {rows.map((node) => {
+            const parent = node.children.length > 0;
+            const isOpen = parent && open.has(node.key);
+            return (
+              <tr key={node.key} className={parent ? 'matrix__parent' : undefined}>
+                <th scope="row" style={{ '--level': node.level - 1 } as CSSProperties}>
+                  <span className="matrix__row-head">
+                    {rowLevels > 1 && (parent
+                      ? <button type="button" className="matrix__toggle" aria-expanded={isOpen} onClick={() => toggle(node.key)}>{isOpen ? <Minus size={12} aria-hidden /> : <Plus size={12} aria-hidden />}<span className="sr-only">{t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })}</span></button>
+                      : <span className="matrix__toggle matrix__toggle--none" aria-hidden />)}
+                    <span>{node.label}</span>
+                  </span>
+                </th>
+                {cellsOf(node)}
+              </tr>
+            );
+          })}
         </tbody>
         {totals && (
           <tfoot>
             <tr>
               <th scope="row">{t('editor.total')}</th>
-              {colDim
-                ? pv.colKeys.map((col) => measures.map((m, mi) => cell(colTotal(col, mi), m, `${col}|${m}`)))
-                : measures.map((m, mi) => cell(colTotal('', mi), m, m))}
-              {colDim && measures.map((m, mi) => cell(grand(mi), m, `grand|${m}`))}
+              {colKeys.flatMap((tuple) => measures.map((m) => cell(num(tree.colTotals.get(colKeyOf(tuple))?.[m]), m, `${colKeyOf(tuple)}|${m}`)))}
+              {hasColumns && measures.map((m) => cell(num(tree.grand?.[m]), m, `grand|${m}`))}
             </tr>
           </tfoot>
         )}

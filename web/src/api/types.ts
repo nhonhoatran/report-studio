@@ -102,13 +102,18 @@ export interface QueryRequest {
   limit?: number;
   /** ask the server for every measure over all groups, and per first / second dimension value */
   totals?: boolean;
+  /** subtotals: every measure over the groups sharing these dimensions' values, one list per set (the matrix's levels) */
+  subtotals?: number[][];
 }
 export interface QueryResultColumn { alias: string; role: 'dimension' | 'measure' | 'column'; source?: string }
 /** Totals the server computed in the same statement, keyed by measure alias (and by dimension value as text). */
 export interface QueryTotals { grand: Record<string, unknown>; byRow?: Record<string, Record<string, unknown>>; byColumn?: Record<string, Record<string, unknown>> }
+/** Subtotals by the dimensions they are over ("0,2"), then by those dimensions' values as a JSON array of texts, then by measure alias. */
+export type QuerySubtotals = Record<string, Record<string, Record<string, unknown>>>;
 export interface QueryResult {
   columns: QueryResultColumn[]; rows: Record<string, unknown>[]; rowCount: number; truncated: boolean; durationMs: number; sql: string;
   totals?: QueryTotals;
+  subtotals?: QuerySubtotals;
 }
 
 /**
@@ -140,6 +145,10 @@ export interface WidgetOptions {
   sortBy?: 'none' | 'measure_desc' | 'measure_asc';
   /** table / matrix: a totals row (and column) */
   showTotals?: boolean;
+  /** matrix: how many of the trailing dimensions go across the columns (the rest are row levels); absent = one when there are two or more */
+  matrixColumns?: number;
+  /** matrix: how many row levels are open when it first shows (1 = only the first level); absent = 1 */
+  matrixExpand?: number;
   /** table: a bar behind each numeric cell, proportional to the column's maximum */
   dataBars?: boolean;
   /** gauge: scale, and whether the target mark and label are drawn; a second measure overrides `target` (gauge, KPI with trend) */

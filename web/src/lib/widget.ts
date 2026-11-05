@@ -15,7 +15,8 @@ export type ChartFeature =
   | 'dataBars'      // bars behind numeric cells
   | 'gauge'         // min / max, show the target
   | 'target'        // a target number when no second measure carries it
-  | 'series';       // each measure drawn as a column or a line (combo)
+  | 'series'        // each measure drawn as a column or a line (combo)
+  | 'hierarchy';    // row levels that open and close (matrix): how many are open at first
 
 export interface ChartSpec {
   /** gallery grouping (Power BI order): compare, trend, part-to-whole, relation, single value, tables */
@@ -24,8 +25,10 @@ export interface ChartSpec {
   minMeasures: number; maxMeasures: number;
   /** labels of the two wells */
   wells: { dimensions: TKey; measures: TKey };
-  /** a label per slot where the slots mean different things (X / Y / Size, Rows / Columns, Value / Target) */
+  /** a label per slot where the slots mean different things (X / Y / Size, Value / Target) */
   dimensionSlots?: TKey[]; measureSlots?: TKey[];
+  /** a second dimension well (the matrix's columns): the trailing `options.matrixColumns` dimensions live there */
+  columnsWell?: TKey;
   features: ChartFeature[];
   /** default row limit sent with the query */
   limit: number;
@@ -109,11 +112,48 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
     wells: { dimensions: 'editor.wellColumns', measures: 'editor.wellValues' }, features: ['sort', 'totals', 'dataBars'], limit: 500,
   },
   matrix: {
-    group: 'table', minDimensions: 1, maxDimensions: 2, minMeasures: 1, maxMeasures: 20,
-    wells: { dimensions: 'editor.wellRowsColumns', measures: 'editor.wellValues' },
-    dimensionSlots: ['editor.slotRows', 'editor.slotColumns'], features: ['sort', 'totals'], limit: 2000,
+    group: 'table', minDimensions: 1, maxDimensions: 10, minMeasures: 1, maxMeasures: 20,
+    wells: { dimensions: 'editor.wellRows', measures: 'editor.wellValues' }, columnsWell: 'editor.wellColumns',
+    features: ['sort', 'totals', 'hierarchy'], limit: 2000,
   },
 };
+
+/**
+ * How a matrix reads its dimensions: the leading ones are row levels, the trailing
+ * `options.matrixColumns` go across. A document from before this option had rows first and one
+ * column dimension, so that is what an absent option means with two or more dimensions. There is
+ * always at least one row level.
+ */
+export function matrixSplit(widget: Widget): { rows: Dimension[]; columns: Dimension[] } {
+  const dims = widget.query.dimensions;
+  if (widget.type !== 'matrix' || dims.length === 0) return { rows: dims, columns: [] };
+  const wanted = widget.options.matrixColumns ?? (dims.length >= 2 ? 1 : 0);
+  const m = Math.max(0, Math.min(wanted, dims.length - 1));
+  return { rows: dims.slice(0, dims.length - m), columns: dims.slice(dims.length - m) };
+}
+/** The column count the author built, before the split clamps it (so a column dropped first stays a column once a row arrives). */
+export const matrixColumnCount = (widget: Widget): number => widget.options.matrixColumns ?? (widget.query.dimensions.length >= 2 ? 1 : 0);
+/** Where a new row level goes: before the column dimensions. */
+export const rowInsertIndex = (widget: Widget): number => widget.query.dimensions.length - Math.min(matrixColumnCount(widget), widget.query.dimensions.length);
+
+/**
+ * The subtotals a matrix needs from the server: every row level above the leaves per column (the
+ * parent rows), and with totals on, every level across the columns, the columns alone and everything.
+ */
+export function matrixSubtotals(widget: Widget): number[][] | undefined {
+  if (widget.type !== 'matrix' || widget.query.measures.length === 0) return undefined;
+  const { rows, columns } = matrixSplit(widget);
+  const n = rows.length; const cols = columns.map((_, j) => n + j);
+  const out: number[][] = [];
+  const level = (k: number) => Array.from({ length: k }, (_, i) => i);
+  for (let k = 1; k < n; k++) out.push([...level(k), ...cols]);
+  if (widget.options.showTotals === true) {
+    for (let k = 1; k <= n; k++) out.push(level(k));
+    if (cols.length) out.push(cols);
+    out.push([]);
+  }
+  return out.length ? out : undefined;
+}
 
 /** Types drawn on a category axis with a value axis (ECharts grid). */
 export const CARTESIAN: WidgetType[] = ['column', 'bar', 'line', 'area', 'combo', 'waterfall'];
@@ -176,7 +216,7 @@ export function measureFormat(m: Measure | undefined, widgetFormat: NumberFormat
   return m?.format ?? widgetFormat ?? 'auto';
 }
 
-/** Add a field the Power BI way: numbers become measures, everything else a dimension. */
+/** Add a field the Power BI way: numbers become measures, everything else a dimension (a row level, on a matrix). */
 export function autoPlace(widget: Widget, f: FieldInfo): Widget {
   const q = widget.query;
   const asMeasure = f.kind === 'number' || q.dimensions.length >= maxDimensions(widget.type);
@@ -186,7 +226,17 @@ export function autoPlace(widget: Widget, f: FieldInfo): Widget {
     return { ...widget, query: { ...q, measures: [...q.measures, defaultMeasure(f)] } };
   }
   if (q.dimensions.some((d) => d.field === f.name)) return widget;
-  return { ...widget, query: { ...q, dimensions: [...q.dimensions, defaultDimension(f)] } };
+  return addDimension(widget, defaultDimension(f), 'dimensions');
+}
+
+/** A dimension into the rows (before the column dimensions) or, on a matrix, into the columns; the column count is written down either way. */
+export function addDimension(widget: Widget, d: Dimension, well: 'dimensions' | 'columns'): Widget {
+  const q = widget.query;
+  if (widget.type !== 'matrix') return { ...widget, query: { ...q, dimensions: [...q.dimensions, d] } };
+  const count = matrixColumnCount(widget);
+  if (well === 'columns') return { ...widget, query: { ...q, dimensions: [...q.dimensions, d] }, options: { ...widget.options, matrixColumns: count + 1 } };
+  const at = rowInsertIndex(widget);
+  return { ...widget, query: { ...q, dimensions: [...q.dimensions.slice(0, at), d, ...q.dimensions.slice(at)] }, options: { ...widget.options, matrixColumns: count } };
 }
 
 /** Changing chart type may need to trim wells that the new type does not read. */
@@ -259,7 +309,9 @@ export function toQueryRequest(widget: Widget, extras: QueryExtras = {}): QueryR
     orderBy,
     limit: q.limit ?? CHART_SPECS[widget.type].limit,
     // totals come from the source in the same statement, so a ratio's total is the ratio of the totals
-    totals: hasFeature(widget.type, 'totals') && widget.options.showTotals === true && q.dimensions.length > 0 && q.measures.length > 0 ? true : undefined,
+    totals: widget.type !== 'matrix' && hasFeature(widget.type, 'totals') && widget.options.showTotals === true && q.dimensions.length > 0 && q.measures.length > 0 ? true : undefined,
+    // a matrix takes its parent rows and totals the same way, one set per level
+    subtotals: matrixSubtotals(widget),
   };
 }
 

@@ -6,7 +6,7 @@ Mỗi chức năng gồm: mục tiêu · người dùng thao tác ra sao · yêu
 
 Ưu tiên: **P1** = thiếu thì không chuyển được báo cáo Power BI phổ biến · **P2** = dùng được nhưng khác xa Power BI · **P3** = nên có.
 
-Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã làm. Các mục P1 (F1–F4) đã có từ nhánh này; cách làm được ghi ở `docs/ARCHITECTURE.md` (mục *Semantic query model*, *Dashboard document*).
+Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã làm. Các mục P1 (F1–F4) và F5 đã có từ nhánh này; cách làm được ghi ở `docs/ARCHITECTURE.md` (mục *Semantic query model*, *Dashboard document*).
 
 ## Ràng buộc chung cho mọi chức năng
 
@@ -30,7 +30,7 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 | F2 | Tên hiển thị cho trường và measure | P1 | — | Đã làm |
 | F3 | Báo cáo nhiều trang | P1 | — | Đã làm |
 | F4 | Phép tính "% trên tổng" (tỷ trọng) | P1 | F1 | Đã làm |
-| F5 | Ma trận nhiều cấp hàng, mở/thu, tổng phụ | P2 | — | Chưa (tổng hàng / cột / chung đã tính ở server, xem F1) |
+| F5 | Ma trận nhiều cấp hàng, mở/thu, tổng phụ | P2 | — | Đã làm (một truy vấn, tổng phụ bằng window function; chưa tải cấp con theo yêu cầu) |
 | F6 | Định dạng có điều kiện | P2 | — | Chưa |
 | F7 | Bộ lọc phụ thuộc nhau | P2 | — | Chưa |
 | F8 | Bộ lọc danh sách có tìm kiếm, không cắt cụt | P2 | — | Chưa |
@@ -139,7 +139,9 @@ Trạng thái: cột *Trạng thái* trong bảng tổng quan ghi phần đã l�
 - Mở/thu không gọi lại server khi dữ liệu đã có.
 - Cấu hình ma trận cũ (1 hàng × 1 cột) vẫn chạy.
 
-**Code liên quan:** `web/src/lib/widget.ts` (`CHART_SPECS.matrix`, hiện `maxDimensions: 2`), `web/src/components/charts/Tables.tsx` (`Matrix`), `web/src/components/charts/shape.ts` (`pivot`), `server/src/query/builder.ts` (`totals`: tổng chung / theo hàng / theo cột đã có trong cùng câu lệnh qua window function).
+**Code liên quan:** `web/src/lib/widget.ts` (`matrixSplit`, `matrixSubtotals`: hàng = các chiều đầu, cột = `options.matrixColumns` chiều cuối), `web/src/components/charts/matrix.ts` (dựng cây từ dòng lá và `result.subtotals`), `web/src/components/charts/Tables.tsx` (`Matrix`: mở / thu, mở tất cả / thu tất cả, mặc định mở tới `options.matrixExpand`), `server/src/query/builder.ts` (`subtotals`: một cột window cho mỗi measure × mỗi tập chiều, tính đúng cho measure công thức).
+
+**Cách làm:** một câu lệnh ở cấp lá (GROUP BY mọi chiều) kèm tổng phụ của từng cấp hàng theo từng cột, tổng theo hàng, tổng cột và tổng chung bằng `SUM(SUM(x)) OVER (PARTITION BY …)`; client dựng cây và mở / thu không gọi lại server. Giới hạn dòng áp lên dòng lá: khi bị cắt, dòng tổng phụ vẫn đúng (tính trước LIMIT) nhưng thiếu dòng con. Tải cấp con khi mở (lazy) chưa làm.
 
 ## F6. Định dạng có điều kiện — P2
 
