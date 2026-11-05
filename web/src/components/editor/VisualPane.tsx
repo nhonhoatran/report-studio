@@ -7,7 +7,7 @@ import {
 import type { Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure, NumberFormat, ShowAs, Stacking, Widget, WidgetType } from '@/api/types';
 import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STACKINGS, WIDGET_TYPES, isFormula } from '@/api/types';
 import { useT, type TFn, type TKey } from '@/i18n';
-import { checkFormula, type FormulaError } from '@shared/formula';
+import { FORMULA_MAX_LENGTH, checkFormula, type FormulaError } from '@shared/formula';
 import { useEditor, useSelectedWidget } from '@/store/editor';
 import { CHART_SPECS, comboRole, dimensionName, hasFeature, maxDimensions, maxMeasures, measureAlias, measureName, measureRefs, newFormulaMeasure, stackingOf } from '@/lib/widget';
 import { newId } from '@/lib/id';
@@ -27,6 +27,8 @@ export const typeIcons: Record<WidgetType, typeof BarChart3> = {
 };
 
 const NUMBER_FORMATS: NumberFormat[] = ['auto', 'compact', 'integer', 'currency', 'percent'];
+/** what the server accepts for a display name (routes: `label` max 200) */
+const LABEL_MAX = 200;
 const formatKey = (f: NumberFormat): TKey => `editor.format${(f[0]!.toUpperCase() + f.slice(1)) as 'Auto' | 'Compact' | 'Integer' | 'Currency' | 'Percent'}`;
 
 function Well({ id, label, children, empty, disabled, action }: { id: string; label: string; children: ReactNode; empty: boolean; disabled?: boolean; /** a control shown under the chips, empty or not */ action?: ReactNode }) {
@@ -74,7 +76,7 @@ function DimensionChip({ d, slot, onChange, onRemove }: { d: Dimension; slot?: T
       </div>
       {open && (
         <div className="well-details">
-          <Input size="sm" label={t('editor.displayName')} value={d.label ?? ''} placeholder={d.field} onChange={(e) => onChange({ ...d, label: e.target.value || undefined })} />
+          <Input size="sm" label={t('editor.displayName')} value={d.label ?? ''} placeholder={d.field} maxLength={LABEL_MAX} onChange={(e) => onChange({ ...d, label: e.target.value || undefined })} />
         </div>
       )}
     </div>
@@ -87,7 +89,7 @@ function MeasureDetails({ m, auto, onChange, children }: { m: Measure; auto: str
   return (
     <div className="well-details">
       {children}
-      <Input size="sm" label={t('editor.displayName')} value={m.label ?? ''} placeholder={auto} onChange={(e) => onChange({ ...m, label: e.target.value || undefined })} />
+      <Input size="sm" label={t('editor.displayName')} value={m.label ?? ''} placeholder={auto} maxLength={LABEL_MAX} onChange={(e) => onChange({ ...m, label: e.target.value || undefined })} />
       <div className="option-grid">
         <Select size="sm" label={t('editor.showAs')} value={m.showAs ?? 'value'} onChange={(e) => onChange({ ...m, showAs: e.target.value === 'value' ? undefined : (e.target.value as ShowAs) })}>
           {SHOW_AS.map((s) => <option key={s} value={s}>{t(`editor.showAsOptions.${s}`)}</option>)}
@@ -171,7 +173,7 @@ function FormulaChip({ m, slot, others, error, combo, onChange, onRemove }: {
       {open && (
         <MeasureDetails m={m} auto={t('editor.calculation')} onChange={onChange}>
           <Input ref={input} size="sm" className="well-details__formula" label={t('editor.formula')} value={m.formula ?? ''} placeholder={t('editor.formulaPlaceholder')}
-            spellCheck={false} autoComplete="off" error={error ? describeFormulaError(error, t) : undefined} help={error ? undefined : t('editor.formulaHelp')}
+            spellCheck={false} autoComplete="off" maxLength={FORMULA_MAX_LENGTH} error={error ? describeFormulaError(error, t) : undefined} help={error ? undefined : t('editor.formulaHelp')}
             onChange={(e) => onChange({ ...m, formula: e.target.value })} />
           {others.length > 0 && (
             <div className="well-details__refs" role="group" aria-label={t('editor.formulaInsert')}>

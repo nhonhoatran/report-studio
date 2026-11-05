@@ -18,11 +18,10 @@ export function FilterDialog({ open, initial, onClose }: { open: boolean; initia
   const t = useT();
   const activeDataset = useEditor((s) => s.activeDataset);
   const pages = useEditor((s) => s.definition.pages);
-  const activePageId = useEditor((s) => s.activePageId);
   const addFilter = useEditor((s) => s.addFilter);
   const updateFilter = useEditor((s) => s.updateFilter);
-  // a new filter belongs to the page it is added on; the author may widen it to the whole report
-  const [form, setForm] = useState<DashboardFilter>(initial ?? { ...newDashboardFilter('list', activeDataset?.datasourceId ?? null, activeDataset?.source ?? null), pageId: pages.length > 1 ? activePageId : undefined });
+  // a new filter applies to the whole report, as every filter did before pages existed; the scope field narrows it to one page
+  const [form, setForm] = useState<DashboardFilter>(initial ?? newDashboardFilter('list', activeDataset?.datasourceId ?? null, activeDataset?.source ?? null));
   const set = (patch: Partial<DashboardFilter>) => setForm((f) => ({ ...f, ...patch }));
   const needsField = form.kind !== 'grain';
 

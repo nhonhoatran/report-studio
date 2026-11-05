@@ -10,6 +10,8 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const FORM_ID = 'page-name-form';
+/** what the server accepts for a page name (routes/dashboards.ts) */
+const PAGE_NAME_MAX = 120;
 
 /** Rename one page: the only thing a page carries besides its widgets. */
 function PageNameDialog({ page, onClose }: { page: DashboardPage | null; onClose: () => void }) {
@@ -27,7 +29,7 @@ function PageNameDialog({ page, onClose }: { page: DashboardPage | null; onClose
     <Modal open={!!page} title={t('pages.renameTitle')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button type="submit" form={FORM_ID} variant="primary" disabled={!valid}>{t('common.save')}</Button></>}>
       <form id={FORM_ID} className="stack" onSubmit={onSubmit}>
-        <Input label={t('pages.name')} value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
+        <Input label={t('pages.name')} value={name} maxLength={PAGE_NAME_MAX} onChange={(e) => setName(e.target.value)} required autoFocus />
       </form>
     </Modal>
   );
