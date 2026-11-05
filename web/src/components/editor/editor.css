@@ -107,6 +107,15 @@ input.editor__name:focus-visible { border-color: var(--color-focus); background:
 
 .sql-box { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; white-space: pre-wrap; word-break: break-all; background: var(--color-side); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); max-height: 240px; overflow: auto; }
 
+/* print / save as PDF: the canvas alone, on paper's white, every widget kept whole */
+@media print {
+  .app__sidebar, .app__header, .editor__bar, .page-tabs__tools, .filter-bar__tools, .filter-bar__actions, .pane, .widget__meta, .widget__actions, .toasts { display: none !important; }
+  .app { grid-template-columns: 1fr; }
+  .editor__body { grid-template-columns: 1fr; }
+  .canvas { overflow: visible; background: transparent; padding: 0; }
+  .widget { break-inside: avoid; box-shadow: none; }
+}
+
 @media (max-width: 1100px) {
   .editor { --pane-width: var(--pane-width-narrow); }
 }

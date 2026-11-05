@@ -16,6 +16,7 @@ import { datasetsRouter } from './routes/datasets.js';
 import { dashboardsRouter } from './routes/dashboards.js';
 import { queryRouter } from './routes/query.js';
 import { clientConfigRouter } from './routes/clientConfig.js';
+import { exportRouter } from './routes/export.js';
 import { aiRouter } from './routes/ai.js';
 import { rolesRouter } from './routes/roles.js';
 import { policiesRouter } from './routes/policies.js';
@@ -57,6 +58,7 @@ export function createApp() {
   app.use('/api/dashboards', wrapAsync(dashboardsRouter));
   app.use('/api/query', wrapAsync(queryRouter));
   app.use('/api/config', wrapAsync(clientConfigRouter));
+  app.use('/api/export', wrapAsync(exportRouter));
   app.use('/api/ai', wrapAsync(aiRouter));
   app.use('/api/roles', wrapAsync(rolesRouter));
   app.use('/api/policies', wrapAsync(policiesRouter));

@@ -99,6 +99,21 @@ export const api = {
   },
   query: {
     run: (req: QueryRequest, signal?: AbortSignal) => request<QueryResult>('POST', '/query', req, { signal }),
+    /** The rows of one visual as a file the browser saves (CSV or Excel), with the display names as headers. */
+    export: async (req: QueryRequest, format: 'csv' | 'xlsx', headers: Record<string, string>, filename: string): Promise<void> => {
+      const res = await fetch('/api/export', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ ...req, format, headers, filename }) });
+      if (!res.ok) {
+        let err: { error?: string; code?: string; details?: unknown } = {};
+        try { err = await res.json(); } catch { /* no body */ }
+        throw new ApiError(res.status, err.error ?? res.statusText, err.details, err.code);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${filename}.${format}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    },
     explain: (req: QueryRequest) => request<{ sql: string; params: unknown[] }>('POST', '/query/explain', req),
   },
   ai: {

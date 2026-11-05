@@ -432,6 +432,9 @@ export function VisualPane() {
         {spec.maxDimensions > 0 && (
           <Input size="sm" type="number" min={1} max={100000} label={t('editor.limit')} value={q.limit ?? ''} placeholder={String(spec.limit)} onChange={(e) => setQuery({ limit: e.target.value ? Number(e.target.value) : undefined })} />
         )}
+        {has('pagination') && (
+          <NumberOption label={t('editor.pageSize')} value={o.pageSize} placeholder={t('editor.pageSizeNone')} onChange={(v) => setOptions({ pageSize: v && v > 0 ? Math.floor(v) : undefined })} />
+        )}
         {has('stacking') && (
           <Select size="sm" label={t('editor.stacking')} value={stacking} onChange={(e) => setOptions({ stacking: e.target.value as Stacking, stacked: undefined })}>
             {STACKINGS.map((s) => <option key={s} value={s}>{s === 'none' ? t('common.none') : s === 'stacked' ? t('editor.stackingStacked') : t('editor.stackingPercent')}</option>)}

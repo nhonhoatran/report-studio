@@ -61,6 +61,10 @@ export const en: Dictionary = {
     topN: 'Keep only the top N', topNAll: 'All', topNOthers: 'Gather the rest into "Others"', others: 'Others',
     compare: 'Compare with', compares: { previous_period: 'Previous period', same_period_last_year: 'Same period last year' }, comparePreviousShort: 'previous period', compareLastYearShort: 'same period last year', compareChange: '± %',
     cumulative: 'Running total over the period (by time)',
+    // export, paging
+    export: 'Export data', exportTitle: 'Export the visual\'s data', exportHint: 'With the filters in force; numbers stay numbers in Excel. The server caps the row count.',
+    exportCsv: 'Download CSV', exportExcel: 'Download Excel', exportPrint: 'Print / save the page as PDF',
+    pageSize: 'Rows per page', pageSizeNone: 'No paging', pager: 'Pages', pagePrev: 'Previous page', pageNext: 'Next page', pageLabel: 'Page {n}',
     // conditional formatting
     conditional: 'Conditional formatting', cfAddRule: 'Add rule', cfThreshold: 'Threshold', cfThresholdTo: 'To', cfColor: 'Colour', cfIcon: 'Icon', cfIconNone: 'No icon', cfIconUp: '▲ up / reached', cfIconDown: '▼ down / short',
     cfScale: 'Scale for the other cells', cfScales: { none: 'None', danger_success: 'Red → green (low → high)', success_danger: 'Green → red (low → high)', muted_primary: 'Light → strong' },

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import ReactEChartsCore from 'echarts-for-react/lib/core';
 import type { EChartsOption } from 'echarts';
 import { echarts } from './echarts';
-import type { QueryResult, Widget } from '@/api/types';
+import type { OrderBy, QueryResult, Widget } from '@/api/types';
 import { useTheme } from '@/store/theme';
 import { useI18nStore, useT } from '@/i18n';
 import { ECHARTS_TYPES } from '@/lib/widget';
@@ -13,13 +13,15 @@ import { KpiCard, MultiRowCard, TrendCard } from './Cards';
 import { DataTable, Matrix } from './Tables';
 import './charts.css';
 
-interface Props { widget: Widget; result: QueryResult }
+/** A paged table: which page is shown, how to move, which column the reader sorted by, and whether a next page exists. */
+export interface Paging { index: number; setIndex: (i: number) => void; sort?: OrderBy; setSort: (s: OrderBy | undefined) => void; more: boolean }
+interface Props { widget: Widget; result: QueryResult; paging?: Paging }
 
 /**
  * Draws one widget's result. ECharts types go through `options.ts`; cards and tables are HTML
  * (`Cards.tsx`, `Tables.tsx`). Everything reads the tokens at render time and again on the look stamp.
  */
-export function ChartRenderer({ widget, result: raw }: Props) {
+export function ChartRenderer({ widget, result: raw, paging }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const look = useTheme((s) => s.stamp);
@@ -40,7 +42,7 @@ export function ChartRenderer({ widget, result: raw }: Props) {
     case 'kpi': return <KpiCard widget={widget} result={result} />;
     case 'trend': return <TrendCard widget={widget} result={result} />;
     case 'multirow': return <MultiRowCard widget={widget} result={result} />;
-    case 'table': return <DataTable widget={widget} result={result} />;
+    case 'table': return <DataTable widget={widget} result={result} paging={paging} />;
     case 'matrix': return <Matrix widget={widget} result={result} />;
     default: break;
   }

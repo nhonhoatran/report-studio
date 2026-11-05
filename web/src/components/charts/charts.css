@@ -41,6 +41,9 @@
 .chart-table .table td.cf-bg { background-color: color-mix(in srgb, var(--cf) 24%, transparent); }
 .chart-table .table td.cf-scale { background-color: color-mix(in srgb, color-mix(in srgb, var(--cf-to) var(--cf-mix), var(--cf-from)) 28%, transparent); }
 .chart-table__cf-icon { vertical-align: -2px; margin-right: var(--space-1); }
+/* the pager of a paged table: under the rows, the page number between its two arrows */
+.chart-table__pager { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); padding: var(--space-2) 0 0; position: sticky; left: 0; }
+.chart-table .matrix__toggle:disabled { opacity: 0.4; cursor: not-allowed; }
 /* totals: a strong rule above, and heavier than the header on purpose (the one row a reader looks for) */
 .chart-table .table tfoot td, .chart-table .table tfoot th { border-top: 1px solid var(--color-border-strong); border-bottom: 0; font-weight: 600; color: var(--color-text); background: var(--color-side); position: sticky; bottom: 0; }
 /* matrix: row headers stay put while the columns scroll */

@@ -58,6 +58,10 @@ export const vi = {
     topN: 'Chỉ giữ N mục lớn nhất', topNAll: 'Tất cả', topNOthers: 'Gộp phần còn lại thành "Còn lại"', others: 'Còn lại',
     compare: 'So sánh với', compares: { previous_period: 'Kỳ trước', same_period_last_year: 'Cùng kỳ năm trước' }, comparePreviousShort: 'kỳ trước', compareLastYearShort: 'cùng kỳ năm trước', compareChange: '± %',
     cumulative: 'Lũy kế trong kỳ (theo thời gian)',
+    // export, paging
+    export: 'Xuất dữ liệu', exportTitle: 'Xuất dữ liệu biểu đồ', exportHint: 'Theo đúng bộ lọc đang áp; số là số trong Excel. Số dòng tối đa do máy chủ đặt.',
+    exportCsv: 'Tải CSV', exportExcel: 'Tải Excel', exportPrint: 'In / lưu PDF cả trang',
+    pageSize: 'Số dòng mỗi trang', pageSizeNone: 'Không phân trang', pager: 'Phân trang', pagePrev: 'Trang trước', pageNext: 'Trang sau', pageLabel: 'Trang {n}',
     // conditional formatting
     conditional: 'Định dạng có điều kiện', cfAddRule: 'Thêm quy tắc', cfThreshold: 'Ngưỡng', cfThresholdTo: 'Đến', cfColor: 'Màu', cfIcon: 'Biểu tượng', cfIconNone: 'Không biểu tượng', cfIconUp: '▲ tăng / đạt', cfIconDown: '▼ giảm / chưa đạt',
     cfScale: 'Thang màu cho ô còn lại', cfScales: { none: 'Không', danger_success: 'Đỏ → xanh (thấp → cao)', success_danger: 'Xanh → đỏ (thấp → cao)', muted_primary: 'Nhạt → đậm' },

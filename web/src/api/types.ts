@@ -200,6 +200,8 @@ export interface WidgetOptions {
   conditional?: Record<string, ConditionalFormat>;
   /** keep the first dimension's top n values by the first measure; `topNOthers` gathers the rest into one row (default on) */
   topN?: number; topNOthers?: boolean;
+  /** table: rows per page; the server pages and sorts, the table shows a pager */
+  pageSize?: number;
 }
 export interface WidgetQuery { dimensions: Dimension[]; measures: Measure[]; filters: Filter[]; orderBy: OrderBy[]; limit?: number }
 export interface Widget {

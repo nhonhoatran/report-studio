@@ -1,4 +1,4 @@
-import type { DateBucket, Dimension, FieldInfo, Filter, Measure, NumberFormat, QueryMeasure, QueryRequest, Stacking, Widget, WidgetType } from '@/api/types';
+import type { DateBucket, Dimension, FieldInfo, Filter, Measure, NumberFormat, OrderBy, QueryMeasure, QueryRequest, Stacking, Widget, WidgetType } from '@/api/types';
 import { isFormula } from '@/api/types';
 import type { TKey } from '@/i18n';
 import { checkFormula, type FormulaError, type MeasureRef } from '@shared/formula';
@@ -18,7 +18,8 @@ export type ChartFeature =
   | 'series'        // each measure drawn as a column or a line (combo)
   | 'hierarchy'     // row levels that open and close (matrix): how many are open at first
   | 'conditional'   // conditional formatting of the measures' cells (tables, matrices)
-  | 'topN';         // keep the first dimension's top n values, the rest as "others"
+  | 'topN'          // keep the first dimension's top n values, the rest as "others"
+  | 'pagination';   // rows a page at a time, sorted by the server (table)
 
 export interface ChartSpec {
   /** gallery grouping (Power BI order): compare, trend, part-to-whole, relation, single value, tables */
@@ -111,7 +112,7 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
   },
   table: {
     group: 'table', minDimensions: 0, maxDimensions: 10, minMeasures: 0, maxMeasures: 20,
-    wells: { dimensions: 'editor.wellColumns', measures: 'editor.wellValues' }, features: ['sort', 'totals', 'dataBars', 'conditional', 'topN'], limit: 500,
+    wells: { dimensions: 'editor.wellColumns', measures: 'editor.wellValues' }, features: ['sort', 'totals', 'dataBars', 'conditional', 'topN', 'pagination'], limit: 500,
   },
   matrix: {
     group: 'table', minDimensions: 1, maxDimensions: 10, minMeasures: 1, maxMeasures: 20,
@@ -293,12 +294,20 @@ export function stackingOf(widget: Widget): Stacking {
 }
 
 /** What the dashboard's filters add to the query (see lib/filters.ts); nothing when the dashboard has none. */
-export interface QueryExtras { filters?: Filter[]; bucket?: DateBucket; period?: { field: string; from?: string; to?: string } }
+export interface QueryExtras {
+  filters?: Filter[]; bucket?: DateBucket; period?: { field: string; from?: string; to?: string };
+  /** a paged table: which page, and the column the reader sorted by (the server sorts) */
+  page?: { index: number; sort?: OrderBy };
+}
+/** Rows per page of a paged table, when the author set one. */
+export const pageSizeOf = (widget: Widget): number | undefined => (hasFeature(widget.type, 'pagination') && widget.options.pageSize && widget.options.pageSize > 0 ? Math.floor(widget.options.pageSize) : undefined);
 
 export function toQueryRequest(widget: Widget, extras: QueryExtras = {}): QueryRequest | null {
   if (!widget.datasourceId || !widget.source) return null;
   const q = widget.query;
-  const orderBy = [...q.orderBy];
+  const pageSize = pageSizeOf(widget);
+  // a reader's sort on a paged table replaces the saved order (the server sorts, the page is a window)
+  const orderBy = pageSize && extras.page?.sort ? [extras.page.sort] : [...q.orderBy];
   // the sort option only acts where the pane offers it, so it does not follow a widget into a type without the control
   if (orderBy.length === 0 && q.measures.length && hasFeature(widget.type, 'sort') && widget.options.sortBy && widget.options.sortBy !== 'none') {
     const m = q.measures[0]!;
@@ -312,7 +321,8 @@ export function toQueryRequest(widget: Widget, extras: QueryExtras = {}): QueryR
     measures: q.measures.map(toQueryMeasure),
     filters: [...q.filters, ...(extras.filters ?? [])].filter((f) => f.field).map(({ field, op, value, values }) => ({ field, op, value, values })),
     orderBy,
-    limit: q.limit ?? CHART_SPECS[widget.type].limit,
+    limit: pageSize ?? q.limit ?? CHART_SPECS[widget.type].limit,
+    offset: pageSize ? (extras.page?.index ?? 0) * pageSize : undefined,
     // totals come from the source in the same statement, so a ratio's total is the ratio of the totals
     totals: widget.type !== 'matrix' && hasFeature(widget.type, 'totals') && widget.options.showTotals === true && q.dimensions.length > 0 && q.measures.length > 0 ? true : undefined,
     // a matrix takes its parent rows and totals the same way, one set per level

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { ArrowDown, ArrowUp, ChevronsDownUp, ChevronsUpDown, Minus, Plus } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Minus, Plus } from 'lucide-react';
 import type { QueryResult, Widget } from '@/api/types';
 import { formatCell, formatNumber } from '@/lib/format';
 import { useI18nStore, useT } from '@/i18n';
 import { canTotal, columnFormat, columnLabel, measureAgg, measureAliases, measureLabel, num, str, sum, type Row } from './shape';
 import { allParents, buildMatrix, colKeyOf, columnGroups, defaultExpanded, visibleNodes, type MatrixNode } from './matrix';
 import { cellFormat, columnStats, type ColumnStats } from './conditional';
+
+import type { Paging } from './ChartRenderer';
 
 interface Props { widget: Widget; result: QueryResult }
 
@@ -39,14 +41,20 @@ function grandTotal(widget: Widget, result: QueryResult, alias: string): number 
   return canTotal(measureAgg(widget, alias)) ? sum(result.rows.map((r) => num(r[alias]))) : null;
 }
 
-/** The table visual: every column sortable from its header, optional totals row and data bars. */
-export function DataTable({ widget, result }: Props) {
+/** The table visual: every column sortable from its header (by the server when paged), optional totals row, data bars and a pager. */
+export function DataTable({ widget, result, paging }: Props & { paging?: Paging }) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const fmt = (alias: string) => columnFormat(widget, alias);
-  const [sort, setSort] = useState<Sort>(null);
+  const [localSort, setLocalSort] = useState<Sort>(null);
+  // a paged table is sorted by the server, so the reader's choice goes back through the query
+  const sort: Sort = paging ? (paging.sort ? { alias: paging.sort.alias, dir: paging.sort.direction } : null) : localSort;
+  const setSort = (next: Sort | ((s: Sort) => Sort)) => {
+    const value = typeof next === 'function' ? next(sort) : next;
+    if (paging) { paging.setSort(value ? { alias: value.alias, direction: value.dir } : undefined); paging.setIndex(0); } else setLocalSort(value);
+  };
   const numeric = useMemo(() => new Set(result.columns.filter((c) => c.role === 'measure' || typeof result.rows[0]?.[c.alias] === 'number').map((c) => c.alias)), [result]);
-  const rows = useMemo(() => sortRows(result.rows, sort, numeric), [result.rows, sort, numeric]);
+  const rows = useMemo(() => (paging ? result.rows : sortRows(result.rows, sort, numeric)), [paging, result.rows, sort, numeric]);
   const measures = useMemo(() => measureAliases(result), [result]);
   const maxima = useMemo(() => {
     const out = new Map<string, number>();
@@ -115,6 +123,13 @@ export function DataTable({ widget, result }: Props) {
           </tfoot>
         )}
       </table>
+      {paging && (
+        <nav className="chart-table__pager" aria-label={t('editor.pager')}>
+          <button type="button" className="matrix__toggle" disabled={paging.index === 0} title={t('editor.pagePrev')} onClick={() => paging.setIndex(paging.index - 1)}><ChevronLeft size={14} aria-hidden /><span className="sr-only">{t('editor.pagePrev')}</span></button>
+          <span className="text-sm text-muted">{t('editor.pageLabel', { n: paging.index + 1 })}</span>
+          <button type="button" className="matrix__toggle" disabled={!paging.more} title={t('editor.pageNext')} onClick={() => paging.setIndex(paging.index + 1)}><ChevronRight size={14} aria-hidden /><span className="sr-only">{t('editor.pageNext')}</span></button>
+        </nav>
+      )}
     </div>
   );
 }
