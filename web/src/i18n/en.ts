@@ -54,7 +54,7 @@ export const en: Dictionary = {
     stacking: 'Stacking', stackingStacked: 'Stacked', stackingPercent: '100%', legendPosition: 'Legend position', legendBottom: 'Bottom', legendTop: 'Top', legendRight: 'Right',
     showTotals: 'Show totals', dataBars: 'Data bars in cells', gaugeMin: 'Minimum', gaugeMax: 'Maximum', target: 'Target', showTarget: 'Show target',
     // matrix hierarchy
-    matrixExpand: 'Open at first to', expandToLevel: 'Level {n}', expandAllLevels: 'All levels', expandAll: 'Expand all', collapseAll: 'Collapse all', expandRow: 'Expand {name}', collapseRow: 'Collapse {name}',
+    matrixExpand: 'Levels open at first', expandToLevel: { one: '{count} level', other: '{count} levels' }, expandAllLevels: 'All', expandAll: 'Expand all', collapseAll: 'Collapse all', expandRow: 'Expand {name}', collapseRow: 'Collapse {name}', levelJoin: ' / ',
     analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line',
     // inside the visuals
     total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',

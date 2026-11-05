@@ -41,12 +41,12 @@
 /* matrix: row headers stay put while the columns scroll */
 .chart-table .matrix th[scope="row"] { position: sticky; left: 0; background: var(--color-side); text-align: left; font-weight: 500; color: var(--color-text); z-index: 1; }
 .chart-table .matrix thead th:first-child { left: 0; z-index: 2; }
-/* the hierarchy: each row level steps in by one spacing unit; a parent row carries its level's subtotal and reads like the totals row */
+/* the hierarchy: each row level steps in by one spacing unit; a parent row carries its level's subtotal, in the totals' weight on the second surface */
 .chart-table .matrix tbody th[scope="row"] { padding-left: calc(var(--space-3) + var(--space-4) * var(--level, 0)); }
 .chart-table .matrix__row-head { display: inline-flex; align-items: center; gap: var(--space-2); }
 .chart-table .matrix__parent td, .chart-table .matrix__parent th[scope="row"] { font-weight: 600; color: var(--color-text); background: var(--color-surface-2); }
-/* a bare button in a cell, like the sortable header: opens or closes a level, or every level from the corner */
-.chart-table .matrix__toggle { display: inline-flex; align-items: center; justify-content: center; width: var(--space-5); height: var(--space-5); padding: 0; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-muted); flex: none; }
-.chart-table .matrix__toggle:hover { color: var(--color-text); border-color: var(--color-border-strong); }
+/* a bare button in a cell, like the sortable header and the ghost button: no border, a raised square on hover; opens or closes a level, or every level from the corner */
+.chart-table .matrix__toggle { display: inline-flex; align-items: center; justify-content: center; width: var(--space-5); height: var(--space-5); padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-muted); flex: none; }
+.chart-table .matrix__toggle:hover { color: var(--color-text); background: var(--color-raised); }
 .chart-table .matrix__toggle--none { visibility: hidden; }
 .chart-table .matrix__tools { display: inline-flex; gap: var(--space-1); margin-left: var(--space-2); vertical-align: middle; }

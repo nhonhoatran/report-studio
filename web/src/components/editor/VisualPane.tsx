@@ -364,7 +364,7 @@ export function VisualPane() {
         {has('hierarchy') && rowDims.length > 1 && (
           // how many row levels a reader sees at first; every deeper level opens with its parent's toggle
           <Select size="sm" label={t('editor.matrixExpand')} value={Math.min(o.matrixExpand ?? 1, rowDims.length)} onChange={(e) => setOptions({ matrixExpand: Number(e.target.value) })}>
-            {rowDims.map((_, i) => <option key={i} value={i + 1}>{i + 1 === rowDims.length ? t('editor.expandAllLevels') : t('editor.expandToLevel', { n: i + 1 })}</option>)}
+            {rowDims.map((_, i) => <option key={i} value={i + 1}>{i + 1 === rowDims.length ? t('editor.expandAllLevels') : t('editor.expandToLevel', { count: i + 1 })}</option>)}
           </Select>
         )}
         {has('dataBars') && (

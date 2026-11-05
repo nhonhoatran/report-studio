@@ -51,7 +51,7 @@ export const vi = {
     stacking: 'Xếp chồng', stackingStacked: 'Xếp chồng', stackingPercent: '100%', legendPosition: 'Vị trí chú giải', legendBottom: 'Dưới', legendTop: 'Trên', legendRight: 'Phải',
     showTotals: 'Hiện dòng tổng', dataBars: 'Thanh dữ liệu trong ô', gaugeMin: 'Nhỏ nhất', gaugeMax: 'Lớn nhất', target: 'Mục tiêu', showTarget: 'Hiện mục tiêu',
     // matrix hierarchy
-    matrixExpand: 'Mở sẵn tới cấp', expandToLevel: 'Cấp {n}', expandAllLevels: 'Tất cả các cấp', expandAll: 'Mở tất cả', collapseAll: 'Thu tất cả', expandRow: 'Mở {name}', collapseRow: 'Thu {name}',
+    matrixExpand: 'Số cấp mở sẵn', expandToLevel: '{count} cấp', expandAllLevels: 'Tất cả', expandAll: 'Mở tất cả', collapseAll: 'Thu gọn tất cả', expandRow: 'Mở {name}', collapseRow: 'Thu gọn {name}', levelJoin: ' / ',
     analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình',
     // inside the visuals
     total: 'Tổng cộng', increase: 'Tăng', decrease: 'Giảm', vsPrevious: 'so với kỳ trước', targetLabel: 'Mục tiêu {value}', sortColumn: 'Sắp xếp theo cột này',

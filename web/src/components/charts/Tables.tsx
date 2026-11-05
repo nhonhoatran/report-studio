@@ -122,7 +122,19 @@ export function Matrix({ widget, result }: Props) {
   const toggle = (key: string) => setExpanded((prev) => { const next = new Set(prev ?? defaultExpanded(tree, expandLevel)); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const rows = visibleNodes(tree, open);
   const dimCols = result.columns.filter((c) => c.role === 'dimension');
-  const rowHead = dimCols.slice(0, rowLevels).map((c) => columnLabel(widget, c, lang)).join(' / ');
+  const rowHead = dimCols.slice(0, rowLevels).map((c) => columnLabel(widget, c, lang)).join(t('editor.levelJoin'));
+  // the corner cell: the row levels' names and, with more than one level, "expand all" and "collapse all"
+  const corner = (
+    <>
+      {rowHead}
+      {rowLevels > 1 && (
+        <span className="matrix__tools">
+          <button type="button" className="matrix__toggle" title={t('editor.expandAll')} onClick={() => setExpanded(allParents(tree))}><ChevronsUpDown size={12} aria-hidden /><span className="sr-only">{t('editor.expandAll')}</span></button>
+          <button type="button" className="matrix__toggle" title={t('editor.collapseAll')} onClick={() => setExpanded(new Set())}><ChevronsDownUp size={12} aria-hidden /><span className="sr-only">{t('editor.collapseAll')}</span></button>
+        </span>
+      )}
+    </>
+  );
   const label = (m: string) => measureLabel(widget, m, lang) ?? m;
   const hasColumns = colLevels > 0;
   const showMeasureRow = !hasColumns || measures.length > 1;
@@ -140,13 +152,7 @@ export function Matrix({ widget, result }: Props) {
             <tr key={`col-${level}`}>
               {level === 0 && (
                 <th scope="col" rowSpan={headerRows}>
-                  {rowHead}
-                  {rowLevels > 1 && (
-                    <span className="matrix__tools">
-                      <button type="button" className="matrix__toggle" title={t('editor.expandAll')} onClick={() => setExpanded(allParents(tree))}><ChevronsUpDown size={12} aria-hidden /><span className="sr-only">{t('editor.expandAll')}</span></button>
-                      <button type="button" className="matrix__toggle" title={t('editor.collapseAll')} onClick={() => setExpanded(new Set())}><ChevronsDownUp size={12} aria-hidden /><span className="sr-only">{t('editor.collapseAll')}</span></button>
-                    </span>
-                  )}
+                  {corner}
                 </th>
               )}
               {columnGroups(colKeys, level).map((g, i) => <th key={`${level}-${i}`} scope="col" className="num" colSpan={g.span * measures.length}>{g.label}</th>)}
@@ -157,13 +163,7 @@ export function Matrix({ widget, result }: Props) {
             <tr>
               {!hasColumns && (
                 <th scope="col">
-                  {rowHead}
-                  {rowLevels > 1 && (
-                    <span className="matrix__tools">
-                      <button type="button" className="matrix__toggle" title={t('editor.expandAll')} onClick={() => setExpanded(allParents(tree))}><ChevronsUpDown size={12} aria-hidden /><span className="sr-only">{t('editor.expandAll')}</span></button>
-                      <button type="button" className="matrix__toggle" title={t('editor.collapseAll')} onClick={() => setExpanded(new Set())}><ChevronsDownUp size={12} aria-hidden /><span className="sr-only">{t('editor.collapseAll')}</span></button>
-                    </span>
-                  )}
+                  {corner}
                 </th>
               )}
               {colKeys.flatMap((tuple) => measures.map((m) => <th key={`${colKeyOf(tuple)}|${m}`} scope="col" className="num">{label(m)}</th>))}
@@ -180,7 +180,7 @@ export function Matrix({ widget, result }: Props) {
                 <th scope="row" style={{ '--level': node.level - 1 } as CSSProperties}>
                   <span className="matrix__row-head">
                     {rowLevels > 1 && (parent
-                      ? <button type="button" className="matrix__toggle" aria-expanded={isOpen} onClick={() => toggle(node.key)}>{isOpen ? <Minus size={12} aria-hidden /> : <Plus size={12} aria-hidden />}<span className="sr-only">{t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })}</span></button>
+                      ? <button type="button" className="matrix__toggle" aria-expanded={isOpen} title={t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })} onClick={() => toggle(node.key)}>{isOpen ? <Minus size={12} aria-hidden /> : <Plus size={12} aria-hidden />}<span className="sr-only">{t(isOpen ? 'editor.collapseRow' : 'editor.expandRow', { name: node.label })}</span></button>
                       : <span className="matrix__toggle matrix__toggle--none" aria-hidden />)}
                     <span>{node.label}</span>
                   </span>
