@@ -36,7 +36,11 @@ export function FilterDialog({ open, initial, onClose }: { open: boolean; initia
     const source: QuerySource = type === 'table' ? { type: 'table', table: rest! } : { type: 'dataset', datasetId: Number(rest) };
     set({ source, field: undefined });
   };
-  const setKind = (kind: DashboardFilterKind) => set({ kind, value: defaultFilterValue(kind), multi: kind === 'list' ? form.multi ?? true : undefined, field: kind === 'grain' ? undefined : form.field });
+  const setKind = (kind: DashboardFilterKind) => {
+    // a date range reads a date column: a field chosen for a list is dropped unless it is one
+    const keepField = kind === 'list' || (kind === 'date_range' && fields.data?.find((f) => f.name === form.field)?.kind === 'date');
+    set({ kind, value: defaultFilterValue(kind), multi: kind === 'list' ? form.multi ?? true : undefined, field: keepField ? form.field : undefined });
+  };
 
   const valid = !needsField || !!(form.datasourceId && form.source && form.field);
   const onSubmit = (e: FormEvent) => {
@@ -56,7 +60,7 @@ export function FilterDialog({ open, initial, onClose }: { open: boolean; initia
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="submit" form={FORM_ID} variant="primary" disabled={!valid}>{initial ? t('common.save') : t('common.add')}</Button>
+          <Button type="submit" form={FORM_ID} variant="primary" disabled={!valid}>{t('common.save')}</Button>
         </>
       }
     >
@@ -79,7 +83,7 @@ export function FilterDialog({ open, initial, onClose }: { open: boolean; initia
                 {!!datasets.data?.length && <optgroup label={t('editor.datasets')}>{datasets.data.map((ds) => <option key={ds.id} value={`dataset:${ds.id}`}>{ds.name}</option>)}</optgroup>}
               </Select>
               <Select className="span-2" label={t('filters.field')} value={form.field ?? ''} onChange={(e) => set({ field: e.target.value || undefined })} disabled={!form.source || fields.isLoading}
-                help={form.source && fields.data && choosable.length === 0 ? t('filters.noDateFields') : undefined}>
+                help={form.kind === 'date_range' && form.source && fields.data && choosable.length === 0 ? t('filters.noDateFields') : undefined}>
                 <option value="">—</option>
                 {choosable.map((f) => <option key={f.name} value={f.name}>{f.name} · {t(`kinds.${f.kind}`)}</option>)}
               </Select>

@@ -39,8 +39,10 @@ function AddRoleModal({ open, onClose }: { open: boolean; onClose: () => void })
     <Modal open={open} title={t('settings.addRoleTitle')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button type="submit" form={ROLE_FORM_ID} variant="primary" disabled={!valid} loading={create.isPending}>{t('common.save')}</Button></>}>
       <form id={ROLE_FORM_ID} className="stack" onSubmit={(e: FormEvent) => { e.preventDefault(); if (valid) create.mutate(); }}>
-        <Input label={t('settings.roleName')} required help={t('settings.roleNameHint')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus />
-        <Input label={t('settings.roleLabel')} required value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
+        <div className="form-grid">
+          <Input label={t('settings.roleName')} required help={t('settings.roleNameHint')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus />
+          <Input label={t('settings.roleLabel')} required value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
+        </div>
         {create.error && <ErrorBox error={create.error} />}
       </form>
     </Modal>
@@ -85,7 +87,7 @@ export function RolesPanel() {
                       <span title={r.name}>{roleLabel(r, r.name, t)}</span>
                       {r.builtin
                         ? <span className="badge">{t('settings.builtin')}</span>
-                        : <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={14} />} onClick={() => setToDelete(r)}>{t('settings.deleteRole')}</Button>}
+                        : <Button variant="ghost" size="sm" iconOnly icon={<Trash2 size={15} />} onClick={() => setToDelete(r)}>{t('settings.deleteRole')}</Button>}
                     </span>
                   </th>
                 ))}

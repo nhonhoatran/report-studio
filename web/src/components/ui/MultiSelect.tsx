@@ -14,6 +14,7 @@ export function MultiSelect<T extends string | number>({ label, value, options, 
   allLabel: ReactNode; /** the text shown while something is selected, e.g. "3 selected" */ summary: ReactNode; size?: 'sm' | 'md'; id?: string;
 }) {
   const auto = useId(); const id = givenId ?? auto;
+  const labelId = `${id}-label`;
   const ref = useRef<HTMLDetailsElement>(null);
 
   // a click outside closes the menu, as a native select would
@@ -30,13 +31,14 @@ export function MultiSelect<T extends string | number>({ label, value, options, 
   const toggle = (v: T, on: boolean) => onChange(on ? [...value, v] : value.filter((x) => x !== v));
   return (
     <div className="field">
-      <label className="field__label" htmlFor={id}>{label}</label>
+      {/* a <summary> cannot be the target of a <label>, so the label names it through aria-labelledby */}
+      <span className="field__label" id={labelId}>{label}</span>
       <details ref={ref} className="multiselect">
-        <summary id={id} className={['field__control', size === 'sm' && 'field__control--sm', 'multiselect__summary'].filter(Boolean).join(' ')} aria-haspopup="listbox">
+        <summary id={id} className={['field__control', size === 'sm' && 'field__control--sm', 'multiselect__summary'].filter(Boolean).join(' ')} aria-labelledby={labelId}>
           <span className="truncate">{value.length === 0 ? allLabel : summary}</span>
           <ChevronDown size={14} aria-hidden />
         </summary>
-        <div className="multiselect__menu" role="group" aria-label={typeof label === 'string' ? label : undefined}>
+        <div className="multiselect__menu" role="group" aria-labelledby={labelId}>
           <Checkbox label={allLabel} checked={value.length === 0} onChange={() => onChange([])} />
           {options.map((o) => (
             <Checkbox key={String(o.value)} label={o.label} checked={value.includes(o.value)} onChange={(e) => toggle(o.value, e.target.checked)} />

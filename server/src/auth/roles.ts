@@ -57,7 +57,7 @@ export async function seedRoles(): Promise<void> {
 export interface RoleInput { name: string; label: string; permissions: Permission[] }
 
 export async function createRole(input: RoleInput): Promise<RoleDefinition> {
-  if (!ROLE_NAME_PATTERN.test(input.name)) throw badRequest('Role name must be 2-32 lower-case letters, digits, _ or -', 'invalid_role', { name: input.name });
+  if (!ROLE_NAME_PATTERN.test(input.name)) throw badRequest('Role name must be 2-32 lower-case letters, digits, _ or -', 'invalid_role', { role: input.name });
   if (await queryOne('SELECT name FROM roles WHERE name = ?', [input.name])) throw conflict('A role with that name already exists', 'role_name_exists');
   await execute('INSERT INTO roles (name, label, permissions, builtin) VALUES (?, ?, ?, 0)', [input.name, input.label, JSON.stringify(input.permissions)]);
   invalidateRoles();

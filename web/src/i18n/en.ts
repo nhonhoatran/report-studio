@@ -11,7 +11,7 @@ export const en: Dictionary = {
     confirmDelete: 'Delete "{name}"? This cannot be undone.', deleted: 'Deleted',
     errorGeneric: 'Something went wrong. Please try again.', unauthorized: 'Your session has expired.',
     language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeSystem: 'System',
-    default: 'Default', test: 'Test', openSettings: 'Open Settings',
+    default: 'Default', test: 'Test', openSettings: 'Open Settings', selected: { one: '{count} selected', other: '{count} selected' },
   },
   nav: { dashboards: 'Dashboards', datasources: 'Data sources', settings: 'Settings', logout: 'Log out', menu: 'Menu' },
   login: {
@@ -60,7 +60,7 @@ export const en: Dictionary = {
   filters: {
     title: 'Dashboard filters', add: 'Add filter', edit: 'Edit filter', remove: 'Remove filter', addTitle: 'Add dashboard filter', editTitle: 'Edit dashboard filter',
     kind: 'Filter kind', kinds: { date_range: 'Date range', grain: 'Time grain', list: 'Value list' },
-    label: 'Label', field: 'Field', multi: 'Allow several values', all: 'All', selected: { one: '{count} selected', other: '{count} selected' }, from: 'From', to: 'To',
+    label: 'Label', field: 'Field', multi: 'Allow several values', all: 'All', from: 'From', to: 'To',
     reset: 'Reset', loadingValues: 'Loading values…', incomplete: 'No field chosen', active: { one: '{count} filter applied', other: '{count} filters applied' }, noDateFields: 'This table has no date column',
     scopeHint: 'Applies to every visual on the same data source whose table has this column. The choice at save time is the default viewers start from.',
     grainHint: 'Changes how dates are grouped (year / quarter / month…) on every visual with a time axis.',
@@ -99,7 +99,7 @@ export const en: Dictionary = {
     loginMethod: 'Sign-in', providerLocal: 'Password', providerEntra: 'Microsoft Entra ID',
     managedByEntra: 'This account signs in with Microsoft Entra ID; its password is managed by your organisation.',
     editUser: 'Edit user', attributes: 'Attributes', attributesHint: 'Read by access policies (ABAC): one or more values per key, comma separated (e.g. region = Hà Nội, Đà Nẵng).',
-    attributeKey: 'Key', attributeValues: 'Values', addAttribute: 'Add attribute', noAttributes: 'No attributes', attributeCount: { one: '{count} attribute', other: '{count} attributes' },
+    attributeKey: 'Key', attributeValues: 'Values', addAttribute: 'Add attribute', noAttributes: 'No attributes',
     roles: 'Roles & permissions', rolesHint: 'One column per role, one row per permission. Admin always holds every permission.', addRole: 'Add role', addRoleTitle: 'Add role',
     roleName: 'Role id', roleNameHint: '2–32 characters: lower-case letters, digits, _ or -', roleLabel: 'Display name', builtin: 'Built-in', deleteRole: 'Delete role', permission: 'Permission',
     permissionLabels: {

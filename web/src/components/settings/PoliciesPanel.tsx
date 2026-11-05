@@ -7,7 +7,7 @@ import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
 import { Panel } from '@/components/ui/Panel';
 import { Button } from '@/components/ui/Button';
-import { Checkbox, Input, Select } from '@/components/ui/Field';
+import { Checkbox, Input, Labelled, Select } from '@/components/ui/Field';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState, ErrorBox, Spinner } from '@/components/ui/Feedback';
@@ -70,12 +70,11 @@ function PolicyModal({ open, initial, onClose }: { open: boolean; initial: Acces
         </div>
 
         <div className="pane__section-title">{t('policies.subject')}</div>
-        <MultiSelect label={t('policies.subjectRoles')} value={form.roles} onChange={(roles) => set({ roles })} allLabel={t('policies.anyone')} summary={t('filters.selected', { count: form.roles.length })}
+        <MultiSelect label={t('policies.subjectRoles')} value={form.roles} onChange={(roles) => set({ roles })} allLabel={t('policies.anyone')} summary={t('common.selected', { count: form.roles.length })}
           options={(roles.data ?? []).map((r) => ({ value: r.name, label: roleLabel(r, r.name, t) }))} />
-        <div className="field">
-          <span className="field__label">{t('policies.subjectAttributes')}</span>
+        <Labelled label={t('policies.subjectAttributes')}>
           <AttributesEditor rows={form.attributes} onChange={(attributes) => set({ attributes })} />
-        </div>
+        </Labelled>
 
         <div className="pane__section-title">{t('policies.resource')}</div>
         <div className="form-grid">
@@ -83,14 +82,13 @@ function PolicyModal({ open, initial, onClose }: { open: boolean; initial: Acces
             <option value="dashboard">{t('policies.resourceTypes.dashboard')}</option>
             <option value="datasource">{t('policies.resourceTypes.datasource')}</option>
           </Select>
-          <MultiSelect label={t('policies.resourceIds')} value={form.ids} onChange={(ids) => set({ ids })} allLabel={t('policies.allResources')} summary={t('filters.selected', { count: form.ids.length })} options={targets} />
+          <MultiSelect label={t('policies.resourceIds')} value={form.ids} onChange={(ids) => set({ ids })} allLabel={t('policies.allResources')} summary={t('common.selected', { count: form.ids.length })} options={targets} />
         </div>
-        <div className="field">
-          <span className="field__label">{t('policies.actions')}</span>
+        <Labelled label={t('policies.actions')}>
           <div className="row row--wrap">
             {RESOURCE_ACTIONS[form.type].map((a) => <Checkbox key={a} label={t(`policies.actionLabels.${a}`)} checked={form.actions.includes(a)} onChange={(e) => toggleAction(a, e.target.checked)} />)}
           </div>
-        </div>
+        </Labelled>
 
         {rowFiltersApply && (
           <>
@@ -146,10 +144,10 @@ export function PoliciesPanel() {
               {policies.data.map((p) => (
                 <tr key={p.id}>
                   <td>{p.name} {!p.enabled && <span className="badge">{t('policies.disabled')}</span>}</td>
-                  <td><span className={['badge', p.effect === 'deny' ? 'badge--date' : 'badge--number'].join(' ')}>{p.effect === 'deny' ? t('policies.effectDeny') : t('policies.effectAllow')}</span></td>
+                  <td><span className="badge">{p.effect === 'deny' ? t('policies.effectDeny') : t('policies.effectAllow')}</span></td>
                   <td>{subjectText(p)}</td>
                   <td>
-                    {t(`policies.resourceTypes.${p.resource.type}`)} · {p.resource.ids.length ? t('filters.selected', { count: p.resource.ids.length }) : t('policies.allResources')}
+                    {t(`policies.resourceTypes.${p.resource.type}`)} · {p.resource.ids.length ? t('common.selected', { count: p.resource.ids.length }) : t('policies.allResources')}
                     {p.rowFilters.length > 0 && <> · {t('policies.rowFilterCount', { count: p.rowFilters.length })}</>}
                   </td>
                   <td>{p.actions.map((a) => t(`policies.actionLabels.${a}`)).join(', ')}</td>

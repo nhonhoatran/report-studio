@@ -66,7 +66,7 @@ function ListControl({ filter, value, onChange }: { filter: DashboardFilter; val
   if (filter.multi) {
     return (
       <MultiSelect size="sm" label={filter.label} value={selected} onChange={(values) => onChange({ values })}
-        options={all.map((v) => ({ value: v, label: String(v) }))} allLabel={choices.isLoading ? t('filters.loadingValues') : t('filters.all')} summary={t('filters.selected', { count: selected.length })} />
+        options={all.map((v) => ({ value: v, label: String(v) }))} allLabel={choices.isLoading ? t('filters.loadingValues') : t('filters.all')} summary={t('common.selected', { count: selected.length })} />
     );
   }
   return (
@@ -111,8 +111,8 @@ export function FilterBar({ editable, manage }: { /** edit mode: a change of val
           <div key={f.id} className={['filter-bar__item', isFilterActive(f, value) && 'filter-bar__item--active'].filter(Boolean).join(' ')}>
             {manageHere && (
               <div className="filter-bar__tools">
-                <Button variant="ghost" size="sm" iconOnly icon={<Settings2 size={13} />} onClick={() => setEditing(f)}>{t('filters.edit')}</Button>
-                <Button variant="ghost" size="sm" iconOnly icon={<X size={13} />} onClick={() => removeFilter(f.id)}>{t('filters.remove')}</Button>
+                <Button variant="ghost" size="sm" iconOnly icon={<Settings2 size={14} />} onClick={() => setEditing(f)}>{t('filters.edit')}</Button>
+                <Button variant="ghost" size="sm" iconOnly icon={<X size={14} />} onClick={() => removeFilter(f.id)}>{t('filters.remove')}</Button>
               </div>
             )}
             {!complete

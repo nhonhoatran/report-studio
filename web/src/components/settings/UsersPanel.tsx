@@ -8,7 +8,7 @@ import { toast } from '@/store/toast';
 import { useT } from '@/i18n';
 import { Panel } from '@/components/ui/Panel';
 import { Button } from '@/components/ui/Button';
-import { Input, Select } from '@/components/ui/Field';
+import { Input, Labelled, Select } from '@/components/ui/Field';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ErrorBox, Spinner } from '@/components/ui/Feedback';
 import { Modal } from '@/components/ui/Modal';
@@ -53,10 +53,9 @@ function UserModal({ open, initial, roles, onClose }: { open: boolean; initial: 
             {roles.map((r) => <option key={r.name} value={r.name}>{roleLabel(r, r.name, t)}</option>)}
           </Select>
         </div>
-        <div className="field">
-          <span className="field__label">{t('settings.attributes')}</span>
+        <Labelled label={t('settings.attributes')}>
           <AttributesEditor rows={form.attributes} onChange={(attributes) => set({ attributes })} hint={t('settings.attributesHint')} />
-        </div>
+        </Labelled>
         {save.error && <ErrorBox error={save.error} />}
       </form>
     </Modal>
@@ -87,7 +86,7 @@ export function UsersPanel() {
   return (
     <Panel title={t('settings.users')} actions={<Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setEditing('new')}>{t('settings.addUser')}</Button>} flush>
       {(users.isLoading || roles.isLoading) && <Spinner block />}
-      {users.error && <div className="panel__body"><ErrorBox error={users.error} /></div>}
+      {(users.error || roles.error) && <div className="panel__body"><ErrorBox error={users.error ?? roles.error} /></div>}
       {users.data && roles.data && (
         <div className="table-wrap">
           <table className="table">

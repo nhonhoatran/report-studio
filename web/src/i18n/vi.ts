@@ -8,7 +8,7 @@ export const vi = {
     confirmDelete: 'Bạn chắc chắn muốn xóa "{name}"? Hành động này không thể hoàn tác.', deleted: 'Đã xóa',
     errorGeneric: 'Đã xảy ra lỗi. Vui lòng thử lại.', unauthorized: 'Phiên đăng nhập đã hết hạn.',
     language: 'Ngôn ngữ', theme: 'Giao diện', themeLight: 'Sáng', themeDark: 'Tối', themeSystem: 'Theo hệ thống',
-    default: 'Mặc định', test: 'Kiểm tra', openSettings: 'Mở Cài đặt',
+    default: 'Mặc định', test: 'Kiểm tra', openSettings: 'Mở Cài đặt', selected: '{count} đã chọn',
   },
   nav: { dashboards: 'Bảng điều khiển', datasources: 'Nguồn dữ liệu', settings: 'Cài đặt', logout: 'Đăng xuất', menu: 'Menu' },
   login: {
@@ -57,7 +57,7 @@ export const vi = {
   filters: {
     title: 'Bộ lọc bảng điều khiển', add: 'Thêm bộ lọc', edit: 'Sửa bộ lọc', remove: 'Xóa bộ lọc', addTitle: 'Thêm bộ lọc bảng điều khiển', editTitle: 'Sửa bộ lọc bảng điều khiển',
     kind: 'Loại bộ lọc', kinds: { date_range: 'Khoảng thời gian', grain: 'Loại thời gian', list: 'Danh sách giá trị' },
-    label: 'Nhãn', field: 'Trường', multi: 'Cho chọn nhiều giá trị', all: 'Tất cả', selected: '{count} đã chọn', from: 'Từ ngày', to: 'Đến ngày',
+    label: 'Nhãn', field: 'Trường', multi: 'Cho chọn nhiều giá trị', all: 'Tất cả', from: 'Từ ngày', to: 'Đến ngày',
     reset: 'Về mặc định', loadingValues: 'Đang tải giá trị…', incomplete: 'Chưa chọn trường', active: '{count} bộ lọc đang áp dụng', noDateFields: 'Bảng này không có cột ngày giờ',
     scopeHint: 'Áp dụng cho mọi biểu đồ cùng nguồn dữ liệu mà bảng của nó có cột này. Giá trị đang chọn khi lưu sẽ là mặc định cho người xem.',
     grainHint: 'Đổi cách nhóm ngày (năm / quý / tháng…) của mọi biểu đồ có trục thời gian.',
@@ -96,7 +96,7 @@ export const vi = {
     loginMethod: 'Đăng nhập', providerLocal: 'Mật khẩu', providerEntra: 'Microsoft Entra ID',
     managedByEntra: 'Tài khoản này đăng nhập bằng Microsoft Entra ID; mật khẩu do tổ chức của bạn quản lý.',
     editUser: 'Sửa người dùng', attributes: 'Thuộc tính', attributesHint: 'Dùng cho chính sách truy cập (ABAC): mỗi khóa một hoặc nhiều giá trị, cách nhau bằng dấu phẩy (vd: region = Hà Nội, Đà Nẵng).',
-    attributeKey: 'Khóa', attributeValues: 'Giá trị', addAttribute: 'Thêm thuộc tính', noAttributes: 'Chưa có thuộc tính', attributeCount: '{count} thuộc tính',
+    attributeKey: 'Khóa', attributeValues: 'Giá trị', addAttribute: 'Thêm thuộc tính', noAttributes: 'Chưa có thuộc tính',
     roles: 'Vai trò & quyền', rolesHint: 'Mỗi cột là một vai trò, mỗi dòng là một quyền. Quản trị luôn có mọi quyền.', addRole: 'Thêm vai trò', addRoleTitle: 'Thêm vai trò',
     roleName: 'Mã vai trò', roleNameHint: '2–32 ký tự: chữ thường, số, _ hoặc -', roleLabel: 'Tên hiển thị', builtin: 'Có sẵn', deleteRole: 'Xóa vai trò', permission: 'Quyền',
     permissionLabels: {
