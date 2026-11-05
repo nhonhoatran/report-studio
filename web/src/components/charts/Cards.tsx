@@ -2,16 +2,14 @@ import { useMemo } from 'react';
 import ReactEChartsCore from 'echarts-for-react/lib/core';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { echarts } from './echarts';
-import type { NumberFormat, QueryResult, Widget } from '@/api/types';
+import type { QueryResult, Widget } from '@/api/types';
 import { formatNumber } from '@/lib/format';
 import { useTheme } from '@/store/theme';
 import { useI18nStore, useT } from '@/i18n';
-import { dimensionAliases, measureAliases, measureLabel, num, str } from './shape';
+import { columnFormat, dimensionAliases, measureAliases, measureLabel, num, str } from './shape';
 import { readChartTheme, sparklineOption } from './options';
 
 interface Props { widget: Widget; result: QueryResult }
-
-const fmtOf = (w: Widget): NumberFormat => w.options.numberFormat ?? 'auto';
 
 /** One headline number and its label. */
 export function KpiCard({ widget, result }: Props) {
@@ -20,7 +18,7 @@ export function KpiCard({ widget, result }: Props) {
   const value = m ? result.rows[0]?.[m] : undefined;
   return (
     <div className="kpi">
-      <div className="kpi__value">{formatNumber(value, fmtOf(widget), lang)}</div>
+      <div className="kpi__value">{formatNumber(value, columnFormat(widget, m ?? ''), lang)}</div>
       <div className="kpi__label">{(m && measureLabel(widget, m, lang)) ?? m}</div>
     </div>
   );
@@ -34,8 +32,8 @@ export function TrendCard({ widget, result }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
   const look = useTheme((s) => s.stamp);
-  const fmt = fmtOf(widget);
   const [mv, mt] = measureAliases(result);
+  const fmt = columnFormat(widget, mv ?? '');
   const axis = dimensionAliases(result)[0];
   const rows = result.rows;
   const last = rows[rows.length - 1];
@@ -82,7 +80,6 @@ export function TrendCard({ widget, result }: Props) {
 /** Power BI's multi-row card: one small card per category, each listing every measure. */
 export function MultiRowCard({ widget, result }: Props) {
   const lang = useI18nStore((s) => s.lang);
-  const fmt = fmtOf(widget);
   const cat = dimensionAliases(result)[0];
   const measures = measureAliases(result);
   return (
@@ -94,7 +91,7 @@ export function MultiRowCard({ widget, result }: Props) {
             {measures.map((m) => (
               <div key={m} className="multirow__row">
                 <dt className="truncate">{measureLabel(widget, m, lang) ?? m}</dt>
-                <dd>{formatNumber(r[m], fmt, lang)}</dd>
+                <dd>{formatNumber(r[m], columnFormat(widget, m), lang)}</dd>
               </div>
             ))}
           </dl>

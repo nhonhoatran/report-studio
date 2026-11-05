@@ -60,14 +60,31 @@ Khi đổi loại, các trường thừa so với ô của loại mới bị b�
 ### Mẹo
 - Trục + Chú giải = 2 trường chữ: biểu đồ cột/đường sẽ tách thành nhiều chuỗi (đặt *Xếp chồng* nếu muốn cộng dồn, *100%* để so tỉ trọng).
 - Mục *Phân tích* của biểu đồ cột/đường: *Đường tham chiếu* (một hằng số) và *Đường trung bình* của chuỗi đầu tiên.
-- Dòng tổng của bảng / ma trận chỉ cộng các giá trị cộng được (Tổng, Số lượng); Trung bình / Nhỏ nhất / Lớn nhất hiện "–".
+- Dòng tổng của bảng / ma trận do nguồn dữ liệu tính trong cùng câu lệnh: Tổng, Số lượng, Trung bình (tính lại từ tổng và số lượng), Nhỏ nhất / Lớn nhất và cả phép tính đều có tổng đúng; chỉ *Số lượng khác nhau* hiện "–".
 - Thẻ số (KPI) chỉ nhận một *Giá trị*.
 - Bảng nhận nhiều cột tuỳ ý; nếu không có *Giá trị* thì hiển thị các dòng duy nhất.
 - Biểu tượng `</>` ở chân mỗi biểu đồ hiển thị câu SQL đã sinh ra — tiện để kiểm tra hoặc copy sang công cụ khác.
 - Kết quả bị cắt ở `QUERY_MAX_ROWS` (mặc định 5.000 dòng); hãy gộp/lọc thay vì vẽ dữ liệu thô.
 
+### Tên hiển thị, phép tính, % trên tổng
+Mỗi trường trong ô *Trục / Hàng / Cột / Giá trị* có nút **Tùy chỉnh trường** (biểu tượng thanh trượt) mở phần cài đặt ngay dưới trường:
+
+- **Tên hiển thị**: tên nghiệp vụ ("Doanh số") thay cho tên kỹ thuật ("Tổng doanh_so") ở tiêu đề cột, chú giải, tooltip, trục và thẻ. Xóa tên thì quay về tên tự sinh.
+- **Hiển thị dưới dạng** (measure): *Giá trị*, *% trên tổng chung*, *% trên tổng nhóm cha (hàng)* hoặc *% trên tổng cột*. Tỷ trọng tính ở nguồn dữ liệu theo dữ liệu đã lọc; các dòng của một nhóm cộng lại bằng 100%.
+- **Định dạng số của trường**: riêng cho measure này (tiền cho doanh số, phần trăm cho tỷ lệ) thay vì định dạng chung của biểu đồ.
+
+**Thêm phép tính** (nút ở cuối ô *Giá trị*) tạo một measure tính từ các measure khác của biểu đồ, ví dụ tỷ lệ lãi gộp `[sum_lai_gop] / [Doanh số]` hoặc `sum(thuc_hien) / sum(ke_hoach) * 100`:
+
+- tham chiếu measure khác bằng `[tên]` (bí danh hoặc tên hiển thị; nhấn tên measure dưới ô công thức để chèn), hoặc gộp thẳng một cột: `sum(cot)`, `avg(cot)`, `count(*)`, `count_distinct(cot)`, `min(cot)`, `max(cot)`;
+- phép toán `+ − × ÷` (hoặc `* /`), hằng số và ngoặc;
+- phép tính thực hiện **sau khi gộp**, nên ở dòng tổng là tỷ lệ của các tổng chứ không phải tổng các tỷ lệ; chia cho 0 hoặc trống cho ô trống;
+- gõ sai thì báo ngay dưới ô công thức kèm vị trí; biểu đồ chờ đến khi công thức hợp lệ.
+
+### Báo cáo nhiều trang
+Dãy **trang** nằm trên thanh lọc. Người xem bấm tên trang để chuyển; địa chỉ trang web mang theo trang đang xem (`?page=…`) nên gửi link là mở đúng trang. Người soạn có các nút bên phải dãy trang: **Đổi tên**, **Nhân bản**, **Chuyển trái / phải**, **Xóa trang** (có xác nhận; trang cuối cùng không xóa được) và **Thêm trang**. Mỗi trang có biểu đồ và bố cục riêng; bảng điều khiển tạo trước khi có trang được đọc như một trang.
+
 ### Bộ lọc bảng điều khiển (slicer)
-Thanh lọc nằm trên khung vẽ và áp dụng cho **mọi biểu đồ** trên bảng, như slicer của Power BI. Người có quyền *Thêm / sửa / xóa bộ lọc bảng điều khiển* (mặc định: Quản trị) nhấn **Thêm bộ lọc** và chọn một trong ba loại:
+Thanh lọc nằm trên khung vẽ và áp dụng cho **mọi biểu đồ** trên bảng, như slicer của Power BI. Khi báo cáo có nhiều trang, mục *Phạm vi* của bộ lọc chọn **Cả báo cáo** (hiện ở mọi trang, giữ nguyên lựa chọn khi chuyển trang) hoặc **chỉ một trang**. Người có quyền *Thêm / sửa / xóa bộ lọc bảng điều khiển* (mặc định: Quản trị) nhấn **Thêm bộ lọc** và chọn một trong ba loại:
 
 | Loại | Lọc gì | Cách áp dụng |
 |---|---|---|

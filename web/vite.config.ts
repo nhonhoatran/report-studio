@@ -5,7 +5,11 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // pure modules both ends run (the formula language): the server owns them, the client bundles them
+      '@shared': fileURLToPath(new URL('../server/src/shared', import.meta.url)),
+    },
   },
   server: {
     port: 5173,

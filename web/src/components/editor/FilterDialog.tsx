@@ -17,9 +17,12 @@ const FORM_ID = 'dashboard-filter-form';
 export function FilterDialog({ open, initial, onClose }: { open: boolean; initial: DashboardFilter | null; onClose: () => void }) {
   const t = useT();
   const activeDataset = useEditor((s) => s.activeDataset);
+  const pages = useEditor((s) => s.definition.pages);
+  const activePageId = useEditor((s) => s.activePageId);
   const addFilter = useEditor((s) => s.addFilter);
   const updateFilter = useEditor((s) => s.updateFilter);
-  const [form, setForm] = useState<DashboardFilter>(initial ?? newDashboardFilter('list', activeDataset?.datasourceId ?? null, activeDataset?.source ?? null));
+  // a new filter belongs to the page it is added on; the author may widen it to the whole report
+  const [form, setForm] = useState<DashboardFilter>(initial ?? { ...newDashboardFilter('list', activeDataset?.datasourceId ?? null, activeDataset?.source ?? null), pageId: pages.length > 1 ? activePageId : undefined });
   const set = (patch: Partial<DashboardFilter>) => setForm((f) => ({ ...f, ...patch }));
   const needsField = form.kind !== 'grain';
 
@@ -71,6 +74,12 @@ export function FilterDialog({ open, initial, onClose }: { open: boolean; initia
             {DASHBOARD_FILTER_KINDS.map((k) => <option key={k} value={k}>{t(`filters.kinds.${k}`)}</option>)}
           </Select>
           <Input label={t('filters.label')} value={form.label} placeholder={form.kind === 'grain' ? t('filters.kinds.grain') : form.field ?? t(`filters.kinds.${form.kind}`)} onChange={(e) => set({ label: e.target.value })} autoFocus />
+          {pages.length > 1 && (
+            <Select className="span-2" label={t('filters.scope')} value={form.pageId ?? ''} onChange={(e) => set({ pageId: e.target.value || undefined })} help={t('filters.scopePageHint')}>
+              <option value="">{t('filters.scopeAll')}</option>
+              {pages.map((p) => <option key={p.id} value={p.id}>{t('filters.scopePage', { name: p.name })}</option>)}
+            </Select>
+          )}
           {needsField && (
             <>
               <Select label={t('editor.chooseDatasource')} value={form.datasourceId ?? ''} onChange={(e) => set({ datasourceId: e.target.value ? Number(e.target.value) : null, source: null, field: undefined })}>

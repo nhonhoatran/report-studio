@@ -12,7 +12,7 @@ export type ErrorCode =
   | 'dashboard_not_found'
   | 'dataset_not_found' | 'dataset_name_exists' | 'dataset_wrong_datasource' | 'adhoc_sql_forbidden'
   | 'datasource_not_found' | 'datasource_name_exists' | 'table_not_found'
-  | 'invalid_identifier' | 'invalid_table' | 'count_distinct_needs_field' | 'between_needs_two_values' | 'order_by_unknown'
+  | 'invalid_identifier' | 'invalid_table' | 'count_distinct_needs_field' | 'between_needs_two_values' | 'order_by_unknown' | 'formula_invalid'
   | 'sql_empty' | 'sql_multiple_statements' | 'sql_not_select' | 'sql_keyword_blocked' | 'sql_locking'
   | 'db_access_denied' | 'db_unreachable' | 'db_timeout' | 'db_read_only' | 'db_sql_error'
   | 'ai_provider_not_found' | 'ai_provider_name_exists' | 'ai_no_provider' | 'ai_auth_failed' | 'ai_provider_error'

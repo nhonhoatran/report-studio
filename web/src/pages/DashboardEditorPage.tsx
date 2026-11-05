@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { ArrowLeft, Eye, Pencil, Plus, RefreshCw, Save, Sparkles } from 'lucide-react';
@@ -16,6 +16,7 @@ import { KindIcon } from '@/components/ui/KindBadge';
 import { FieldsPane, FIELD_DRAG_PREFIX } from '@/components/editor/FieldsPane';
 import { Canvas, WIDGET_DROP_PREFIX } from '@/components/editor/Canvas';
 import { FilterBar } from '@/components/editor/FilterBar';
+import { PageTabs } from '@/components/editor/PageTabs';
 import { VisualPane, WELL_DROP_PREFIX } from '@/components/editor/VisualPane';
 import { AiSuggestDialog } from '@/components/editor/AiSuggestDialog';
 import '@/components/editor/editor.css';
@@ -26,6 +27,8 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   const params = useParams();
   const id = Number(params.id);
   const navigate = useNavigate();
+  const [search, setSearch] = useSearchParams();
+  const urlPage = search.get('page');
   const user = useAuth((s) => s.user);
   const ed = useEditor();
   const qc = useQueryClient();
@@ -40,9 +43,28 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
   const editable = mode === 'edit' && mayEdit;
   const manageFilters = can(user, 'dashboards.filters');
 
-  useEffect(() => { if (dashboard.data) ed.load(dashboard.data); }, [dashboard.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (dashboard.data) ed.load(dashboard.data, urlPage); }, [dashboard.data]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { ed.setMode(editable ? 'edit' : 'view'); }, [editable]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => ed.reset(), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The URL names the page (`?page=`; the first page is the bare URL), so a link opens on the right one.
+  // A URL change (a tab, the back button) moves the canvas; a canvas change (add, remove a page) rewrites the URL.
+  const loaded = ed.dashboardId === id;
+  const pageIds = ed.definition.pages.map((p) => p.id);
+  const firstPage = pageIds[0];
+  useEffect(() => {
+    if (!loaded) return;
+    const target = urlPage && pageIds.includes(urlPage) ? urlPage : firstPage;
+    if (target && target !== ed.activePageId) ed.setActivePage(target);
+  }, [urlPage, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  const urlPageRef = useRef(urlPage);
+  urlPageRef.current = urlPage;
+  useEffect(() => {
+    if (!loaded || !ed.activePageId) return;
+    const want = ed.activePageId === firstPage ? null : ed.activePageId;
+    if ((urlPageRef.current ?? null) === want) return;
+    setSearch((prev) => { const next = new URLSearchParams(prev); if (want) next.set('page', want); else next.delete('page'); return next; }, { replace: true });
+  }, [ed.activePageId, loaded, firstPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // warn before closing the tab with unsaved changes
   useEffect(() => {
@@ -138,6 +160,7 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
           <div className="editor__body">
             <FieldsPane />
             <div className="editor__main">
+              <PageTabs editable />
               <FilterBar editable manage={manageFilters} />
               <Canvas editable />
             </div>
@@ -150,6 +173,7 @@ export function DashboardEditorPage({ mode }: { mode: 'edit' | 'view' }) {
       ) : (
         <div className="editor__body editor__body--view">
           <div className="editor__main">
+            <PageTabs editable={false} />
             <FilterBar editable={false} manage={false} />
             <Canvas editable={false} />
           </div>

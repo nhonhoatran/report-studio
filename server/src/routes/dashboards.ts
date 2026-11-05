@@ -7,29 +7,41 @@ import { parse, parseId } from '../lib/validate.js';
 
 interface DashboardRow extends Row {
   id: number; name: string; description: string | null; definition: string;
-  created_by: number | null; created_at: string; updated_at: string; widget_count?: number;
+  created_by: number | null; created_at: string; updated_at: string; widget_count?: number; page_count?: number;
 }
 
 export const dashboardsRouter = Router();
 dashboardsRouter.use(requireAuth);
 
-// The definition is an opaque JSON document owned by the web client (widgets, layout,
-// per-widget query spec). The server only enforces shape and size.
+// The definition is an opaque JSON document owned by the web client (pages of widgets, layout,
+// per-widget query spec). The server only enforces shape and size. Version 1 kept its widgets at
+// the top level; version 2 keeps them on pages. Both are accepted, the client migrates on load.
+const widgetSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.string().min(1).max(32),
+  title: z.string().max(200),
+  layout: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }),
+  datasourceId: z.number().int().positive().nullable(),
+  source: z.unknown().nullable(),
+  query: z.unknown(),
+  options: z.record(z.unknown()).default({}),
+});
+const MAX_WIDGETS = 100;
 const definitionSchema = z.object({
-  version: z.literal(1),
-  widgets: z.array(z.object({
+  version: z.union([z.literal(1), z.literal(2)]),
+  widgets: z.array(widgetSchema).max(MAX_WIDGETS).default([]),
+  pages: z.array(z.object({
     id: z.string().min(1).max(64),
-    type: z.string().min(1).max(32),
-    title: z.string().max(200),
-    layout: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }),
-    datasourceId: z.number().int().positive().nullable(),
-    source: z.unknown().nullable(),
-    query: z.unknown(),
-    options: z.record(z.unknown()).default({}),
-  })).max(100),
+    name: z.string().max(120),
+    widgets: z.array(widgetSchema).max(MAX_WIDGETS),
+  })).max(50).optional(),
   filters: z.array(z.unknown()).max(50).default([]),
   settings: z.record(z.unknown()).default({}),
 });
+
+/** Every widget of a definition, whichever version wrote it. */
+const allWidgets = (def: { widgets?: unknown[]; pages?: { widgets?: unknown[] }[] } | null | undefined): unknown[] =>
+  [...(def?.widgets ?? []), ...(def?.pages ?? []).flatMap((p) => p?.widgets ?? [])];
 
 const bodySchema = z.object({
   name: z.string().min(1).max(160),
@@ -41,7 +53,8 @@ function view(r: DashboardRow, withDefinition: boolean, canEdit: boolean) {
   const definition = withDefinition ? JSON.parse(r.definition) : undefined;
   return {
     id: Number(r.id), name: r.name, description: r.description ?? '',
-    widgetCount: withDefinition ? (definition.widgets?.length ?? 0) : Number(r.widget_count ?? 0),
+    widgetCount: withDefinition ? allWidgets(definition).length : Number(r.widget_count ?? 0),
+    pageCount: withDefinition ? Math.max(1, definition.pages?.length ?? 1) : Math.max(1, Number(r.page_count ?? 1)),
     createdAt: r.created_at, updatedAt: r.updated_at, definition, canEdit,
   };
 }
@@ -85,8 +98,9 @@ async function sourcesByDashboard(): Promise<Map<number, Set<string>>> {
   for (const r of rows) {
     const keys = new Set<string>();
     try {
-      const def = JSON.parse(r.definition) as { widgets?: { datasourceId?: number; source?: unknown }[]; filters?: { datasourceId?: number; source?: unknown }[] };
-      for (const item of [...(def.widgets ?? []), ...(def.filters ?? [])]) {
+      const def = JSON.parse(r.definition) as { widgets?: unknown[]; pages?: { widgets?: unknown[] }[]; filters?: unknown[] };
+      for (const raw of [...allWidgets(def), ...(def.filters ?? [])]) {
+        const item = raw as { datasourceId?: number; source?: unknown } | null;
         const k = typeof item?.datasourceId === 'number' ? sourceKey(item.datasourceId, item.source) : null;
         if (k) keys.add(k);
       }
@@ -125,7 +139,9 @@ async function load(id: number): Promise<DashboardRow> {
 dashboardsRouter.get('/', requirePermission('dashboards.view'), async (req, res) => {
   const rows = await query<DashboardRow>(
     `SELECT id, name, description, created_by, created_at, updated_at, '' AS definition,
-            JSON_LENGTH(JSON_EXTRACT(definition, '$.widgets')) AS widget_count
+            COALESCE(JSON_LENGTH(JSON_EXTRACT(definition, '$.widgets')), 0)
+              + COALESCE(JSON_LENGTH(JSON_EXTRACT(definition, '$.pages[*].widgets[*]')), 0) AS widget_count,
+            COALESCE(JSON_LENGTH(JSON_EXTRACT(definition, '$.pages')), 1) AS page_count
        FROM dashboards ORDER BY updated_at DESC`);
   const out = [];
   for (const r of rows) {

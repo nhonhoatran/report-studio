@@ -27,7 +27,7 @@ export const en: Dictionary = {
   },
   dashboards: {
     title: 'Dashboards', new: 'New dashboard', empty: 'No dashboards yet', emptyHint: 'Create your first dashboard to start dragging charts around.',
-    widgets: { one: '{count} visual', other: '{count} visuals' }, untitled: 'Untitled dashboard', open: 'Open',
+    widgets: { one: '{count} visual', other: '{count} visuals' }, pages: { one: '{count} page', other: '{count} pages' }, untitled: 'Untitled dashboard', open: 'Open',
   },
   editor: {
     view: 'View', edit: 'Edit', addVisual: 'Add visual', saved: 'Saved', unsaved: 'Unsaved changes',
@@ -56,12 +56,32 @@ export const en: Dictionary = {
     analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line',
     // inside the visuals
     total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',
+    // field settings on a chip: display name, show as, format; calculated measures
+    fieldSettings: 'Field settings', displayName: 'Display name', showAs: 'Show as', measureFormat: 'Number format of this field', formatDefault: "The chart's format",
+    showAsOptions: { value: 'Value', percent_of_total: '% of grand total', percent_of_parent: '% of parent (row) total', percent_of_column: '% of column total' },
+    showAsShort: { percent_of_total: '% of total', percent_of_parent: '% of parent', percent_of_column: '% of column' },
+    calculation: 'Calculation', addCalculation: 'Add calculation', formula: 'Formula', formulaPlaceholder: 'e.g. [sum_profit] / [sum_revenue]',
+    formulaHelp: 'Refer to another measure as [name], or aggregate a column directly: sum(col), count(*). Operators + − × ÷ and parentheses. Dividing by zero leaves the cell empty.',
+    formulaInsert: 'Insert a measure', formulaBroken: 'A formula is not valid yet; see the Values well',
+  },
+  formula: {
+    at: 'Position {position}: {message}', empty: 'The formula is empty.', too_long: 'The formula is too long.', too_deep: 'Too many nested parentheses.',
+    bad_number: 'The number "{token}" is not valid.', unexpected_char: 'The character "{token}" is not allowed.', unexpected_token: 'Did not expect "{token}" here.',
+    unexpected_end: 'The formula ends early; a value is missing.', unclosed_paren: 'A closing parenthesis ")" is missing.', unclosed_bracket: 'The closing "]" of a measure name is missing.',
+    unknown_function: 'No aggregation named "{token}". Use sum, avg, count, count_distinct, min, max.', bad_argument: 'An aggregation takes one column name (count(*) counts rows).',
+    unknown_ref: 'No measure named "{token}" on this visual.', self_ref: 'A formula cannot refer to itself.', cycle: 'The formulas refer to one another through "{token}".',
+  },
+  pages: {
+    title: 'Pages', add: 'Add page', rename: 'Rename page', renameTitle: 'Rename page', name: 'Page name', duplicate: 'Duplicate page', remove: 'Remove page',
+    moveLeft: 'Move left', moveRight: 'Move right', defaultName: 'Page {n}', copyName: '{name} (copy)',
+    confirmRemove: { one: 'Remove the page "{name}" and the {count} visual on it? This cannot be undone.', other: 'Remove the page "{name}" and the {count} visuals on it? This cannot be undone.' },
   },
   filters: {
     title: 'Dashboard filters', add: 'Add filter', edit: 'Edit filter', remove: 'Remove filter', addTitle: 'Add dashboard filter', editTitle: 'Edit dashboard filter',
     kind: 'Filter kind', kinds: { date_range: 'Date range', grain: 'Time grain', list: 'Value list' },
     label: 'Label', field: 'Field', multi: 'Allow several values', all: 'All', from: 'From', to: 'To',
     reset: 'Reset', loadingValues: 'Loading values…', incomplete: 'No field chosen', active: { one: '{count} filter applied', other: '{count} filters applied' }, noDateFields: 'This table has no date column',
+    scope: 'Scope', scopeAll: 'Whole report', scopePage: 'Page "{name}" only', scopePageHint: 'A report-wide filter keeps its selection across pages.',
     scopeHint: 'Applies to every visual on the same data source whose table has this column. The choice at save time is the default viewers start from.',
     grainHint: 'Changes how dates are grouped (year / quarter / month…) on every visual with a time axis.',
     presets: { all: 'All time', today: 'Today', last_7_days: 'Last 7 days', last_30_days: 'Last 30 days', this_month: 'This month', last_month: 'Last month', this_quarter: 'This quarter', this_year: 'This year', custom: 'Custom…' },
@@ -156,6 +176,7 @@ export const en: Dictionary = {
     datasource_not_found: 'Data source not found.', datasource_name_exists: 'A data source with that name already exists.', table_not_found: 'Table not found or it has no columns.',
     invalid_identifier: 'The name "{name}" is not valid.', invalid_table: 'The table name "{name}" is not valid.', count_distinct_needs_field: 'Distinct count needs a specific field.',
     between_needs_two_values: 'The "between" condition needs exactly two values.', order_by_unknown: 'Cannot sort by the unknown column "{alias}".',
+    formula_invalid: 'The formula "{alias}" is not valid ({reason} at position {position}).',
     sql_empty: 'The SQL is empty.', sql_multiple_statements: 'Only a single statement is allowed.', sql_not_select: 'Only SELECT statements are allowed.', sql_keyword_blocked: 'The keyword "{keyword}" is not allowed in a read-only query.',
     sql_locking: 'Locking reads (FOR UPDATE / LOCK IN SHARE MODE) are not allowed.',
     db_access_denied: 'The data source denied access: {message}', db_unreachable: 'Cannot reach the data source: {message}', db_timeout: 'The query ran longer than {seconds} s and was stopped.',

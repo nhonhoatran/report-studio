@@ -3,7 +3,7 @@ import { authorize, hasPermission, requireAuth, requirePermission, rowFilters, t
 import { config } from '../config.js';
 import { forbidden } from '../lib/errors.js';
 import { parse } from '../lib/validate.js';
-import { buildSelect, quoteQualified } from '../query/builder.js';
+import { buildSelect, extractTotals, quoteQualified } from '../query/builder.js';
 import { poolForDatasource, runOnPool } from '../query/executor.js';
 import { fieldsFromPackets } from '../query/introspect.js';
 import { assertReadOnlySelect } from '../query/sqlGuard.js';
@@ -48,11 +48,13 @@ export async function executeQuery(req: QueryRequest, user: RequestUser): Promis
   const built = buildSelect(secured, from, config.query.maxRows);
   const { rows, fields, durationMs } = await runOnPool(poolForDatasource(ds), built.sql, built.params);
   const truncated = rows.length > built.limit;
-  const data = (truncated ? rows.slice(0, built.limit) : rows) as Record<string, unknown>[];
+  const kept = (truncated ? rows.slice(0, built.limit) : rows) as Record<string, unknown>[];
+  // totals were computed by the source over every group, including those beyond the row limit
+  const { rows: data, totals } = extractTotals(kept, built.totals);
   const columns = built.columns.length
     ? built.columns
     : fieldsFromPackets(fields).map((f) => ({ alias: f.name, role: 'column' as const, source: f.name }));
-  return { columns, rows: data, rowCount: data.length, truncated, durationMs, sql: built.sql };
+  return { columns, rows: data, rowCount: data.length, truncated, durationMs, sql: built.sql, totals };
 }
 
 /** Run one visual's query. */

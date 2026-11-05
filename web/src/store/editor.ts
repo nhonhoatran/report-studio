@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import type { Dashboard, DashboardDefinition, DashboardFilter, FieldInfo, FilterValue, QuerySource, Widget, WidgetType } from '@/api/types';
+import type { Dashboard, DashboardDefinition, DashboardFilter, DashboardPage, FieldInfo, FilterValue, LegacyDashboardDefinition, QuerySource, Widget, WidgetType } from '@/api/types';
+import { isFormula } from '@/api/types';
+import { translate, useI18nStore } from '@/i18n';
 import { autoPlace, coerceForType, newWidget } from '@/lib/widget';
 import { defaultFilterValue } from '@/lib/filters';
 import { newId } from '@/lib/id';
@@ -11,6 +13,8 @@ interface EditorState {
   name: string;
   description: string;
   definition: DashboardDefinition;
+  /** the page on the canvas; every widget action acts on it */
+  activePageId: string;
   selectedId: string | null;
   dirty: boolean;
   mode: 'edit' | 'view';
@@ -20,7 +24,8 @@ interface EditorState {
   /** what each dashboard filter selects right now; starts from the saved value, a viewer's changes stay here */
   filterValues: Record<string, FilterValue>;
 
-  load: (d: Dashboard & { definition: DashboardDefinition }) => void;
+  /** `pageId` (from the URL) picks the page to open when the report has it; otherwise the first */
+  load: (d: Dashboard & { definition: NonNullable<Dashboard['definition']> }, pageId?: string | null) => void;
   reset: () => void;
   setName: (name: string) => void;
   setMode: (mode: 'edit' | 'view') => void;
@@ -41,27 +46,60 @@ interface EditorState {
   setFilterValue: (id: string, value: FilterValue) => void;
   /** back to the saved defaults */
   resetFilterValues: () => void;
+  // pages
+  setActivePage: (id: string) => void;
+  addPage: () => string;
+  renamePage: (id: string, name: string) => void;
+  duplicatePage: (id: string) => string;
+  /** the last page cannot be removed; its filters go with it */
+  removePage: (id: string) => void;
+  movePage: (id: string, direction: -1 | 1) => void;
 }
 
-const empty = (): DashboardDefinition => ({ version: 1, widgets: [], filters: [], settings: {} });
+/** "Trang 3" / "Page 3": the name a new page gets until the author renames it. */
+export const defaultPageName = (n: number): string => translate(useI18nStore.getState().lang, 'pages.defaultName', { n });
+export const newPage = (name: string): DashboardPage => ({ id: newId('p'), name, widgets: [] });
 
-/** Definitions may come from API clients that omit optional arrays; fill every field the editor relies on. */
-function normalize(def: Partial<DashboardDefinition> | null | undefined): DashboardDefinition {
-  const widgets = (def?.widgets ?? []).map((w): Widget => ({
+const empty = (): DashboardDefinition => ({ version: 2, pages: [newPage(defaultPageName(1))], filters: [], settings: {} });
+
+/**
+ * Definitions may come from API clients that omit optional arrays, or from before pages existed
+ * (version 1: `widgets` at the top level); fill every field the editor relies on and read an old
+ * document as one page.
+ */
+type AnyDefinition = { version?: number; pages?: Partial<DashboardPage>[]; widgets?: Widget[]; filters?: unknown[]; settings?: Record<string, unknown> };
+function normalize(raw: DashboardDefinition | LegacyDashboardDefinition | null | undefined): DashboardDefinition {
+  const def = raw as AnyDefinition | null | undefined;
+  const widgetsOf = (list: Widget[] | undefined): Widget[] => (list ?? []).map((w, wi): Widget => ({
     ...newWidget(),
     ...w,
     layout: w.layout ?? { x: 0, y: 0, w: 6, h: 7 },
     query: {
       dimensions: w.query?.dimensions ?? [],
-      measures: w.query?.measures ?? [],
+      measures: (w.query?.measures ?? []).map((m, i) => (isFormula(m) && !m.alias ? { ...m, alias: `calc_${wi}_${i}` } : m)),
       filters: (w.query?.filters ?? []).map((f, i) => ({ ...f, id: f.id ?? `f_${i}` })),
       orderBy: w.query?.orderBy ?? [],
       limit: w.query?.limit,
     },
     options: normalizeOptions(w.options),
   }));
-  const filters = (def?.filters ?? []).filter(isDashboardFilter).map((f) => ({ ...f, value: f.value ?? defaultFilterValue(f.kind) }));
-  return { version: 1, widgets, filters, settings: def?.settings ?? {} };
+  const rawPages = Array.isArray(def?.pages) ? def.pages : [];
+  let pages: DashboardPage[] = rawPages.filter((p): p is Partial<DashboardPage> => !!p && typeof p === 'object').map((p, i) => ({
+    id: typeof p.id === 'string' && p.id ? p.id : newId('p'),
+    name: typeof p.name === 'string' && p.name.trim() ? p.name : defaultPageName(i + 1),
+    widgets: widgetsOf(p.widgets),
+  }));
+  // a version 1 document, or a document that lost its pages: one page holding whatever widgets there are
+  if (pages.length === 0) pages = [{ ...newPage(defaultPageName(1)), widgets: widgetsOf(def?.widgets) }];
+  else if (def?.widgets?.length) pages[0] = { ...pages[0]!, widgets: [...pages[0]!.widgets, ...widgetsOf(def.widgets)] };
+  const pageIds = new Set(pages.map((p) => p.id));
+  const filters = (def?.filters ?? []).filter(isDashboardFilter).map((f): DashboardFilter => ({
+    ...f,
+    value: f.value ?? defaultFilterValue(f.kind),
+    // a filter scoped to a page that no longer exists applies to the whole report again
+    pageId: f.pageId && pageIds.has(f.pageId) ? f.pageId : undefined,
+  }));
+  return { version: 2, pages, filters, settings: def?.settings ?? {} };
 }
 /** Only a filter the editor can show survives loading; anything else in the array is dropped. */
 function isDashboardFilter(f: unknown): f is DashboardFilter {
@@ -77,11 +115,21 @@ function normalizeOptions(o: Partial<Widget['options']> | undefined): Widget['op
 /** First free row below every widget (never Infinity: the document must stay JSON-safe). */
 const bottomOf = (widgets: Widget[]) => widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
 
+const pageOf = (def: DashboardDefinition, id: string): DashboardPage => def.pages.find((p) => p.id === id) ?? def.pages[0]!;
+/** The page holding a widget; the active page when none does (a new widget). */
+const pageWith = (def: DashboardDefinition, widgetId: string, fallback: string): DashboardPage =>
+  def.pages.find((p) => p.widgets.some((w) => w.id === widgetId)) ?? pageOf(def, fallback);
+/** The definition with one page's widgets replaced. */
+const withWidgets = (def: DashboardDefinition, pageId: string, widgets: Widget[]): DashboardDefinition =>
+  ({ ...def, pages: def.pages.map((p) => (p.id === pageId ? { ...p, widgets } : p)) });
+const cloneWidget = (w: Widget): Widget => ({ ...structuredClone(w), id: newId('w') });
+
 export const useEditor = create<EditorState>((set, get) => ({
   dashboardId: null,
   name: '',
   description: '',
   definition: empty(),
+  activePageId: '',
   selectedId: null,
   dirty: false,
   mode: 'edit',
@@ -89,50 +137,57 @@ export const useEditor = create<EditorState>((set, get) => ({
   activeFields: [],
   filterValues: {},
 
-  load: (d) => {
+  load: (d, pageId) => {
     const definition = normalize(d.definition);
+    const activePageId = pageId && definition.pages.some((p) => p.id === pageId) ? pageId : definition.pages[0]!.id;
     set({
-      dashboardId: d.id, name: d.name, description: d.description, definition,
+      dashboardId: d.id, name: d.name, description: d.description, definition, activePageId,
       selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: valuesOf(definition.filters),
     });
   },
-  reset: () => set({ dashboardId: null, name: '', description: '', definition: empty(), selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: {} }),
+  reset: () => set({ dashboardId: null, name: '', description: '', definition: empty(), activePageId: '', selectedId: null, dirty: false, activeDataset: null, activeFields: [], filterValues: {} }),
   setName: (name) => set({ name, dirty: true }),
   setMode: (mode) => set({ mode, selectedId: mode === 'view' ? null : get().selectedId }),
   select: (id) => set({ selectedId: id }),
 
   addWidget: (type = 'column') => {
-    const { definition, activeDataset } = get();
+    const { definition, activeDataset, activePageId } = get();
+    const page = pageOf(definition, activePageId);
     const w = newWidget({
       type,
       datasourceId: activeDataset?.datasourceId ?? null,
       source: activeDataset?.source ?? null,
-      layout: { x: (definition.widgets.length * 6) % 12, y: bottomOf(definition.widgets), w: 6, h: 7 },
+      layout: { x: (page.widgets.length * 6) % 12, y: bottomOf(page.widgets), w: 6, h: 7 },
     });
-    set({ definition: { ...definition, widgets: [...definition.widgets, w] }, selectedId: w.id, dirty: true });
+    set({ definition: withWidgets(definition, page.id, [...page.widgets, w]), selectedId: w.id, dirty: true });
     return w.id;
   },
-  removeWidget: (id) => set((s) => ({
-    definition: { ...s.definition, widgets: s.definition.widgets.filter((w) => w.id !== id) },
-    selectedId: s.selectedId === id ? null : s.selectedId, dirty: true,
-  })),
-  duplicateWidget: (id) => set((s) => {
-    const src = s.definition.widgets.find((w) => w.id === id);
-    if (!src) return s;
-    const copy: Widget = { ...structuredClone(src), id: newId('w'), layout: { ...src.layout, y: bottomOf(s.definition.widgets) } };
-    return { definition: { ...s.definition, widgets: [...s.definition.widgets, copy] }, selectedId: copy.id, dirty: true };
+  removeWidget: (id) => set((s) => {
+    const page = pageWith(s.definition, id, s.activePageId);
+    return {
+      definition: withWidgets(s.definition, page.id, page.widgets.filter((w) => w.id !== id)),
+      selectedId: s.selectedId === id ? null : s.selectedId, dirty: true,
+    };
   }),
-  updateWidget: (id, patch) => set((s) => ({
-    definition: {
-      ...s.definition,
-      widgets: s.definition.widgets.map((w) => (w.id !== id ? w : typeof patch === 'function' ? patch(w) : { ...w, ...patch })),
-    },
-    dirty: true,
-  })),
+  duplicateWidget: (id) => set((s) => {
+    const page = pageWith(s.definition, id, s.activePageId);
+    const src = page.widgets.find((w) => w.id === id);
+    if (!src) return s;
+    const copy: Widget = { ...cloneWidget(src), layout: { ...src.layout, y: bottomOf(page.widgets) } };
+    return { definition: withWidgets(s.definition, page.id, [...page.widgets, copy]), selectedId: copy.id, dirty: true };
+  }),
+  updateWidget: (id, patch) => set((s) => {
+    const page = pageWith(s.definition, id, s.activePageId);
+    return {
+      definition: withWidgets(s.definition, page.id, page.widgets.map((w) => (w.id !== id ? w : typeof patch === 'function' ? patch(w) : { ...w, ...patch }))),
+      dirty: true,
+    };
+  }),
   setWidgetType: (id, type) => get().updateWidget(id, (w) => coerceForType(w, type)),
   applyLayout: (layout) => set((s) => {
+    const page = pageOf(s.definition, s.activePageId);
     let changed = false;
-    const widgets = s.definition.widgets.map((w) => {
+    const widgets = page.widgets.map((w) => {
       const l = layout.find((x) => x.i === w.id);
       if (!l) return w;
       if (l.x !== w.layout.x || l.y !== w.layout.y || l.w !== w.layout.w || l.h !== w.layout.h) {
@@ -141,7 +196,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       }
       return w;
     });
-    return changed ? { definition: { ...s.definition, widgets }, dirty: true } : s;
+    return changed ? { definition: withWidgets(s.definition, page.id, widgets), dirty: true } : s;
   }),
   dropField: (widgetId, field, well) => {
     const { activeDataset } = get();
@@ -178,6 +233,53 @@ export const useEditor = create<EditorState>((set, get) => ({
     ? { filterValues: { ...s.filterValues, [id]: value }, definition: { ...s.definition, filters: s.definition.filters.map((f) => (f.id === id ? { ...f, value } : f)) }, dirty: true }
     : { filterValues: { ...s.filterValues, [id]: value } })),
   resetFilterValues: () => set((s) => ({ filterValues: valuesOf(s.definition.filters) })),
+
+  // the selection belongs to a page, so it is dropped on every switch
+  setActivePage: (id) => set((s) => (s.definition.pages.some((p) => p.id === id) && id !== s.activePageId ? { activePageId: id, selectedId: null } : s)),
+  addPage: () => {
+    const { definition } = get();
+    const page = newPage(defaultPageName(definition.pages.length + 1));
+    set({ definition: { ...definition, pages: [...definition.pages, page] }, activePageId: page.id, selectedId: null, dirty: true });
+    return page.id;
+  },
+  renamePage: (id, name) => set((s) => ({ definition: { ...s.definition, pages: s.definition.pages.map((p) => (p.id === id ? { ...p, name } : p)) }, dirty: true })),
+  duplicatePage: (id) => {
+    const { definition } = get();
+    const index = definition.pages.findIndex((p) => p.id === id);
+    const src = definition.pages[index];
+    if (!src) return id;
+    const copy: DashboardPage = { id: newId('p'), name: translate(useI18nStore.getState().lang, 'pages.copyName', { name: src.name }), widgets: src.widgets.map(cloneWidget) };
+    const pages = [...definition.pages.slice(0, index + 1), copy, ...definition.pages.slice(index + 1)];
+    set({ definition: { ...definition, pages }, activePageId: copy.id, selectedId: null, dirty: true });
+    return copy.id;
+  },
+  removePage: (id) => set((s) => {
+    if (s.definition.pages.length <= 1) return s;
+    const index = s.definition.pages.findIndex((p) => p.id === id);
+    if (index < 0) return s;
+    const pages = s.definition.pages.filter((p) => p.id !== id);
+    const filters = s.definition.filters.filter((f) => f.pageId !== id);
+    const activePageId = s.activePageId === id ? (pages[Math.min(index, pages.length - 1)] ?? pages[0])!.id : s.activePageId;
+    return { definition: { ...s.definition, pages, filters }, filterValues: valuesOf(filters), activePageId, selectedId: s.activePageId === id ? null : s.selectedId, dirty: true };
+  }),
+  movePage: (id, direction) => set((s) => {
+    const pages = [...s.definition.pages];
+    const from = pages.findIndex((p) => p.id === id);
+    const to = from + direction;
+    if (from < 0 || to < 0 || to >= pages.length) return s;
+    [pages[from], pages[to]] = [pages[to]!, pages[from]!];
+    return { definition: { ...s.definition, pages }, dirty: true };
+  }),
 }));
 
-export const useSelectedWidget = () => useEditor((s) => s.definition.widgets.find((w) => w.id === s.selectedId) ?? null);
+/** The page on the canvas (the first when the id is stale). */
+export const useActivePage = () => useEditor((s) => pageOf(s.definition, s.activePageId));
+/** The widgets on the canvas: those of the active page. */
+export const usePageWidgets = () => useEditor((s) => pageOf(s.definition, s.activePageId).widgets);
+/** The report's filters that act on the active page: those of the whole report and those scoped to it. */
+export const usePageFilters = () => {
+  const filters = useEditor((s) => s.definition.filters);
+  const activePageId = useEditor((s) => s.activePageId);
+  return filters.filter((f) => !f.pageId || f.pageId === activePageId);
+};
+export const useSelectedWidget = () => useEditor((s) => (s.selectedId ? pageOf(s.definition, s.activePageId).widgets.find((w) => w.id === s.selectedId) ?? null : null));

@@ -24,7 +24,7 @@ export const vi = {
   },
   dashboards: {
     title: 'Bảng điều khiển', new: 'Tạo bảng mới', empty: 'Chưa có bảng điều khiển nào', emptyHint: 'Tạo bảng đầu tiên để bắt đầu kéo-thả biểu đồ.',
-    widgets: '{count} biểu đồ', untitled: 'Bảng chưa đặt tên', open: 'Mở',
+    widgets: '{count} biểu đồ', pages: '{count} trang', untitled: 'Bảng chưa đặt tên', open: 'Mở',
   },
   editor: {
     view: 'Xem', edit: 'Chỉnh sửa', addVisual: 'Thêm biểu đồ', saved: 'Đã lưu', unsaved: 'Có thay đổi chưa lưu',
@@ -53,12 +53,32 @@ export const vi = {
     analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình',
     // inside the visuals
     total: 'Tổng cộng', increase: 'Tăng', decrease: 'Giảm', vsPrevious: 'so với kỳ trước', targetLabel: 'Mục tiêu {value}', sortColumn: 'Sắp xếp theo cột này',
+    // field settings on a chip: display name, show as, format; calculated measures
+    fieldSettings: 'Tùy chỉnh trường', displayName: 'Tên hiển thị', showAs: 'Hiển thị dưới dạng', measureFormat: 'Định dạng số của trường', formatDefault: 'Theo biểu đồ',
+    showAsOptions: { value: 'Giá trị', percent_of_total: '% trên tổng chung', percent_of_parent: '% trên tổng nhóm cha (hàng)', percent_of_column: '% trên tổng cột' },
+    showAsShort: { percent_of_total: '% tổng', percent_of_parent: '% nhóm', percent_of_column: '% cột' },
+    calculation: 'Phép tính', addCalculation: 'Thêm phép tính', formula: 'Công thức', formulaPlaceholder: 'vd: [sum_lai_gop] / [sum_doanh_so]',
+    formulaHelp: 'Tham chiếu measure khác bằng [tên], hoặc gộp trực tiếp một cột: sum(cot), count(*). Phép toán + − × ÷ và ngoặc. Chia cho 0 cho ô trống.',
+    formulaInsert: 'Chèn measure', formulaBroken: 'Công thức chưa hợp lệ, xem ô Giá trị',
+  },
+  formula: {
+    at: 'Vị trí {position}: {message}', empty: 'Công thức trống.', too_long: 'Công thức quá dài.', too_deep: 'Quá nhiều ngoặc lồng nhau.',
+    bad_number: 'Số "{token}" không hợp lệ.', unexpected_char: 'Ký tự "{token}" không được phép.', unexpected_token: 'Không mong đợi "{token}" ở đây.',
+    unexpected_end: 'Công thức kết thúc sớm, còn thiếu một giá trị.', unclosed_paren: 'Thiếu dấu đóng ngoặc ")".', unclosed_bracket: 'Thiếu dấu "]" đóng tên measure.',
+    unknown_function: 'Không có phép gộp "{token}". Dùng sum, avg, count, count_distinct, min, max.', bad_argument: 'Phép gộp cần đúng một tên cột (count(*) để đếm dòng).',
+    unknown_ref: 'Không có measure nào tên "{token}" trong biểu đồ này.', self_ref: 'Công thức không thể tham chiếu chính nó.', cycle: 'Các công thức tham chiếu vòng qua "{token}".',
+  },
+  pages: {
+    title: 'Trang', add: 'Thêm trang', rename: 'Đổi tên trang', renameTitle: 'Đổi tên trang', name: 'Tên trang', duplicate: 'Nhân bản trang', remove: 'Xóa trang',
+    moveLeft: 'Chuyển sang trái', moveRight: 'Chuyển sang phải', defaultName: 'Trang {n}', copyName: '{name} (bản sao)',
+    confirmRemove: 'Xóa trang "{name}" cùng {count} biểu đồ trên đó? Hành động này không thể hoàn tác.',
   },
   filters: {
     title: 'Bộ lọc bảng điều khiển', add: 'Thêm bộ lọc', edit: 'Sửa bộ lọc', remove: 'Xóa bộ lọc', addTitle: 'Thêm bộ lọc bảng điều khiển', editTitle: 'Sửa bộ lọc bảng điều khiển',
     kind: 'Loại bộ lọc', kinds: { date_range: 'Khoảng thời gian', grain: 'Loại thời gian', list: 'Danh sách giá trị' },
     label: 'Nhãn', field: 'Trường', multi: 'Cho chọn nhiều giá trị', all: 'Tất cả', from: 'Từ ngày', to: 'Đến ngày',
     reset: 'Về mặc định', loadingValues: 'Đang tải giá trị…', incomplete: 'Chưa chọn trường', active: '{count} bộ lọc đang áp dụng', noDateFields: 'Bảng này không có cột ngày giờ',
+    scope: 'Phạm vi', scopeAll: 'Cả báo cáo', scopePage: 'Chỉ trang "{name}"', scopePageHint: 'Bộ lọc của cả báo cáo giữ nguyên lựa chọn khi chuyển trang.',
     scopeHint: 'Áp dụng cho mọi biểu đồ cùng nguồn dữ liệu mà bảng của nó có cột này. Giá trị đang chọn khi lưu sẽ là mặc định cho người xem.',
     grainHint: 'Đổi cách nhóm ngày (năm / quý / tháng…) của mọi biểu đồ có trục thời gian.',
     presets: { all: 'Toàn bộ thời gian', today: 'Hôm nay', last_7_days: '7 ngày qua', last_30_days: '30 ngày qua', this_month: 'Tháng này', last_month: 'Tháng trước', this_quarter: 'Quý này', this_year: 'Năm nay', custom: 'Tùy chọn…' },
@@ -153,6 +173,7 @@ export const vi = {
     datasource_not_found: 'Không tìm thấy nguồn dữ liệu.', datasource_name_exists: 'Đã có nguồn dữ liệu cùng tên.', table_not_found: 'Không tìm thấy bảng hoặc bảng không có cột.',
     invalid_identifier: 'Tên "{name}" không hợp lệ.', invalid_table: 'Tên bảng "{name}" không hợp lệ.', count_distinct_needs_field: 'Phép "Số lượng khác nhau" cần một trường cụ thể.',
     between_needs_two_values: 'Điều kiện "trong khoảng" cần đúng hai giá trị.', order_by_unknown: 'Không thể sắp xếp theo cột không tồn tại "{alias}".',
+    formula_invalid: 'Công thức "{alias}" không hợp lệ ({reason}, vị trí {position}).',
     sql_empty: 'Câu SQL trống.', sql_multiple_statements: 'Chỉ cho phép một câu lệnh.', sql_not_select: 'Chỉ cho phép câu SELECT.', sql_keyword_blocked: 'Từ khóa "{keyword}" không được phép trong truy vấn chỉ đọc.',
     sql_locking: 'Không cho phép khóa dòng (FOR UPDATE / LOCK IN SHARE MODE).',
     db_access_denied: 'Nguồn dữ liệu từ chối truy cập: {message}', db_unreachable: 'Không kết nối được tới nguồn dữ liệu: {message}', db_timeout: 'Truy vấn quá {seconds} giây và đã bị dừng.',

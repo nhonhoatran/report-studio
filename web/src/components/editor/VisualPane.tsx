@@ -1,13 +1,15 @@
+import { useRef, useState, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import {
   BarChart3, BarChartHorizontal, ChartArea, ChartCandlestick, ChartLine, ChartNoAxesCombined, ChartPie, ChartScatter, CircleDot, Filter, Gauge, Grid3x3,
-  Hash, LayoutDashboard, Plus, Radar, Rows3, Table2, TableProperties, TrendingUp, X,
+  Hash, LayoutDashboard, Plus, Radar, Rows3, Settings2, Sigma, Table2, TableProperties, TrendingUp, X,
 } from 'lucide-react';
-import type { Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure, Stacking, Widget, WidgetType } from '@/api/types';
-import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, STACKINGS, WIDGET_TYPES } from '@/api/types';
-import { useT, type TKey } from '@/i18n';
+import type { Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure, NumberFormat, ShowAs, Stacking, Widget, WidgetType } from '@/api/types';
+import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STACKINGS, WIDGET_TYPES, isFormula } from '@/api/types';
+import { useT, type TFn, type TKey } from '@/i18n';
+import { checkFormula, type FormulaError } from '@shared/formula';
 import { useEditor, useSelectedWidget } from '@/store/editor';
-import { CHART_SPECS, comboRole, hasFeature, maxDimensions, maxMeasures, stackingOf } from '@/lib/widget';
+import { CHART_SPECS, comboRole, dimensionName, hasFeature, maxDimensions, maxMeasures, measureAlias, measureName, measureRefs, newFormulaMeasure, stackingOf } from '@/lib/widget';
 import { newId } from '@/lib/id';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Input, Select } from '@/components/ui/Field';
@@ -24,7 +26,10 @@ export const typeIcons: Record<WidgetType, typeof BarChart3> = {
   table: Table2, matrix: TableProperties,
 };
 
-function Well({ id, label, children, empty, disabled }: { id: string; label: string; children: React.ReactNode; empty: boolean; disabled?: boolean }) {
+const NUMBER_FORMATS: NumberFormat[] = ['auto', 'compact', 'integer', 'currency', 'percent'];
+const formatKey = (f: NumberFormat): TKey => `editor.format${(f[0]!.toUpperCase() + f.slice(1)) as 'Auto' | 'Compact' | 'Integer' | 'Currency' | 'Percent'}`;
+
+function Well({ id, label, children, empty, disabled, action }: { id: string; label: string; children: ReactNode; empty: boolean; disabled?: boolean; /** a control shown under the chips, empty or not */ action?: ReactNode }) {
   const t = useT();
   const { setNodeRef, isOver } = useDroppable({ id, disabled });
   if (disabled) return null;
@@ -32,6 +37,7 @@ function Well({ id, label, children, empty, disabled }: { id: string; label: str
     <div ref={setNodeRef} className={['well', isOver && 'well--over'].filter(Boolean).join(' ')}>
       <div className="well__label">{label}</div>
       {empty ? <div className="well__empty">{t('editor.wellDrop')}</div> : children}
+      {action}
     </div>
   );
 }
@@ -43,41 +49,137 @@ function Slot({ keyName }: { keyName: TKey | undefined }) {
   return <span className="well-chip__slot">{t(keyName)}</span>;
 }
 
+/** The toggle at the end of a chip that opens its settings (display name, show as, format). */
+function DetailsToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const t = useT();
+  return <Button variant="ghost" size="sm" iconOnly icon={<Settings2 size={12} />} active={open} aria-expanded={open} title={t('editor.fieldSettings')} onClick={onToggle}>{t('editor.fieldSettings')}</Button>;
+}
+
 function DimensionChip({ d, slot, onChange, onRemove }: { d: Dimension; slot?: TKey; onChange: (d: Dimension) => void; onRemove: () => void }) {
   const t = useT();
+  const [open, setOpen] = useState(false);
   return (
-    <div className="well-chip">
-      <Slot keyName={slot} />
-      <KindIcon kind={d.kind ?? 'string'} size={12} />
-      <span className="well-chip__name" title={d.field}>{d.field}</span>
-      {d.kind === 'date' && (
-        <Select size="sm" aria-label={t('editor.bucketLabel')} value={d.bucket ?? 'none'} onChange={(e) => onChange({ ...d, bucket: e.target.value as Dimension['bucket'] })}>
-          {DATE_BUCKETS.map((b) => <option key={b} value={b}>{t(`bucket.${b}`)}</option>)}
-        </Select>
+    <div className="well-item">
+      <div className="well-chip">
+        <Slot keyName={slot} />
+        <KindIcon kind={d.kind ?? 'string'} size={12} />
+        <span className="well-chip__name" title={d.field}>{dimensionName(d)}</span>
+        {d.kind === 'date' && (
+          <Select size="sm" aria-label={t('editor.bucketLabel')} value={d.bucket ?? 'none'} onChange={(e) => onChange({ ...d, bucket: e.target.value as Dimension['bucket'] })}>
+            {DATE_BUCKETS.map((b) => <option key={b} value={b}>{t(`bucket.${b}`)}</option>)}
+          </Select>
+        )}
+        <DetailsToggle open={open} onToggle={() => setOpen((o) => !o)} />
+        <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
+      </div>
+      {open && (
+        <div className="well-details">
+          <Input size="sm" label={t('editor.displayName')} value={d.label ?? ''} placeholder={d.field} onChange={(e) => onChange({ ...d, label: e.target.value || undefined })} />
+        </div>
       )}
-      <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
+    </div>
+  );
+}
+
+/** The settings every measure has: its display name, what it is shown as, and its own number format. */
+function MeasureDetails({ m, auto, onChange, children }: { m: Measure; auto: string; onChange: (m: Measure) => void; children?: ReactNode }) {
+  const t = useT();
+  return (
+    <div className="well-details">
+      {children}
+      <Input size="sm" label={t('editor.displayName')} value={m.label ?? ''} placeholder={auto} onChange={(e) => onChange({ ...m, label: e.target.value || undefined })} />
+      <div className="option-grid">
+        <Select size="sm" label={t('editor.showAs')} value={m.showAs ?? 'value'} onChange={(e) => onChange({ ...m, showAs: e.target.value === 'value' ? undefined : (e.target.value as ShowAs) })}>
+          {SHOW_AS.map((s) => <option key={s} value={s}>{t(`editor.showAsOptions.${s}`)}</option>)}
+        </Select>
+        <Select size="sm" label={t('editor.measureFormat')} value={m.format ?? ''} disabled={!!m.showAs && m.showAs !== 'value'} onChange={(e) => onChange({ ...m, format: (e.target.value || undefined) as NumberFormat | undefined })}>
+          <option value="">{t('editor.formatDefault')}</option>
+          {NUMBER_FORMATS.map((f) => <option key={f} value={f}>{t(formatKey(f))}</option>)}
+        </Select>
+      </div>
     </div>
   );
 }
 
 function MeasureChip({ m, slot, combo, onChange, onRemove }: { m: Measure; slot?: TKey; combo?: 'column' | 'line'; onChange: (m: Measure) => void; onRemove: () => void }) {
   const t = useT();
+  const [open, setOpen] = useState(false);
+  const auto = measureName({ ...m, label: undefined }, t);
   return (
-    <div className="well-chip">
-      <Slot keyName={slot} />
-      <KindIcon kind={m.kind ?? 'number'} size={12} />
-      <span className="well-chip__name" title={m.field}>{m.field}</span>
-      <Select size="sm" aria-label={t('editor.aggLabel')} value={m.agg} onChange={(e) => onChange({ ...m, agg: e.target.value as Measure['agg'] })}>
-        {AGGREGATIONS.filter((a) => !m.kind || m.kind === 'number' || !['sum', 'avg'].includes(a)).map((a) => <option key={a} value={a}>{t(`agg.${a}`)}</option>)}
-      </Select>
-      {combo && (
-        // combo chart: "draw as a line" is pressed while this measure is the line; columns are the rest
-        <Button variant="ghost" size="sm" iconOnly icon={<ChartLine size={12} />} active={combo === 'line'} title={t('editor.comboAsLine')}
-          onClick={() => onChange({ ...m, series: combo === 'line' ? 'column' : 'line' })}>
-          {t('editor.comboAsLine')}
-        </Button>
+    <div className="well-item">
+      <div className="well-chip">
+        <Slot keyName={slot} />
+        <KindIcon kind={m.kind ?? 'number'} size={12} />
+        <span className="well-chip__name" title={m.field}>{m.label?.trim() || m.field}</span>
+        <Select size="sm" aria-label={t('editor.aggLabel')} value={m.agg} onChange={(e) => onChange({ ...m, agg: e.target.value as Measure['agg'] })}>
+          {AGGREGATIONS.filter((a) => !m.kind || m.kind === 'number' || !['sum', 'avg'].includes(a)).map((a) => <option key={a} value={a}>{t(`agg.${a}`)}</option>)}
+        </Select>
+        {combo && (
+          // combo chart: "draw as a line" is pressed while this measure is the line; columns are the rest
+          <Button variant="ghost" size="sm" iconOnly icon={<ChartLine size={12} />} active={combo === 'line'} title={t('editor.comboAsLine')}
+            onClick={() => onChange({ ...m, series: combo === 'line' ? 'column' : 'line' })}>
+            {t('editor.comboAsLine')}
+          </Button>
+        )}
+        <DetailsToggle open={open} onToggle={() => setOpen((o) => !o)} />
+        <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
+      </div>
+      {open && <MeasureDetails m={m} auto={auto} onChange={onChange} />}
+    </div>
+  );
+}
+
+/** "Position 7: no measure named …": where a formula goes wrong, in the reader's words. */
+function describeFormulaError(err: FormulaError, t: TFn): string {
+  const message = t(`formula.${err.code}`, { token: err.token ?? '' });
+  return err.code === 'empty' ? message : t('formula.at', { position: err.position + 1, message });
+}
+
+/** A calculated measure: its expression, the measures it may name, and the settings every measure has. */
+function FormulaChip({ m, slot, others, error, combo, onChange, onRemove }: {
+  m: Measure; slot?: TKey; /** the widget's other measures, offered for insertion */ others: Measure[]; error: FormulaError | null;
+  combo?: 'column' | 'line'; onChange: (m: Measure) => void; onRemove: () => void;
+}) {
+  const t = useT();
+  // a fresh calculation opens on its expression; afterwards the chip folds like the others
+  const [open, setOpen] = useState(!m.formula);
+  const input = useRef<HTMLInputElement>(null);
+  const insert = (text: string) => {
+    const el = input.current;
+    const current = m.formula ?? '';
+    const at = el?.selectionStart ?? current.length;
+    const before = current.slice(0, at); const after = current.slice(el?.selectionEnd ?? at);
+    const pad = before && !before.endsWith(' ') ? ' ' : '';
+    onChange({ ...m, formula: `${before}${pad}${text}${after.startsWith(' ') || !after ? '' : ' '}${after}` });
+    requestAnimationFrame(() => { el?.focus(); const pos = before.length + pad.length + text.length; el?.setSelectionRange(pos, pos); });
+  };
+  return (
+    <div className="well-item">
+      <div className="well-chip">
+        <Slot keyName={slot} />
+        <Sigma size={12} aria-hidden className="kind-icon kind-icon--number" />
+        <span className="well-chip__name" title={m.formula}>{measureName(m, t)}</span>
+        {combo && (
+          <Button variant="ghost" size="sm" iconOnly icon={<ChartLine size={12} />} active={combo === 'line'} title={t('editor.comboAsLine')}
+            onClick={() => onChange({ ...m, series: combo === 'line' ? 'column' : 'line' })}>
+            {t('editor.comboAsLine')}
+          </Button>
+        )}
+        <DetailsToggle open={open} onToggle={() => setOpen((o) => !o)} />
+        <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
+      </div>
+      {open && (
+        <MeasureDetails m={m} auto={t('editor.calculation')} onChange={onChange}>
+          <Input ref={input} size="sm" className="well-details__formula" label={t('editor.formula')} value={m.formula ?? ''} placeholder={t('editor.formulaPlaceholder')}
+            spellCheck={false} autoComplete="off" error={error ? describeFormulaError(error, t) : undefined} help={error ? undefined : t('editor.formulaHelp')}
+            onChange={(e) => onChange({ ...m, formula: e.target.value })} />
+          {others.length > 0 && (
+            <div className="well-details__refs" role="group" aria-label={t('editor.formulaInsert')}>
+              {others.map((o) => <Button key={measureAlias(o)} variant="ghost" size="sm" onClick={() => insert(`[${measureAlias(o)}]`)}>{measureName(o, t)}</Button>)}
+            </div>
+          )}
+        </MeasureDetails>
       )}
-      <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
     </div>
   );
 }
@@ -146,6 +248,10 @@ export function VisualPane() {
   const fieldNames = activeFields.length ? activeFields.map((f) => f.name) : Array.from(new Set([...q.dimensions.map((d) => d.field), ...q.measures.map((m) => m.field), ...q.filters.map((f) => f.field)].filter(Boolean)));
   const stacking = stackingOf(widget);
   const has = (f: Parameters<typeof hasFeature>[1]) => hasFeature(widget.type, f);
+  // every formula is checked against the widget's measures as they stand, so a mistake shows where it is typed
+  const refs = measureRefs(q.measures);
+  const formulaError = (i: number): FormulaError | null => { const r = checkFormula(refs[i]!, refs); return r.ok ? null : r.error; };
+  const canAddMeasure = q.measures.length < maxMeasures(widget.type);
 
   return (
     <aside className="pane pane--right" aria-label={t('editor.visual')}>
@@ -176,12 +282,16 @@ export function VisualPane() {
               onRemove={() => setQuery({ dimensions: q.dimensions.filter((_, j) => j !== i) })} />
           ))}
         </Well>
-        <Well id={`${WELL_DROP_PREFIX}measures`} label={t(spec.wells.measures)} empty={q.measures.length === 0} disabled={maxMeasures(widget.type) === 0}>
-          {q.measures.map((m, i) => (
-            <MeasureChip key={`${m.field}-${i}`} m={m} slot={spec.measureSlots?.[i]} combo={has('series') ? comboRole(q.measures, i) : undefined}
-              onChange={(nm) => setQuery({ measures: q.measures.map((x, j) => (j === i ? nm : x)) })}
-              onRemove={() => setQuery({ measures: q.measures.filter((_, j) => j !== i) })} />
-          ))}
+        <Well id={`${WELL_DROP_PREFIX}measures`} label={t(spec.wells.measures)} empty={q.measures.length === 0} disabled={maxMeasures(widget.type) === 0}
+          action={canAddMeasure && <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={() => setQuery({ measures: [...q.measures, newFormulaMeasure()] })}>{t('editor.addCalculation')}</Button>}>
+          {q.measures.map((m, i) => {
+            const onChange = (nm: Measure) => setQuery({ measures: q.measures.map((x, j) => (j === i ? nm : x)) });
+            const onRemove = () => setQuery({ measures: q.measures.filter((_, j) => j !== i) });
+            const combo = has('series') ? comboRole(q.measures, i) : undefined;
+            return isFormula(m)
+              ? <FormulaChip key={measureAlias(m)} m={m} slot={spec.measureSlots?.[i]} others={q.measures.filter((_, j) => j !== i)} error={formulaError(i)} combo={combo} onChange={onChange} onRemove={onRemove} />
+              : <MeasureChip key={`${m.field}-${i}`} m={m} slot={spec.measureSlots?.[i]} combo={combo} onChange={onChange} onRemove={onRemove} />;
+          })}
         </Well>
 
         <div className="row-between">
@@ -203,11 +313,7 @@ export function VisualPane() {
           </Select>
         )}
         <Select size="sm" label={t('editor.numberFormat')} value={o.numberFormat ?? 'auto'} onChange={(e) => setOptions({ numberFormat: e.target.value as Widget['options']['numberFormat'] })}>
-          <option value="auto">{t('editor.formatAuto')}</option>
-          <option value="compact">{t('editor.formatCompact')}</option>
-          <option value="integer">{t('editor.formatInteger')}</option>
-          <option value="currency">{t('editor.formatCurrency')}</option>
-          <option value="percent">{t('editor.formatPercent')}</option>
+          {NUMBER_FORMATS.map((f) => <option key={f} value={f}>{t(formatKey(f))}</option>)}
         </Select>
         {spec.maxDimensions > 0 && (
           <Input size="sm" type="number" min={1} max={100000} label={t('editor.limit')} value={q.limit ?? ''} placeholder={String(spec.limit)} onChange={(e) => setQuery({ limit: e.target.value ? Number(e.target.value) : undefined })} />

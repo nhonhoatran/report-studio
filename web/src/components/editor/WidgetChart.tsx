@@ -4,8 +4,8 @@ import { Code2 } from 'lucide-react';
 import { api } from '@/api/client';
 import type { Widget } from '@/api/types';
 import { useT } from '@/i18n';
-import { useEditor } from '@/store/editor';
-import { isRunnable, missingWells, toQueryRequest, widgetQueryKey } from '@/lib/widget';
+import { useEditor, usePageFilters } from '@/store/editor';
+import { invalidFormula, isRunnable, missingWells, toQueryRequest, widgetQueryKey } from '@/lib/widget';
 import { applyDashboardFilters, needsSourceFields } from '@/lib/filters';
 import { useSourceFields } from './useSourceFields';
 import { ChartRenderer } from '@/components/charts/ChartRenderer';
@@ -19,8 +19,10 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
   const [sqlOpen, setSqlOpen] = useState(false);
   const runnable = isRunnable(widget);
   const missing = missingWells(widget);
-  // dashboard filters: a field filter from another source applies only when this source has the column
-  const dashboardFilters = useEditor((s) => s.definition.filters);
+  // a formula that does not parse or names a missing measure is reported in the pane; the query waits
+  const brokenFormula = invalidFormula(widget);
+  // dashboard filters: those of this page or of the whole report; a field filter from another source applies only when this source has the column
+  const dashboardFilters = usePageFilters();
   const filterValues = useEditor((s) => s.filterValues);
   const wantFields = needsSourceFields(widget, dashboardFilters);
   const fields = useSourceFields(wantFields ? widget.datasourceId : null, wantFields ? widget.source : null);
@@ -29,7 +31,7 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
   const query = useQuery({
     queryKey: widgetQueryKey(widget, extras),
     queryFn: ({ signal }) => api.query.run(toQueryRequest(widget, extras)!, signal),
-    enabled: runnable && !missing && fieldsSettled,
+    enabled: runnable && !missing && !brokenFormula && fieldsSettled,
     staleTime: 30_000,
     retry: false,
     placeholderData: (prev) => prev,
@@ -37,6 +39,7 @@ export function WidgetChart({ widget, showMeta = true }: { widget: Widget; showM
 
   if (!runnable) return <div className="widget__center"><EmptyState compact title={t('editor.needsFields')} /></div>;
   if (missing) return <div className="widget__center"><EmptyState compact title={t(missing.message, { well: t(missing.well) })} /></div>;
+  if (brokenFormula) return <div className="widget__center"><EmptyState compact title={t('editor.formulaBroken')} /></div>;
   if (query.isPending) return <div className="widget__center"><Spinner /></div>;
   if (query.error) return <div className="widget__body"><ErrorBox error={query.error} /></div>;
   const result = query.data!;

@@ -5,7 +5,7 @@ import { api } from '@/api/client';
 import type { DashboardFilter, DateBucket, DatePreset, FilterValue } from '@/api/types';
 import { DATE_PRESETS } from '@/api/types';
 import { useT } from '@/i18n';
-import { useEditor } from '@/store/editor';
+import { useEditor, usePageFilters } from '@/store/editor';
 import { GRAIN_BUCKETS, defaultFilterValue, isFilterActive, isFilterComplete } from '@/lib/filters';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
@@ -87,7 +87,8 @@ function ListControl({ filter, value, onChange }: { filter: DashboardFilter; val
  */
 export function FilterBar({ editable, manage }: { /** edit mode: a change of value becomes the saved default */ editable: boolean; /** may add, configure and remove filters (dashboards.filters) */ manage: boolean }) {
   const t = useT();
-  const filters = useEditor((s) => s.definition.filters);
+  // the report's filters and this page's own; a filter scoped to another page is neither shown nor applied here
+  const filters = usePageFilters();
   const values = useEditor((s) => s.filterValues);
   const setFilterValue = useEditor((s) => s.setFilterValue);
   const resetFilterValues = useEditor((s) => s.resetFilterValues);

@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 import { api } from '@/api/client';
 import type { FieldInfo, QuerySource } from '@/api/types';
 import { useT } from '@/i18n';
-import { useEditor } from '@/store/editor';
+import { useEditor, usePageWidgets } from '@/store/editor';
 import { Select } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorBox, Spinner } from '@/components/ui/Feedback';
@@ -31,7 +31,7 @@ function FieldItem({ field, onAdd }: { field: FieldInfo; onAdd: () => void }) {
 export function FieldsPane() {
   const t = useT();
   const selectedId = useEditor((s) => s.selectedId);
-  const widgets = useEditor((s) => s.definition.widgets);
+  const widgets = usePageWidgets();
   const setActiveDataset = useEditor((s) => s.setActiveDataset);
   const dropField = useEditor((s) => s.dropField);
   const addWidget = useEditor((s) => s.addWidget);

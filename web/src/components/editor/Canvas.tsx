@@ -4,7 +4,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { Copy, Trash2 } from 'lucide-react';
 import type { Widget } from '@/api/types';
 import { useT } from '@/i18n';
-import { useEditor } from '@/store/editor';
+import { useEditor, usePageWidgets } from '@/store/editor';
 import { autoTitle } from '@/lib/widget';
 import { cssPx } from '@/store/theme';
 import { Button } from '@/components/ui/Button';
@@ -48,7 +48,7 @@ function WidgetFrame({ widget, editable }: { widget: Widget; editable: boolean }
 
 export function Canvas({ editable }: { editable: boolean }) {
   const t = useT();
-  const widgets = useEditor((s) => s.definition.widgets);
+  const widgets = usePageWidgets();
   const applyLayout = useEditor((s) => s.applyLayout);
   const addWidget = useEditor((s) => s.addWidget);
   const select = useEditor((s) => s.select);

@@ -1,5 +1,7 @@
-import type { DateBucket, Dimension, FieldInfo, Filter, Measure, QueryRequest, Stacking, Widget, WidgetType } from '@/api/types';
+import type { DateBucket, Dimension, FieldInfo, Filter, Measure, NumberFormat, QueryMeasure, QueryRequest, Stacking, Widget, WidgetType } from '@/api/types';
+import { isFormula } from '@/api/types';
 import type { TKey } from '@/i18n';
+import { checkFormula, type FormulaError, type MeasureRef } from '@shared/formula';
 import { newId } from './id';
 
 /** Which options the visual pane offers for a type. */
@@ -148,6 +150,32 @@ export function defaultMeasure(f: FieldInfo): Measure {
   return { field: f.name, kind: f.kind, agg: f.kind === 'number' ? 'sum' : 'count' };
 }
 
+/** A calculated measure, empty until the author types its expression; the alias is what sorts and other formulas name it by. */
+export function newFormulaMeasure(): Measure {
+  return { field: '', agg: 'sum', kind: 'number', formula: '', alias: newId('calc') };
+}
+
+/** How each measure of a widget can be named by a formula, and which are formulas themselves. */
+export const measureRefs = (measures: Measure[]): MeasureRef[] =>
+  measures.map((m) => ({ alias: measureAlias(m), label: m.label?.trim() || undefined, formula: isFormula(m) ? m.formula : undefined }));
+
+/** The first formula of the widget that cannot run, with what is wrong with it; null when every formula is fine. */
+export function invalidFormula(widget: Widget): { measure: Measure; error: FormulaError } | null {
+  const refs = measureRefs(widget.query.measures);
+  for (const [i, m] of widget.query.measures.entries()) {
+    if (!isFormula(m)) continue;
+    const r = checkFormula(refs[i]!, refs);
+    if (!r.ok) return { measure: m, error: r.error };
+  }
+  return null;
+}
+
+/** The format a measure's values take: a share is always a percent; otherwise its own choice, else the widget's. */
+export function measureFormat(m: Measure | undefined, widgetFormat: NumberFormat | undefined): NumberFormat {
+  if (m?.showAs && m.showAs !== 'value') return 'percent';
+  return m?.format ?? widgetFormat ?? 'auto';
+}
+
 /** Add a field the Power BI way: numbers become measures, everything else a dimension. */
 export function autoPlace(widget: Widget, f: FieldInfo): Widget {
   const q = widget.query;
@@ -185,6 +213,14 @@ export function isRunnable(widget: Widget): boolean {
   return !!widget.datasourceId && !!widget.source && (widget.query.dimensions.length + widget.query.measures.length > 0);
 }
 
+/** What the server reads of a measure: a formula, or a field with its aggregation; the display name goes along for formulas to resolve. */
+function toQueryMeasure(m: Measure): QueryMeasure {
+  const label = m.label?.trim() || undefined;
+  const showAs = m.showAs && m.showAs !== 'value' ? m.showAs : undefined;
+  if (isFormula(m)) return { formula: m.formula ?? '', alias: measureAlias(m), label, showAs };
+  return { field: m.field, agg: m.agg, alias: m.alias, label, showAs };
+}
+
 /** Which well is still short for this type: the message to show instead of the chart and the well it names; null when the query can run. */
 export function missingWells(widget: Widget): { message: TKey; well: TKey } | null {
   const spec = CHART_SPECS[widget.type];
@@ -218,10 +254,12 @@ export function toQueryRequest(widget: Widget, extras: QueryExtras = {}): QueryR
     source: widget.source,
     // a grain filter re-buckets every date dimension that already has a bucket; raw dates stay raw
     dimensions: q.dimensions.map(({ field, bucket, alias, kind }) => ({ field, bucket: extras.bucket && kind === 'date' && bucket && bucket !== 'none' ? extras.bucket : bucket ?? 'none', alias })),
-    measures: q.measures.map(({ field, agg, alias }) => ({ field, agg, alias })),
+    measures: q.measures.map(toQueryMeasure),
     filters: [...q.filters, ...(extras.filters ?? [])].filter((f) => f.field).map(({ field, op, value, values }) => ({ field, op, value, values })),
     orderBy,
     limit: q.limit ?? CHART_SPECS[widget.type].limit,
+    // totals come from the source in the same statement, so a ratio's total is the ratio of the totals
+    totals: hasFeature(widget.type, 'totals') && widget.options.showTotals === true && q.dimensions.length > 0 && q.measures.length > 0 ? true : undefined,
   };
 }
 
@@ -232,6 +270,7 @@ export function dimensionAlias(d: Dimension): string {
 }
 export function measureAlias(m: Measure): string {
   if (m.alias) return safe(m.alias);
+  if (isFormula(m)) return 'formula';
   return safe(`${m.agg}_${m.field === '*' ? 'all' : m.field}`);
 }
 
@@ -240,12 +279,24 @@ export function widgetQueryKey(widget: Widget, extras: QueryExtras = {}): unknow
   return ['widget-query', toQueryRequest(widget, extras)];
 }
 
+type NameFn = (k: 'editor.by' | 'editor.widgetDefaultTitle' | 'editor.calculation' | `agg.${Measure['agg']}`) => string;
+
+/** The name a measure goes by: the author's display name, else "Sum revenue", else "Calculation" for an unnamed formula. */
+export function measureName(m: Measure, t: NameFn): string {
+  if (m.label?.trim()) return m.label.trim();
+  if (isFormula(m)) return t('editor.calculation');
+  return `${t(`agg.${m.agg}`)} ${m.field === '*' ? '' : m.field}`.trim();
+}
+
+/** The name a dimension goes by: the author's display name, else the column. */
+export const dimensionName = (d: Dimension): string => d.label?.trim() || d.field;
+
 /** Title shown when the author left it blank: "Sum revenue by region". */
-export function autoTitle(widget: Widget, t: (k: 'editor.by' | 'editor.widgetDefaultTitle' | `agg.${Measure['agg']}`) => string): string {
+export function autoTitle(widget: Widget, t: NameFn): string {
   if (widget.title) return widget.title;
   const m = widget.query.measures[0];
   const d = widget.query.dimensions[0];
   if (!m && !d) return t('editor.widgetDefaultTitle');
-  const head = m ? `${t(`agg.${m.agg}`)} ${m.field === '*' ? '' : m.field}`.trim() : d!.field;
-  return m && d ? `${head} ${t('editor.by')} ${d.field}` : head;
+  const head = m ? measureName(m, t) : dimensionName(d!);
+  return m && d ? `${head} ${t('editor.by')} ${dimensionName(d)}` : head;
 }

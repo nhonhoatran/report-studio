@@ -57,29 +57,58 @@ export const AGGREGATIONS: Aggregation[] = ['sum', 'avg', 'count', 'count_distin
 export const DATE_BUCKETS: DateBucket[] = ['none', 'year', 'quarter', 'month', 'week', 'day', 'hour'];
 export const FILTER_OPS: FilterOp[] = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in', 'contains', 'starts_with', 'between', 'is_null', 'not_null'];
 
-export interface Dimension { field: string; bucket?: DateBucket; alias?: string; kind?: FieldKind }
+/** How a measure is shown: as is, or as its share of a total the server computes over the same query. */
+export type ShowAs = 'value' | 'percent_of_total' | 'percent_of_parent' | 'percent_of_column';
+export const SHOW_AS: ShowAs[] = ['value', 'percent_of_total', 'percent_of_parent', 'percent_of_column'];
+
+export interface Dimension {
+  field: string; bucket?: DateBucket; alias?: string; kind?: FieldKind;
+  /** the name a reader sees instead of the column name */
+  label?: string;
+}
 export interface Measure {
   field: string; agg: Aggregation; alias?: string; kind?: FieldKind;
+  /** the name a reader sees instead of "Sum revenue"; a formula may refer to the measure by it */
+  label?: string;
+  /**
+   * A calculated measure: an expression over the widget's other measures (`[Doanh số] / [sum_cost]`)
+   * or over columns (`sum(a) / count(*)`), evaluated by the server after GROUP BY. `field` and `agg`
+   * are then unused; `alias` is always set so other formulas and sorts can name it.
+   */
+  formula?: string;
+  showAs?: ShowAs;
+  /** this measure's own number format, over the widget's; a share is always a percent */
+  format?: NumberFormat;
   /** combo chart only: drawn as a line on the secondary axis instead of a column */
   series?: 'column' | 'line';
 }
+export const isFormula = (m: Measure): boolean => typeof m.formula === 'string';
 export interface Filter { id: string; field: string; op: FilterOp; value?: string | number | boolean | null; values?: (string | number)[] }
 export interface OrderBy { alias: string; direction: 'asc' | 'desc' }
 
 export type QuerySource = { type: 'table'; table: string } | { type: 'dataset'; datasetId: number };
 
+/** What the server reads of a measure: an aggregation or a formula, each with its alias, display name and show-as. */
+export type QueryMeasure =
+  | { field: string; agg: Aggregation; alias?: string; label?: string; showAs?: ShowAs }
+  | { formula: string; alias?: string; label?: string; showAs?: ShowAs };
 export interface QueryRequest {
   datasourceId: number;
   source: QuerySource;
-  dimensions: Omit<Dimension, 'kind'>[];
-  measures: Omit<Measure, 'kind' | 'series'>[];
+  dimensions: Omit<Dimension, 'kind' | 'label'>[];
+  measures: QueryMeasure[];
   filters: Omit<Filter, 'id'>[];
   orderBy: OrderBy[];
   limit?: number;
+  /** ask the server for every measure over all groups, and per first / second dimension value */
+  totals?: boolean;
 }
 export interface QueryResultColumn { alias: string; role: 'dimension' | 'measure' | 'column'; source?: string }
+/** Totals the server computed in the same statement, keyed by measure alias (and by dimension value as text). */
+export interface QueryTotals { grand: Record<string, unknown>; byRow?: Record<string, Record<string, unknown>>; byColumn?: Record<string, Record<string, unknown>> }
 export interface QueryResult {
   columns: QueryResultColumn[]; rows: Record<string, unknown>[]; rowCount: number; truncated: boolean; durationMs: number; sql: string;
+  totals?: QueryTotals;
 }
 
 /**
@@ -140,6 +169,8 @@ export interface DashboardFilter {
   id: string;
   kind: DashboardFilterKind;
   label: string;
+  /** the page it is shown on and applies to; absent means the whole report */
+  pageId?: string;
   /** date_range and list: the column it filters, on every visual of the data source whose source has it */
   field?: string;
   /** list: where its choices are read from; date_range: the data source it belongs to */
@@ -151,15 +182,20 @@ export interface DashboardFilter {
   value?: FilterValue;
 }
 
-export interface DashboardDefinition { version: 1; widgets: Widget[]; filters: DashboardFilter[]; settings: Record<string, unknown> }
+/** One page of a report: its own widgets and layout; filters are the report's and pick a page or all of them. */
+export interface DashboardPage { id: string; name: string; widgets: Widget[] }
+/** Version 2 of the document: widgets live on pages. A version 1 document (top-level `widgets`) is read as one page. */
+export interface DashboardDefinition { version: 2; pages: DashboardPage[]; filters: DashboardFilter[]; settings: Record<string, unknown> }
+export interface LegacyDashboardDefinition { version: 1; widgets: Widget[]; filters: DashboardFilter[]; settings: Record<string, unknown> }
 export interface Dashboard {
-  id: number; name: string; description: string; widgetCount: number; createdAt: string; updatedAt: string; definition?: DashboardDefinition;
+  id: number; name: string; description: string; widgetCount: number; pageCount?: number; createdAt: string; updatedAt: string;
+  definition?: DashboardDefinition | LegacyDashboardDefinition;
   /** the server's answer for this user: the permission and no policy against it */
   canEdit?: boolean;
 }
 export interface DashboardInput { name: string; description?: string; definition: DashboardDefinition }
 
-export const emptyDefinition = (): DashboardDefinition => ({ version: 1, widgets: [], filters: [], settings: {} });
+export const emptyDefinition = (firstPage: DashboardPage): DashboardDefinition => ({ version: 2, pages: [firstPage], filters: [], settings: {} });
 
 // --- AI suggestions --------------------------------------------------------------------------
 export type AiProviderKind = 'anthropic' | 'openai' | 'gemini' | 'openai_compatible';

@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
 interface BaseProps { label?: ReactNode; hint?: ReactNode; error?: ReactNode; help?: ReactNode; size?: 'sm' | 'md'; className?: string }
 
@@ -16,14 +16,14 @@ function Wrapper({ id, label, hint, error, help, className, children }: BaseProp
   );
 }
 
-export function Input({ label, hint, error, help, size, className, id: givenId, ...rest }: BaseProps & Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>) {
+export const Input = forwardRef<HTMLInputElement, BaseProps & Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>>(function Input({ label, hint, error, help, size, className, id: givenId, ...rest }, ref) {
   const auto = useId(); const id = givenId ?? auto;
   return (
     <Wrapper id={id} label={label} hint={hint} error={error} help={help} className={className}>
-      <input id={id} className={['field__control', size === 'sm' && 'field__control--sm'].filter(Boolean).join(' ')} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} {...rest} />
+      <input ref={ref} id={id} className={['field__control', size === 'sm' && 'field__control--sm'].filter(Boolean).join(' ')} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} {...rest} />
     </Wrapper>
   );
-}
+});
 
 export function Select({ label, hint, error, help, size, className, id: givenId, children, ...rest }: BaseProps & Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'>) {
   const auto = useId(); const id = givenId ?? auto;

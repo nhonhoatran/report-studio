@@ -1,6 +1,7 @@
-import type { Aggregation, QueryResult, QueryResultColumn, Widget } from '@/api/types';
+import type { Aggregation, Measure, NumberFormat, QueryResult, QueryResultColumn, Widget } from '@/api/types';
+import { isFormula } from '@/api/types';
 import { translate, type Lang } from '@/i18n';
-import { dimensionAlias, measureAlias } from '@/lib/widget';
+import { dimensionAlias, dimensionName, measureAlias, measureFormat, measureName } from '@/lib/widget';
 
 /*
  * Pure helpers that turn a query result (columns with roles, flat rows) into what a visual
@@ -21,25 +22,38 @@ export const str = (v: unknown): string => (v === null || v === undefined ? '' :
 
 const uniq = (values: string[]): string[] => Array.from(new Set(values));
 
-/** "Tổng revenue" for a measure column, read from the widget's own wells; undefined for anything else. */
+/** The measure behind a result column, from the widget's own wells. */
+export const measureOf = (widget: Widget, alias: string): Measure | undefined => widget.query.measures.find((mm) => measureAlias(mm) === alias);
+
+/**
+ * The name a reader sees for a measure column: the author's display name, else "Tổng revenue"
+ * (with the share it is shown as, "… (% of total)"); undefined for a column that is no measure.
+ */
 export function measureLabel(widget: Widget, alias: string, lang: Lang): string | undefined {
-  const m = widget.query.measures.find((mm) => measureAlias(mm) === alias);
+  const m = measureOf(widget, alias);
   if (!m) return undefined;
-  return `${translate(lang, `agg.${m.agg}`)} ${m.field === '*' ? '' : m.field}`.trim();
+  const name = measureName(m, (k) => translate(lang, k));
+  if (m.label?.trim() || !m.showAs || m.showAs === 'value') return name;
+  return `${name} (${translate(lang, `editor.showAsShort.${m.showAs}`)})`;
 }
 
-/** The aggregation behind a measure column, so totals know what they may add up. */
+/** The number format a measure column is shown in (see `measureFormat`). */
+export const columnFormat = (widget: Widget, alias: string): NumberFormat => measureFormat(measureOf(widget, alias), widget.options.numberFormat);
+
+/** The aggregation behind a measure column, so client-side totals know what they may add up; a formula has none. */
 export function measureAgg(widget: Widget, alias: string): Aggregation | undefined {
-  return widget.query.measures.find((m) => measureAlias(m) === alias)?.agg;
+  const m = measureOf(widget, alias);
+  return m && !isFormula(m) ? m.agg : undefined;
 }
 
-/** A column header a reader understands: the field (with its date bucket) or the measure label, never the SQL alias. */
+/** A column header a reader understands: the field's display name (with its date bucket) or the measure label, never the SQL alias. */
 export function columnLabel(widget: Widget, c: QueryResultColumn, lang: Lang): string {
   if (c.role === 'measure') return measureLabel(widget, c.alias, lang) ?? c.alias;
   if (c.role === 'dimension') {
     const d = widget.query.dimensions.find((dd) => dimensionAlias(dd) === c.alias);
     if (!d) return c.alias;
-    return d.bucket && d.bucket !== 'none' ? `${d.field} (${translate(lang, `bucket.${d.bucket}`)})` : d.field;
+    if (d.label?.trim()) return d.label.trim();
+    return d.bucket && d.bucket !== 'none' ? `${dimensionName(d)} (${translate(lang, `bucket.${d.bucket}`)})` : dimensionName(d);
   }
   return c.alias;
 }

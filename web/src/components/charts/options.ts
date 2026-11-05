@@ -4,7 +4,7 @@ import { formatAxis, formatNumber } from '@/lib/format';
 import { translate, type Lang, type TKey, type TParams } from '@/i18n';
 import { comboRole, measureAlias, stackingOf } from '@/lib/widget';
 import { cssPx, cssVar } from '@/store/theme';
-import { dimensionAliases, measureAliases, measureLabel, niceCeil, num, shape, str, toShares, type Row, type Shaped } from './shape';
+import { columnFormat, dimensionAliases, measureAliases, measureLabel, niceCeil, num, shape, str, toShares, type Row, type Shaped } from './shape';
 
 /*
  * One ECharts option per visual type. Every colour, size and spacing is read from the tokens
@@ -34,6 +34,11 @@ export function readChartTheme(): ChartTheme {
 }
 
 export interface ChartContext { theme: ChartTheme; lang: Lang; fmt: NumberFormat }
+
+/** The format of one measure's values: its own (a share is a percent), else the widget's. */
+const fmtOf = (widget: Widget, alias: string | undefined, ctx: ChartContext): NumberFormat => (alias ? columnFormat(widget, alias) : ctx.fmt);
+/** A short label on a mark: compact for ordinary numbers, a percent for a percent measure. */
+const markLabel = (v: unknown, fmt: NumberFormat, lang: Lang) => (fmt === 'percent' ? formatNumber(v, 'percent', lang) : formatAxis(v, lang));
 
 // ECharts takes numbers and percent strings: spacing comes from the tokens, the rest are named constants.
 const ANIMATION_MS = 300;
@@ -138,13 +143,16 @@ function markLine(widget: Widget, ctx: ChartContext, horizontal: boolean) {
 function categoryAxis(data: string[], th: ChartTheme) {
   return { type: 'category' as const, data, axisLine: { lineStyle: { color: th.grid } }, axisTick: { show: false }, axisLabel: { color: th.text, hideOverlap: true } };
 }
-function valueAxis(ctx: ChartContext, percent = false) {
+/** `percent` labels the axis as percents; `capAtOne` ends it at 100 % (100 % stacking), which a ratio above one must not. */
+function valueAxis(ctx: ChartContext, percent = false, capAtOne = percent) {
   return {
     type: 'value' as const, splitLine: { lineStyle: { color: ctx.theme.grid } },
-    ...(percent ? { max: 1 } : {}),
+    ...(capAtOne ? { max: 1 } : {}),
     axisLabel: { color: ctx.theme.text, formatter: (v: number) => (percent ? formatNumber(v, 'percent', ctx.lang) : formatAxis(v, ctx.lang)) },
   };
 }
+/** Every series of the chart is a percent measure: the axis then reads as percents too. */
+const allPercent = (widget: Widget, aliases: string[], ctx: ChartContext) => aliases.length > 0 && aliases.every((a) => fmtOf(widget, a, ctx) === 'percent');
 
 // --- cartesian: column, bar, line, area ---------------------------------------------------------
 
@@ -158,11 +166,11 @@ function cartesian(widget: Widget, result: QueryResult, ctx: ChartContext): ECha
   const isLine = widget.type === 'line' || widget.type === 'area';
   const showLegend = widget.options.legend !== false && series.length > 1;
   const pos = legendPos(widget);
-  const valueFmt = (v: unknown) => (percent ? formatNumber(v, 'percent', lang) : formatAxis(v, lang));
+  const seriesFmt = (alias: string): NumberFormat => (percent ? 'percent' : fmtOf(widget, alias, ctx));
   const option = base(widget, ctx, showLegend, 'axis');
   if (percent) option.tooltip = { ...(option.tooltip as object), valueFormatter: (v) => formatNumber(v as number, 'percent', lang) };
   const cat = categoryAxis(shaped.categories, th);
-  const val = valueAxis(ctx, percent);
+  const val = valueAxis(ctx, percent || allPercent(widget, shaped.measures, ctx), percent);
   return {
     ...option,
     grid: gridOption(showLegend, pos, th),
@@ -178,7 +186,9 @@ function cartesian(widget: Widget, result: QueryResult, ctx: ChartContext): ECha
       barMaxWidth: BAR_MAX_WIDTH,
       itemStyle: !isLine && stacking === 'none' ? { borderRadius: horizontal ? [0, th.radiusSm, th.radiusSm, 0] : [th.radiusSm, th.radiusSm, 0, 0] } : undefined,
       emphasis: { focus: 'series' },
-      label: widget.options.showValues ? { show: true, position: stacking !== 'none' ? 'inside' : horizontal ? 'right' : 'top', color: stacking !== 'none' ? th.textStrong : th.text, formatter: (p: { value?: unknown }) => valueFmt(p.value) } : undefined,
+      // each measure keeps its own format in its tooltip line and labels (a share next to an amount)
+      tooltip: percent ? undefined : { valueFormatter: (v: unknown) => formatNumber(v, seriesFmt(s.alias), lang) },
+      label: widget.options.showValues ? { show: true, position: stacking !== 'none' ? 'inside' : horizontal ? 'right' : 'top', color: stacking !== 'none' ? th.textStrong : th.text, formatter: (p: { value?: unknown }) => markLabel(p.value, seriesFmt(s.alias), lang) } : undefined,
       markLine: i === 0 ? markLine(widget, ctx, horizontal) : undefined,
     } as SeriesOption)),
   };
@@ -195,14 +205,19 @@ function combo(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
   const hasColumn = shaped.series.some((s) => roleOf(s.alias) === 'column');
   const showLegend = widget.options.legend !== false && shaped.series.length > 1;
   const pos = legendPos(widget);
-  const val = valueAxis(ctx);
+  // each axis reads as percents when every series drawn on it is a percent measure
+  const columnAliases = shaped.series.filter((s) => roleOf(s.alias) === 'column').map((s) => s.alias);
+  const lineAliases = shaped.series.filter((s) => roleOf(s.alias) === 'line').map((s) => s.alias);
+  const val = valueAxis(ctx, allPercent(widget, hasColumn ? columnAliases : lineAliases, ctx), false);
+  const lineAxis = valueAxis(ctx, allPercent(widget, lineAliases, ctx), false);
   return {
     ...base(widget, ctx, showLegend, 'axis'),
     grid: gridOption(showLegend, pos, th),
     xAxis: categoryAxis(shaped.categories, th),
-    yAxis: hasLine && hasColumn ? [val, { ...val, splitLine: { show: false } }] : val,
+    yAxis: hasLine && hasColumn ? [val, { ...lineAxis, splitLine: { show: false } }] : val,
     series: shaped.series.map((s, i): SeriesOption => {
       const line = roleOf(s.alias) === 'line';
+      const fmt = fmtOf(widget, s.alias, ctx);
       return {
         name: s.name,
         type: line ? 'line' : 'bar',
@@ -212,7 +227,8 @@ function combo(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
         barMaxWidth: BAR_MAX_WIDTH,
         itemStyle: line ? undefined : { borderRadius: [th.radiusSm, th.radiusSm, 0, 0] },
         emphasis: { focus: 'series' },
-        label: widget.options.showValues ? { show: true, position: 'top', color: th.text, formatter: (p: { value?: unknown }) => formatAxis(p.value, lang) } : undefined,
+        tooltip: { valueFormatter: (v: unknown) => formatNumber(v, fmt, lang) },
+        label: widget.options.showValues ? { show: true, position: 'top', color: th.text, formatter: (p: { value?: unknown }) => markLabel(p.value, fmt, lang) } : undefined,
         markLine: i === 0 ? markLine(widget, ctx, false) : undefined,
       } as SeriesOption;
     }),
@@ -222,8 +238,9 @@ function combo(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
 // --- waterfall: running total, increases and decreases coloured, a closing total ---------------
 
 function waterfall(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
-  const { theme: th, lang, fmt } = ctx;
+  const { theme: th, lang } = ctx;
   const shaped = shape(result, widget, lang);
+  const fmt = fmtOf(widget, shaped.measures[0], ctx);
   const deltas = shaped.series[0]?.data ?? [];
   const categories = [...shaped.categories, t(lang, 'editor.total')];
   // Every series holds a number at every index (0 where it has no bar): with stackStrategy 'all' ECharts
@@ -278,14 +295,16 @@ function waterfall(widget: Widget, result: QueryResult, ctx: ChartContext): ECha
 // --- part-to-whole: pie, donut, funnel ------------------------------------------------------------
 
 function pie(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
-  const { theme: th, lang, fmt } = ctx;
+  const { theme: th, lang } = ctx;
   const shaped = shape(result, widget, lang);
+  const fmt = fmtOf(widget, shaped.measures[0], ctx);
   const values = shaped.series[0]?.data ?? [];
   const showLegend = widget.options.legend !== false;
   const pos = legendPos(widget);
   const center = !showLegend ? CENTER.alone : pos === 'right' ? CENTER.legendRight : pos === 'top' ? CENTER.legendTop : CENTER.legendBottom;
   return {
     ...base(widget, ctx, showLegend, 'item'),
+    tooltip: { ...(base(widget, ctx, showLegend, 'item').tooltip as object), valueFormatter: (v: unknown) => formatNumber(v, fmt, lang) },
     series: [{
       type: 'pie',
       radius: widget.type === 'donut' ? [PIE_RADIUS.inner, PIE_RADIUS.full] : PIE_RADIUS.full,
@@ -299,13 +318,15 @@ function pie(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOpt
 }
 
 function funnel(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
-  const { theme: th, lang, fmt } = ctx;
+  const { theme: th, lang } = ctx;
   const shaped = shape(result, widget, lang);
+  const fmt = fmtOf(widget, shaped.measures[0], ctx);
   const values = shaped.series[0]?.data ?? [];
   const showLegend = widget.options.legend !== false;
   const pos = legendPos(widget);
   return {
     ...base(widget, ctx, showLegend, 'item'),
+    tooltip: { ...(base(widget, ctx, showLegend, 'item').tooltip as object), valueFormatter: (v: unknown) => formatNumber(v, fmt, lang) },
     series: [{
       type: 'funnel',
       left: FUNNEL_INSET, right: showLegend && pos === 'right' ? LEGEND_SIDE_WIDTH : FUNNEL_INSET,
@@ -323,10 +344,11 @@ function funnel(widget: Widget, result: QueryResult, ctx: ChartContext): ECharts
 // --- relation: scatter / bubble, heat map, radar ----------------------------------------------------
 
 function scatter(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
-  const { theme: th, lang, fmt } = ctx;
+  const { theme: th, lang } = ctx;
   const [detail, legend] = dimensionAliases(result);
   const [mx, my, msize] = measureAliases(result);
   const label = (alias: string | undefined) => (alias ? measureLabel(widget, alias, lang) ?? alias : '');
+  const fmtX = fmtOf(widget, mx, ctx); const fmtY = fmtOf(widget, my, ctx); const fmtSize = fmtOf(widget, msize, ctx);
   const groups = new Map<string, Row[]>();
   for (const r of result.rows) {
     const g = legend ? str(r[legend]) : label(my);
@@ -347,17 +369,17 @@ function scatter(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
     ...(option.tooltip as object),
     formatter: (p: unknown) => {
       const [x, y, size, name] = (asParams(p)[0]!.value as unknown[]);
-      const lines = [`${label(mx)}: ${formatNumber(x, fmt, lang)}`, `${label(my)}: ${formatNumber(y, fmt, lang)}`];
-      if (msize) lines.push(`${label(msize)}: ${formatNumber(size, fmt, lang)}`);
+      const lines = [`${label(mx)}: ${formatNumber(x, fmtX, lang)}`, `${label(my)}: ${formatNumber(y, fmtY, lang)}`];
+      if (msize) lines.push(`${label(msize)}: ${formatNumber(size, fmtSize, lang)}`);
       return `<b>${str(name)}</b><br/>${lines.join('<br/>')}`;
     },
   };
-  const axis = (name: string) => ({ ...valueAxis(ctx), name, nameLocation: 'middle' as const, nameGap: th.s7, nameTextStyle: { color: th.text }, scale: true });
+  const axis = (name: string, fmt: NumberFormat) => ({ ...valueAxis(ctx, fmt === 'percent', false), name, nameLocation: 'middle' as const, nameGap: th.s7, nameTextStyle: { color: th.text }, scale: true });
   return {
     ...option,
     grid: { ...(gridOption(showLegend, pos, th) as object), left: th.s4, bottom: (showLegend && pos === 'bottom' ? th.s7 : th.s2) + th.s6 },
-    xAxis: axis(label(mx)),
-    yAxis: axis(label(my)),
+    xAxis: axis(label(mx), fmtX),
+    yAxis: axis(label(my), fmtY),
     series: Array.from(groups, ([name, rows]): SeriesOption => ({
       name, type: 'scatter', symbolSize,
       data: rows.map((r) => [num(r[mx!]) ?? 0, num(r[my!]) ?? 0, msize ? num(r[msize]) ?? 0 : 0, detail ? str(r[detail]) : name]),
@@ -369,9 +391,10 @@ function scatter(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
 }
 
 function heatmap(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
-  const { theme: th, lang, fmt } = ctx;
+  const { theme: th, lang } = ctx;
   const [dx, dy] = dimensionAliases(result);
   const [m] = measureAliases(result);
+  const fmt = fmtOf(widget, m, ctx);
   const xs = Array.from(new Set(result.rows.map((r) => str(r[dx!]))));
   const ys = Array.from(new Set(result.rows.map((r) => str(r[dy!]))));
   // an empty cell is left out, so it keeps the surface colour instead of the scale's lowest one
@@ -395,15 +418,15 @@ function heatmap(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
     yAxis: { ...categoryAxis(ys, th), splitArea: { show: true }, inverse: true },
     visualMap: {
       show: showScale, min, max, calculable: false, orient: 'horizontal', left: 'center', bottom: 0,
-      text: [formatAxis(max, lang), formatAxis(min, lang)],
+      text: [markLabel(max, fmt, lang), markLabel(min, fmt, lang)],
       itemHeight: th.s7 * HEAT_SCALE_LENGTH, itemWidth: th.s3, textStyle: { color: th.text },
-      formatter: (v: unknown) => formatAxis(v, lang),
+      formatter: (v: unknown) => markLabel(v, fmt, lang),
       inRange: { color: [mixHex(high, th.surface, HEAT_LOW_MIX), high] },
     },
     series: [{
       type: 'heatmap', data: data.map((d) => [...d]),
       itemStyle: { borderColor: th.surface, borderWidth: CELL_BORDER },
-      label: { show: widget.options.showValues === true, color: th.textStrong, formatter: (p) => formatAxis((p.value as unknown[])[2], lang) },
+      label: { show: widget.options.showValues === true, color: th.textStrong, formatter: (p) => markLabel((p.value as unknown[])[2], fmt, lang) },
       emphasis: { itemStyle: { borderColor: th.text } },
     }],
   };
@@ -412,6 +435,7 @@ function heatmap(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
 function radar(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
   const { theme: th, lang } = ctx;
   const shaped = shape(result, widget, lang);
+  const fmt = fmtOf(widget, shaped.measures[0], ctx);
   const raw = Math.max(...shaped.series.flatMap((s) => s.data.map((v) => v ?? 0)), 0) * RADAR_HEADROOM;
   const max = niceCeil(raw / RADAR_SPLIT, RADAR_STEPS) * RADAR_SPLIT;
   const showLegend = widget.options.legend !== false && shaped.series.length > 1;
@@ -432,7 +456,7 @@ function radar(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
       symbolSize: th.s1,
       areaStyle: { opacity: AREA_FILL_OPACITY },
       lineStyle: { width: LINE_WIDTH },
-      label: { show: widget.options.showValues === true, color: th.text, formatter: (p) => formatAxis(p.value, lang) },
+      label: { show: widget.options.showValues === true, color: th.text, formatter: (p) => markLabel(p.value, fmt, lang) },
       emphasis: { focus: 'series' },
       data: shaped.series.map((s) => ({ name: s.name, value: s.data.map((v) => v ?? 0) })),
     }],
@@ -442,8 +466,9 @@ function radar(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
 // --- single value: gauge --------------------------------------------------------------------------
 
 function gauge(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
-  const { theme: th, lang, fmt } = ctx;
+  const { theme: th, lang } = ctx;
   const [mv, mt] = measureAliases(result);
+  const fmt = fmtOf(widget, mv, ctx);
   const row = result.rows[0] ?? {};
   const value = num(row[mv!]) ?? 0;
   const target = mt ? num(row[mt]) : typeof widget.options.target === 'number' ? widget.options.target : null;
@@ -458,7 +483,7 @@ function gauge(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
     axisLine: { roundCap: true, lineStyle: { width: GAUGE.width, color: [[1, th.grid]] } },
     axisTick: { show: false }, splitLine: { show: false },
     splitNumber: GAUGE.splitNumber,
-    axisLabel: { color: th.text, distance: -th.s7, formatter: (v: number) => formatAxis(v, lang) },
+    axisLabel: { color: th.text, distance: -th.s7, formatter: (v: number) => markLabel(v, fmt, lang) },
     pointer: { show: false }, anchor: { show: false },
     title: { show: showTarget, offsetCenter: [0, GAUGE.titleOffset], color: th.text, fontSize: th.fontSize },
     detail: { valueAnimation: true, offsetCenter: [0, GAUGE.valueOffset], color: th.textStrong, fontSize: th.fontSizeLg, fontWeight: HEADLINE_WEIGHT, formatter: (v: number) => formatNumber(v, fmt, lang) },
@@ -479,9 +504,10 @@ function gauge(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsO
 // --- treemap ------------------------------------------------------------------------------------
 
 function treemap(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption {
-  const { theme: th, lang, fmt } = ctx;
+  const { theme: th, lang } = ctx;
   const [dg, dd] = dimensionAliases(result);
   const [m] = measureAliases(result);
+  const fmt = fmtOf(widget, m, ctx);
   type Node = { name: string; value: number; children?: Node[] };
   let data: Node[];
   if (dd) {

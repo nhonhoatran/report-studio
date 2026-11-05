@@ -5,6 +5,7 @@ import { Copy, LayoutDashboard, Pencil, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/api/client';
 import { emptyDefinition, type Dashboard } from '@/api/types';
 import { useAuth, canEdit } from '@/store/auth';
+import { defaultPageName, newPage } from '@/store/editor';
 import { toast } from '@/store/toast';
 import { useI18nStore, useT } from '@/i18n';
 import { formatDateTime } from '@/lib/format';
@@ -25,7 +26,7 @@ export function DashboardsPage() {
 
   const list = useQuery({ queryKey: ['dashboards'], queryFn: () => api.dashboards.list().then((r) => r.dashboards) });
   const create = useMutation({
-    mutationFn: () => api.dashboards.create({ name: t('dashboards.untitled'), definition: emptyDefinition() }),
+    mutationFn: () => api.dashboards.create({ name: t('dashboards.untitled'), definition: emptyDefinition(newPage(defaultPageName(1))) }),
     onSuccess: ({ dashboard }) => { qc.invalidateQueries({ queryKey: ['dashboards'] }); navigate(`/dashboards/${dashboard.id}/edit`); },
     onError: (e) => toast.error(e),
   });
@@ -56,7 +57,7 @@ export function DashboardsPage() {
               <h2 className="card__title truncate"><Link to={`/dashboards/${d.id}`}>{d.name}</Link></h2>
               {d.description && <p className="text-sm text-muted">{d.description}</p>}
               <div className="card__meta">
-                <span>{t('dashboards.widgets', { count: d.widgetCount })}</span>
+                <span>{t('dashboards.widgets', { count: d.widgetCount })}{(d.pageCount ?? 1) > 1 && ` · ${t('dashboards.pages', { count: d.pageCount! })}`}</span>
                 <span>{t('common.updatedAt')} {formatDateTime(d.updatedAt, lang)}</span>
               </div>
               <div className="card__actions">

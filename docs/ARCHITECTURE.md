@@ -32,7 +32,8 @@ Report Studio is a two-package npm workspace that ships as one container.
 | `routes/dashboards.ts` | dashboard documents (name + JSON `definition`), duplicate |
 | `routes/preferences.ts` | the signed-in user's own UI bag: `GET`, and `PUT` as an upsert into `user_preferences` |
 | `routes/query.ts` | runs one visual's semantic query; `/explain` shows the generated SQL |
-| `query/builder.ts` | semantic query → SQL: quoted identifiers, `?` params, GROUP BY positions, date buckets, LIMIT cap |
+| `query/builder.ts` | semantic query → SQL: quoted identifiers, `?` params, GROUP BY positions, date buckets, LIMIT cap; calculated measures rendered after GROUP BY, "show as" shares and totals as window functions in the same statement |
+| `shared/formula.ts` | the expression language of a calculated measure (parser, reference and cycle checks); imports nothing, so the web client bundles the same file through the `@shared/*` alias and shows the same errors the server would raise |
 | `query/sqlGuard.ts` | strips comments/literals, allows a single `SELECT`/`WITH`, rejects write/lock/`INTO` keywords |
 | `query/executor.ts` | per-datasource pool cache (invalidated on edit), `READ ONLY` + `max_statement_time` on each connection, error translation |
 | `query/introspect.ts` | table list, column kinds (number/date/string/boolean), field types from result packets |
@@ -76,23 +77,32 @@ LIMIT 1001          -- one extra row to detect truncation
 
 A dataset source is wrapped as `FROM (<dataset sql>) AS __rs_src`.
 
+**Calculated measures.** A measure may be a formula instead of a field + aggregation: `{ "formula": "[sum_profit] / [Doanh số]", "alias": "margin", "label": "Tỷ lệ lãi gộp" }`. The language (`server/src/shared/formula.ts`) has `+ − × ÷`, parentheses, numbers, references to the widget's other measures by alias or display name (`[name]`, or a bare identifier) and direct aggregations of a column (`sum(a)`, `count(*)`, `count_distinct(x)`…). The builder checks it (unknown names, self-references and cycles are errors with a character position; the client runs the same check while the author types), inlines referenced measures and renders it **after GROUP BY** in the same SELECT, so a ratio is the ratio of the group's sums. Every division becomes `(a / NULLIF(b, 0))`, so dividing by zero or NULL leaves the cell empty. Typed numbers travel as `?` parameters; nothing the user wrote is spliced into the SQL.
+
+**Show as.** A measure with `showAs: 'percent_of_total' | 'percent_of_parent' | 'percent_of_column'` is divided by the same aggregation over a window: `OVER ()` for the grand total, `OVER (PARTITION BY <all dimensions but the last>)` for its parent (the row of a matrix), `OVER (PARTITION BY <second dimension>)` for its column. Filters (including row-level security) are in the WHERE, so shares are of the filtered data.
+
+**Totals.** With `"totals": true` the builder adds, for every measure, a column with the measure over all groups (`SUM(SUM(x)) OVER ()`, an average re-weighted from sums and counts, the extreme of extremes; a distinct count cannot be re-aggregated and is NULL) and, with two or more dimensions, the same per first-dimension value and per second-dimension value. `routes/query.ts` lifts those columns out of the rows into `result.totals` (`grand`, `byRow`, `byColumn`), so a table's totals row and a matrix's row / column / grand totals come from the data source in one statement, and a formula totals as a formula of the totals rather than a sum of ratios.
+
 ### Dashboard filters (slicers)
 
-`definition.filters` holds the dashboard's own filters: `{ id, kind: 'date_range' | 'grain' | 'list', label, field?, datasourceId?, source?, multi?, value? }`. `web/src/lib/filters.ts` turns them into what a widget's query needs (`applyDashboardFilters`): a date range becomes `field >= from AND field < to + 1 day` (so DATE and DATETIME columns both get the whole last day), a list becomes `field IN (...)`, a grain re-buckets every bucketed date dimension. A field filter applies to a widget on the same data source whose source has the column: the widget's own source, or any source whose column list (`useSourceFields`, the same cache the fields pane fills) names it. The saved `value` is the default every viewer starts from; a viewer's choices live in the editor store's `filterValues` for the session. The server lets only a user with `dashboards.filters` add, change or remove a filter (it compares the filters without their values on save).
+`definition.filters` holds the dashboard's own filters: `{ id, kind: 'date_range' | 'grain' | 'list', label, pageId?, field?, datasourceId?, source?, multi?, value? }`. `pageId` scopes a filter to one page; without it the filter is shown on every page and keeps its selection across them. `web/src/lib/filters.ts` turns them into what a widget's query needs (`applyDashboardFilters`): a date range becomes `field >= from AND field < to + 1 day` (so DATE and DATETIME columns both get the whole last day), a list becomes `field IN (...)`, a grain re-buckets every bucketed date dimension. A field filter applies to a widget on the same data source whose source has the column: the widget's own source, or any source whose column list (`useSourceFields`, the same cache the fields pane fills) names it. The saved `value` is the default every viewer starts from; a viewer's choices live in the editor store's `filterValues` for the session. The server lets only a user with `dashboards.filters` add, change or remove a filter (it compares the filters without their values on save).
 
 ### Dashboard document
 
 Stored as JSON in `dashboards.definition` and owned by the web client:
 
 ```ts
-{ version: 1, widgets: Widget[], filters: [], settings: {} }
+{ version: 2, pages: Page[], filters: [], settings: {} }
+Page = { id, name, widgets: Widget[] }                       // each page has its own widgets and layout
 Widget = { id, type, title, layout: {x,y,w,h}, datasourceId, source, query: {dimensions, measures, filters, orderBy, limit}, options }
 // options: legend, legendPosition, stacking (none|stacked|percent; the old `stacked: true` is read as `stacked`), showValues,
 //          numberFormat, sortBy, showTotals, dataBars, gaugeMin, gaugeMax, target, referenceLine, averageLine
-// a measure may carry `series: 'column' | 'line'` for the combo chart; the server never sees it
+// a dimension or measure may carry `label` (the name a reader sees everywhere: headers, legends, tooltips, axes, cards)
+// a measure may carry `formula` (a calculated measure; `field` / `agg` are then unused and `alias` is always set),
+//   `showAs`, `format` (its own number format; a share is always a percent) and, for the combo chart, `series: 'column' | 'line'`
 ```
 
-The server validates shape and size only, so new widget options never need a migration.
+Version 1 kept `widgets` at the top level; `store/editor.ts` reads such a document as one page (and a version 2 document that still carries top-level widgets appends them to its first page). The server accepts both versions and validates shape and size only, so new widget options never need a migration. The URL names the page being viewed (`/dashboards/7?page=<id>`; the first page is the bare URL), so a link opens on the right page.
 
 ## Web (`web/`)
 
@@ -100,10 +110,10 @@ The server validates shape and size only, so new widget options never need a mig
 |---|---|
 | `styles/tokens.css` | the only place for colours, spacing (4px base), radii, control heights (`--control-h`, `-sm`, `-lg`), type sizes, chart palette. Dark is the primary theme ("Sổ cái": blue-black surfaces, ivory text, brass accent); light is neutral paper (warm white surfaces, ink text). Hierarchy comes from weight and tone — `base.css` sets the shared type roles (sentence-case labels, section titles), and mono (`.mono`) is reserved for identifiers and SQL. Presets override tokens per attribute on `<html>`: `data-theme` (resolved `light`/`dark`), `data-accent` (6 accents), `data-palette` (5 chart palettes), `data-text` (3 type scales), `data-radius` (3 corner scales). Accent and palette blocks also match the attribute on any element, which is how a swatch previews a preset. Fonts are self-hosted via `@fontsource-variable` (Archivo, JetBrains Mono) |
 | `components/ui/` | Button, Field (Input/Select/Textarea/Checkbox), Panel, Modal (`<dialog>`), Toolbar, Feedback (Spinner/ErrorBox/EmptyState/Toasts), Segmented, Swatches (colour presets, same group shape as Segmented), KindBadge |
-| `components/editor/` | `FieldsPane` (draggable fields), `Canvas` (react-grid-layout, droppable widgets, 1 column under 640px), `VisualPane` (chart type, wells, filters, options), `WidgetChart` (react-query + states) |
+| `components/editor/` | `FieldsPane` (draggable fields), `PageTabs` (the report's pages as links above the filters; rename, duplicate, move and remove in edit mode), `Canvas` (react-grid-layout, droppable widgets, 1 column under 640px), `VisualPane` (chart type, wells, filters, options; each chip opens its settings: display name, "show as", number format, and for a calculated measure its formula with the parser's errors inline), `WidgetChart` (react-query + states) |
 | `components/charts/` | `ChartRenderer.tsx` dispatches a widget to its visual; `options.ts` builds one ECharts option per type (column / bar / line / area with stacking and 100 %, combo, scatter / bubble, waterfall, funnel, pie / donut, treemap, heat map, radar, gauge), `Cards.tsx` draws the card, the KPI with trend and the multi-row card, `Tables.tsx` the sortable table and the matrix; `shape.ts` is the pure rows → categories / series / pivot layer they share. Colours, type and spacing are read from the tokens at render time |
 | `lib/widget.ts` | `CHART_SPECS`: one row per visual type — how many fields each well takes (min / max), what each slot means (X / Y / Size, Rows / Columns, Value / Target), which options apply; `missingWells()` names the well still short, `comboRole()` decides which measures the combo chart draws as lines |
-| `store/editor.ts` | zustand store: definition, selection, dirty flag, drop logic (`autoPlace`: numbers → measures) |
+| `store/editor.ts` | zustand store: definition (pages of widgets), the active page, selection, dirty flag, drop logic (`autoPlace`: numbers → measures), page operations; `usePageWidgets` / `usePageFilters` are what the canvas and the filter bar read |
 | `store/theme.ts` | the user's look: writes the preset attributes on `<html>`, mirrors them in `localStorage` (`rs.appearance`) for first paint, loads them from `GET /preferences` once the shell mounts and saves changes with a debounced `PUT` (table `user_preferences`), so they follow the user across devices; an empty server bag adopts the browser's current look. The language is not part of it: it stays with the i18n store. Charts re-read tokens on its `stamp` |
 | `i18n/` | `LANGUAGES` registry (code, label, locale), `vi` (default) and `en` dictionaries; `useT()` is typed over the dictionary keys; plural forms via `Intl.PluralRules`; language = stored choice → browser language → `vi` |
 | `lib/errors.ts` | `describeError()` turns a thrown `ApiError` into text: the translated `errors.<code>` when known, else the server message |

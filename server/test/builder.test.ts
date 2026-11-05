@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSelect, quoteIdent, quoteQualified } from '../src/query/builder.js';
+import { buildSelect, extractTotals, quoteIdent, quoteQualified } from '../src/query/builder.js';
 import type { QueryRequest } from '../src/query/types.js';
 
 const base = (over: Partial<QueryRequest>): QueryRequest => ({
@@ -71,5 +71,113 @@ describe('buildSelect', () => {
   it('de-duplicates aliases', () => {
     const q = buildSelect(base({ measures: [{ field: 'x', agg: 'sum' }, { field: 'x', agg: 'sum' }] }), '`t`', 10);
     expect(q.columns.map((c) => c.alias)).toEqual(['sum_x', 'sum_x_2']);
+  });
+});
+
+describe('calculated measures', () => {
+  const measures: QueryRequest['measures'] = [
+    { field: 'profit', agg: 'sum' },
+    { field: 'revenue', agg: 'sum', label: 'Doanh số' },
+    { formula: '[sum_profit] / [Doanh số]', alias: 'margin' },
+  ];
+
+  it('evaluates a formula after GROUP BY and turns a division into a NULLIF', () => {
+    const q = buildSelect(base({ dimensions: [{ field: 'region' }], measures }), '`t`', 100);
+    expect(q.sql).toBe(
+      'SELECT `region` AS `region`, SUM(`profit`) AS `sum_profit`, SUM(`revenue`) AS `sum_revenue`, (SUM(`profit`) / NULLIF(SUM(`revenue`), 0)) AS `margin` FROM `t` GROUP BY 1 ORDER BY 1 LIMIT 101',
+    );
+    expect(q.columns).toEqual([
+      { alias: 'region', role: 'dimension', source: 'region' },
+      { alias: 'sum_profit', role: 'measure', source: 'profit' },
+      { alias: 'sum_revenue', role: 'measure', source: 'revenue' },
+      { alias: 'margin', role: 'measure', source: undefined },
+    ]);
+  });
+
+  it('sends typed numbers as parameters, before the WHERE parameters', () => {
+    const q = buildSelect(base({
+      measures: [{ formula: 'sum(a) * 100 / count(*) - 0.5', alias: 'score' }],
+      filters: [{ field: 'status', op: 'eq', value: 'paid' }],
+    }), '`t`', 100);
+    expect(q.sql).toBe('SELECT (((SUM(`a`) * ?) / NULLIF(COUNT(*), 0)) - ?) AS `score` FROM `t` WHERE `status` = ? LIMIT 101');
+    expect(q.params).toEqual([100, 0.5, 'paid']);
+  });
+
+  it('inlines a formula that uses another formula and names an unknown reference', () => {
+    const q = buildSelect(base({ measures: [...measures, { formula: '[margin] * 2', alias: 'double' }] }), '`t`', 100);
+    expect(q.sql).toContain('(((SUM(`profit`) / NULLIF(SUM(`revenue`), 0))) * ?) AS `double`');
+    expect(() => buildSelect(base({ measures: [{ formula: '[nope] + 1' }] }), '`t`', 100)).toThrow(/Invalid formula/);
+    expect(() => buildSelect(base({ measures: [{ formula: '1 +', alias: 'x' }] }), '`t`', 100)).toThrow(/unexpected_end at 3/);
+  });
+
+  it('gives an unnamed formula a stable alias and lets ORDER BY use it', () => {
+    const q = buildSelect(base({ dimensions: [{ field: 'r' }], measures: [{ formula: 'sum(a) + 1' }], orderBy: [{ alias: 'formula_1', direction: 'desc' }] }), '`t`', 100);
+    expect(q.sql).toContain('AS `formula_1` FROM `t` GROUP BY 1 ORDER BY `formula_1` DESC');
+  });
+});
+
+describe('show as and totals', () => {
+  it('shows a measure as its share of the grand total, of its parent or of its column', () => {
+    const dims = [{ field: 'channel' }, { field: 'team' }];
+    const total = buildSelect(base({ dimensions: dims, measures: [{ field: 'x', agg: 'sum', showAs: 'percent_of_total' }] }), '`t`', 10);
+    expect(total.sql).toContain('(SUM(`x`) / NULLIF(SUM(SUM(`x`)) OVER (), 0)) AS `sum_x`');
+    const parent = buildSelect(base({ dimensions: dims, measures: [{ field: 'x', agg: 'sum', showAs: 'percent_of_parent' }] }), '`t`', 10);
+    expect(parent.sql).toContain('(SUM(`x`) / NULLIF(SUM(SUM(`x`)) OVER (PARTITION BY `channel`), 0)) AS `sum_x`');
+    const column = buildSelect(base({ dimensions: dims, measures: [{ field: 'x', agg: 'sum', showAs: 'percent_of_column' }] }), '`t`', 10);
+    expect(column.sql).toContain('OVER (PARTITION BY `team`), 0)) AS `sum_x`');
+    // with one dimension there is no parent: the share is of the grand total
+    const one = buildSelect(base({ dimensions: [dims[0]!], measures: [{ field: 'x', agg: 'sum', showAs: 'percent_of_parent' }] }), '`t`', 10);
+    expect(one.sql).toContain('OVER (), 0)) AS `sum_x`');
+  });
+
+  it('adds grand, row and column totals as extra columns and lifts them out of the rows', () => {
+    const q = buildSelect(base({
+      dimensions: [{ field: 'channel' }, { field: 'month', bucket: 'month' }],
+      measures: [{ field: 'x', agg: 'sum' }, { field: 'x', agg: 'avg' }, { field: 'c', agg: 'count_distinct' }, { formula: '[sum_x] / [count_distinct_c]', alias: 'per' }],
+      totals: true,
+    }), '`t`', 10);
+    expect(q.sql).toContain('SUM(SUM(`x`)) OVER () AS `__rs_t_sum_x`');
+    expect(q.sql).toContain('(SUM(SUM(`x`)) OVER () / NULLIF(SUM(COUNT(`x`)) OVER (), 0)) AS `__rs_t_avg_x`');
+    expect(q.sql).toContain('NULL AS `__rs_t_count_distinct_c`');
+    expect(q.sql).toContain('(SUM(SUM(`x`)) OVER () / NULLIF(NULL, 0)) AS `__rs_t_per`');
+    expect(q.sql).toContain("SUM(SUM(`x`)) OVER (PARTITION BY `channel`) AS `__rs_r_sum_x`");
+    expect(q.sql).toContain("SUM(SUM(`x`)) OVER (PARTITION BY DATE_FORMAT(`month`, '%Y-%m')) AS `__rs_c_sum_x`");
+    expect(q.columns.map((c) => c.alias)).toEqual(['channel', 'month_month', 'sum_x', 'avg_x', 'count_distinct_c', 'per']);
+    expect(q.totals).toMatchObject({ rowDim: 'channel', colDim: 'month_month', grand: { sum_x: '__rs_t_sum_x' }, byRow: { sum_x: '__rs_r_sum_x' }, byColumn: { sum_x: '__rs_c_sum_x' } });
+
+    const rows = [
+      { channel: 'A', month_month: '2026-01', sum_x: 1, avg_x: 1, count_distinct_c: 1, per: 1, __rs_t_sum_x: 10, __rs_t_avg_x: 2.5, __rs_t_count_distinct_c: null, __rs_t_per: null, __rs_r_sum_x: 3, __rs_r_avg_x: 1.5, __rs_r_count_distinct_c: null, __rs_r_per: null, __rs_c_sum_x: 4, __rs_c_avg_x: 2, __rs_c_count_distinct_c: null, __rs_c_per: null },
+      { channel: 'A', month_month: '2026-02', sum_x: 2, avg_x: 2, count_distinct_c: 1, per: 2, __rs_t_sum_x: 10, __rs_t_avg_x: 2.5, __rs_t_count_distinct_c: null, __rs_t_per: null, __rs_r_sum_x: 3, __rs_r_avg_x: 1.5, __rs_r_count_distinct_c: null, __rs_r_per: null, __rs_c_sum_x: 6, __rs_c_avg_x: 3, __rs_c_count_distinct_c: null, __rs_c_per: null },
+    ];
+    const out = extractTotals(rows, q.totals);
+    expect(out.rows).toEqual([
+      { channel: 'A', month_month: '2026-01', sum_x: 1, avg_x: 1, count_distinct_c: 1, per: 1 },
+      { channel: 'A', month_month: '2026-02', sum_x: 2, avg_x: 2, count_distinct_c: 1, per: 2 },
+    ]);
+    expect(out.totals).toEqual({
+      grand: { sum_x: 10, avg_x: 2.5, count_distinct_c: null, per: null },
+      byRow: { A: { sum_x: 3, avg_x: 1.5, count_distinct_c: null, per: null } },
+      byColumn: { '2026-01': { sum_x: 4, avg_x: 2, count_distinct_c: null, per: null }, '2026-02': { sum_x: 6, avg_x: 3, count_distinct_c: null, per: null } },
+    });
+  });
+
+  it('totals a share within the dimensions the share and the total have in common', () => {
+    const q = buildSelect(base({
+      dimensions: [{ field: 'channel' }, { field: 'team' }],
+      measures: [{ field: 'x', agg: 'sum', showAs: 'percent_of_parent', alias: 'p' }],
+      totals: true,
+    }), '`t`', 10);
+    // grand total of "% of row": the whole against the whole
+    expect(q.sql).toContain('(SUM(SUM(`x`)) OVER () / NULLIF(SUM(SUM(`x`)) OVER (), 0)) AS `__rs_t_p`');
+    // row total of "% of row": 100 %
+    expect(q.sql).toContain('(SUM(SUM(`x`)) OVER (PARTITION BY `channel`) / NULLIF(SUM(SUM(`x`)) OVER (PARTITION BY `channel`), 0)) AS `__rs_r_p`');
+    // column total of "% of row": that column against everything
+    expect(q.sql).toContain('(SUM(SUM(`x`)) OVER (PARTITION BY `team`) / NULLIF(SUM(SUM(`x`)) OVER (), 0)) AS `__rs_c_p`');
+  });
+
+  it('asks for no totals without dimensions or measures', () => {
+    expect(buildSelect(base({ measures: [{ field: 'x', agg: 'sum' }], totals: true }), '`t`', 10).totals).toBeUndefined();
+    expect(buildSelect(base({ dimensions: [{ field: 'r' }], totals: true }), '`t`', 10).totals).toBeUndefined();
+    expect(extractTotals([{ a: 1 }], undefined)).toEqual({ rows: [{ a: 1 }] });
   });
 });

@@ -1,13 +1,11 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
-import type { NumberFormat, QueryResult, Widget } from '@/api/types';
+import type { QueryResult, Widget } from '@/api/types';
 import { formatCell, formatNumber } from '@/lib/format';
 import { useI18nStore, useT } from '@/i18n';
-import { canTotal, columnLabel, dimensionAliases, measureAgg, measureAliases, measureLabel, num, pivot, str, sum, type Row } from './shape';
+import { canTotal, columnFormat, columnLabel, dimensionAliases, measureAgg, measureAliases, measureLabel, num, pivot, str, sum, type Row } from './shape';
 
 interface Props { widget: Widget; result: QueryResult }
-
-const fmtOf = (w: Widget): NumberFormat => w.options.numberFormat ?? 'auto';
 
 type Sort = { alias: string; dir: 'asc' | 'desc' } | null;
 
@@ -22,11 +20,21 @@ function sortRows(rows: Row[], sort: Sort, numeric: Set<string>): Row[] {
   });
 }
 
+/**
+ * A measure's total: what the server computed over every group when it was asked to (a ratio's
+ * total is then the ratio of the totals); otherwise, for an older answer, the loaded rows added up
+ * where that is sound (sums and counts), and nothing for anything else.
+ */
+function grandTotal(widget: Widget, result: QueryResult, alias: string): number | null {
+  if (result.totals) return num(result.totals.grand[alias]);
+  return canTotal(measureAgg(widget, alias)) ? sum(result.rows.map((r) => num(r[alias]))) : null;
+}
+
 /** The table visual: every column sortable from its header, optional totals row and data bars. */
 export function DataTable({ widget, result }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
-  const fmt = fmtOf(widget);
+  const fmt = (alias: string) => columnFormat(widget, alias);
   const [sort, setSort] = useState<Sort>(null);
   const numeric = useMemo(() => new Set(result.columns.filter((c) => c.role === 'measure' || typeof result.rows[0]?.[c.alias] === 'number').map((c) => c.alias)), [result]);
   const rows = useMemo(() => sortRows(result.rows, sort, numeric), [result.rows, sort, numeric]);
@@ -37,9 +45,7 @@ export function DataTable({ widget, result }: Props) {
     for (const m of measures) out.set(m, Math.max(...result.rows.map((r) => Math.abs(num(r[m]) ?? 0)), 0));
     return out;
   }, [widget.options.dataBars, measures, result.rows]);
-  const totals = widget.options.showTotals
-    ? measures.map((m) => (canTotal(measureAgg(widget, m)) ? sum(result.rows.map((r) => num(r[m]))) : null))
-    : null;
+  const totals = widget.options.showTotals ? measures.map((m) => grandTotal(widget, result, m)) : null;
   const toggle = (alias: string) => setSort((s) => (s?.alias !== alias ? { alias, dir: numeric.has(alias) ? 'desc' : 'asc' } : s.dir === 'asc' ? { alias, dir: 'desc' } : s.dir === 'desc' && !numeric.has(alias) ? null : { alias, dir: 'asc' }));
   const barStyle = (alias: string, v: unknown): CSSProperties | undefined => {
     const max = maxima.get(alias);
@@ -69,7 +75,7 @@ export function DataTable({ widget, result }: Props) {
             <tr key={i}>
               {result.columns.map((c) => (
                 <td key={c.alias} className={[numeric.has(c.alias) && 'num', maxima.has(c.alias) && 'bar'].filter(Boolean).join(' ') || undefined} style={barStyle(c.alias, r[c.alias])}>
-                  {numeric.has(c.alias) ? formatNumber(r[c.alias], fmt, lang) : formatCell(r[c.alias], lang)}
+                  {numeric.has(c.alias) ? formatNumber(r[c.alias], fmt(c.alias), lang) : formatCell(r[c.alias], lang)}
                 </td>
               ))}
             </tr>
@@ -82,7 +88,7 @@ export function DataTable({ widget, result }: Props) {
                 const mi = measures.indexOf(c.alias);
                 return (
                   <td key={c.alias} className={numeric.has(c.alias) ? 'num' : undefined}>
-                    {i === 0 && mi < 0 ? t('editor.total') : mi >= 0 ? formatNumber(totals[mi], fmt, lang) : ''}
+                    {i === 0 && mi < 0 ? t('editor.total') : mi >= 0 ? formatNumber(totals[mi], fmt(c.alias), lang) : ''}
                   </td>
                 );
               })}
@@ -96,12 +102,13 @@ export function DataTable({ widget, result }: Props) {
 
 /**
  * Power BI's matrix: dim 0 down the rows, dim 1 across the columns, every measure in each cell.
- * Totals add up only the measures that can be added (sums and counts).
+ * Totals come from the server when it computed them (so a ratio totals as a ratio); an older
+ * answer is added up on the client for the measures that can be (sums and counts).
  */
 export function Matrix({ widget, result }: Props) {
   const t = useT();
   const lang = useI18nStore((s) => s.lang);
-  const fmt = fmtOf(widget);
+  const fmt = (alias: string) => columnFormat(widget, alias);
   const pv = useMemo(() => pivot(result), [result]);
   const [rowDim, colDim] = dimensionAliases(result);
   const measures = measureAliases(result);
@@ -110,12 +117,25 @@ export function Matrix({ widget, result }: Props) {
   const rowDimLabel = rowDim ? columnLabel(widget, result.columns.find((c) => c.alias === rowDim)!, lang) : '';
   const label = (m: string) => measureLabel(widget, m, lang) ?? m;
   const cellValue = (row: string, col: string, m: string) => num(pv.cell(row, col)?.[m]);
-  const rowTotal = (row: string, mi: number) => (summable[mi] ? sum(pv.colKeys.map((c) => cellValue(row, c, measures[mi]!))) : null);
-  const colTotal = (col: string, mi: number) => (summable[mi] ? sum(pv.rowKeys.map((r) => cellValue(r, col, measures[mi]!))) : null);
-  const grand = (mi: number) => (summable[mi] ? sum(pv.rowKeys.map((r) => rowTotal(r, mi))) : null);
+  const serverTotals = result.totals;
+  const rowTotal = (row: string, mi: number) => {
+    const m = measures[mi]!;
+    if (serverTotals) return num((colDim ? serverTotals.byRow?.[row] : serverTotals.grand)?.[m]);
+    return summable[mi] ? sum(pv.colKeys.map((c) => cellValue(row, c, m))) : null;
+  };
+  const colTotal = (col: string, mi: number) => {
+    const m = measures[mi]!;
+    if (serverTotals) return num((colDim ? serverTotals.byColumn?.[col] : serverTotals.grand)?.[m]);
+    return summable[mi] ? sum(pv.rowKeys.map((r) => cellValue(r, col, m))) : null;
+  };
+  const grand = (mi: number) => {
+    const m = measures[mi]!;
+    if (serverTotals) return num(serverTotals.grand[m]);
+    return summable[mi] ? sum(pv.rowKeys.map((r) => rowTotal(r, mi))) : null;
+  };
   const colGroups = colDim ? [...pv.colKeys, ...(totals ? [t('editor.total')] : [])] : [''];
   const twoHeaderRows = !!colDim && measures.length > 1;
-  const cell = (v: number | null, key: string) => <td key={key} className="num">{formatNumber(v, fmt, lang)}</td>;
+  const cell = (v: number | null, m: string, key: string) => <td key={key} className="num">{formatNumber(v, fmt(m), lang)}</td>;
   return (
     <div className="chart-table">
       <table className="table matrix">
@@ -137,9 +157,9 @@ export function Matrix({ widget, result }: Props) {
             <tr key={row}>
               <th scope="row">{row}</th>
               {colDim
-                ? pv.colKeys.map((col) => measures.map((m) => cell(cellValue(row, col, m), `${col}|${m}`)))
-                : measures.map((m) => cell(cellValue(row, '', m), m))}
-              {colDim && totals && measures.map((m, mi) => cell(rowTotal(row, mi), `total|${m}`))}
+                ? pv.colKeys.map((col) => measures.map((m) => cell(cellValue(row, col, m), m, `${col}|${m}`)))
+                : measures.map((m) => cell(cellValue(row, '', m), m, m))}
+              {colDim && totals && measures.map((m, mi) => cell(rowTotal(row, mi), m, `total|${m}`))}
             </tr>
           ))}
         </tbody>
@@ -148,9 +168,9 @@ export function Matrix({ widget, result }: Props) {
             <tr>
               <th scope="row">{t('editor.total')}</th>
               {colDim
-                ? pv.colKeys.map((col) => measures.map((m, mi) => cell(colTotal(col, mi), `${col}|${m}`)))
-                : measures.map((m, mi) => cell(colTotal('', mi), m))}
-              {colDim && measures.map((m, mi) => cell(grand(mi), `grand|${m}`))}
+                ? pv.colKeys.map((col) => measures.map((m, mi) => cell(colTotal(col, mi), m, `${col}|${m}`)))
+                : measures.map((m, mi) => cell(colTotal('', mi), m, m))}
+              {colDim && measures.map((m, mi) => cell(grand(mi), m, `grand|${m}`))}
             </tr>
           </tfoot>
         )}
