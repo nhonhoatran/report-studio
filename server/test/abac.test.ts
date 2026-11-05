@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { decide, normalizeAttributes, rowFiltersFor, subjectMatches, type Policy, type Subject } from '../src/auth/abac.js';
 import { checkPolicyInput, policyInputSchema } from '../src/auth/policies.js';
-import { BUILTIN_ROLES, PERMISSIONS } from '../src/auth/permissions.js';
+import { BUILTIN_ROLES, PERMISSIONS, permissionsNotHeld } from '../src/auth/permissions.js';
 import { HttpError } from '../src/lib/errors.js';
 
 const policy = (over: Partial<Policy>): Policy => ({
@@ -96,5 +96,13 @@ describe('built-in roles', () => {
     expect(BUILTIN_ROLES.find((r) => r.name === 'admin')!.permissions).toEqual([...PERMISSIONS]);
     expect(BUILTIN_ROLES.find((r) => r.name === 'viewer')!.permissions).toEqual(['dashboards.view']);
     expect(BUILTIN_ROLES.find((r) => r.name === 'editor')!.permissions).not.toContain('dashboards.filters');
+  });
+});
+
+describe('permissionsNotHeld', () => {
+  it('lists what a caller would be granting beyond their own permissions', () => {
+    expect(permissionsNotHeld(['dashboards.view', 'users.manage'], ['dashboards.view'])).toEqual([]);
+    expect(permissionsNotHeld(['dashboards.view', 'users.manage'], ['dashboards.view', 'roles.manage', 'ai.manage'])).toEqual(['roles.manage', 'ai.manage']);
+    expect(permissionsNotHeld([], [])).toEqual([]);
   });
 });

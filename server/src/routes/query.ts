@@ -10,6 +10,7 @@ import { assertReadOnlySelect } from '../query/sqlGuard.js';
 import { queryRequestSchema, type QueryRequest, type QueryResult } from '../query/types.js';
 import { loadDataset } from './datasets.js';
 import { loadDatasource } from './datasources.js';
+import { sourceInViewableDashboard } from './dashboards.js';
 
 export const queryRouter = Router();
 queryRouter.use(requireAuth);
@@ -24,8 +25,9 @@ async function resolveFrom(req: QueryRequest, user: RequestUser): Promise<string
       return `(${ds.sql_text}) AS \`__rs_src\``;
     }
     case 'sql':
-      // ad-hoc SQL is for whoever builds datasets; everybody else only runs saved specs
+      // ad-hoc SQL is for whoever builds datasets on this source; everybody else only runs saved specs
       if (!hasPermission(user, 'datasets.manage')) throw forbidden('Ad-hoc SQL requires the datasets.manage permission', 'adhoc_sql_forbidden');
+      await authorize(user, 'datasource', req.datasourceId, 'manage');
       return `(${assertReadOnlySelect(req.source.sql)}) AS \`__rs_src\``;
   }
 }
@@ -37,6 +39,10 @@ async function resolveFrom(req: QueryRequest, user: RequestUser): Promise<string
 export async function executeQuery(req: QueryRequest, user: RequestUser): Promise<QueryResult> {
   const ds = await loadDatasource(req.datasourceId);
   await authorize(user, 'datasource', req.datasourceId, 'query');
+  // a user who only views dashboards may query only what the dashboards they may see already query
+  if (!hasPermission(user, 'dashboards.edit') && !hasPermission(user, 'datasets.manage') && !(await sourceInViewableDashboard(user, req.datasourceId, req.source))) {
+    throw forbidden('This source is not read by any dashboard you may view', 'source_not_in_dashboard');
+  }
   const secured: QueryRequest = { ...req, filters: [...req.filters, ...(await rowFilters(user, req.datasourceId))] };
   const from = await resolveFrom(secured, user);
   const built = buildSelect(secured, from, config.query.maxRows);

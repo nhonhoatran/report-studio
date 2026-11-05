@@ -4,7 +4,7 @@ import { attributesOf, findUserById } from './users.js';
 import { permissionsForRole } from './roles.js';
 import { listPolicies } from './policies.js';
 import { decide, rowFiltersFor, type Attributes, type PolicyAction, type ResourceType, type Subject } from './abac.js';
-import type { Permission } from './permissions.js';
+import { ADMIN_ROLE, type Permission } from './permissions.js';
 import type { Filter } from '../query/types.js';
 import { forbidden, unauthorized } from '../lib/errors.js';
 
@@ -81,8 +81,11 @@ export function requirePermission(...any: Permission[]) {
 
 const subjectOf = (user: RequestUser): Subject => ({ role: user.role, attributes: user.attributes });
 
-/** ABAC: may this user take the action on that dashboard or data source? */
+export const isAdmin = (user: RequestUser | undefined): boolean => !!user && user.role === ADMIN_ROLE;
+
+/** ABAC: may this user take the action on that dashboard or data source? Administrators are outside the policies, so nobody can lock them out. */
 export async function allowed(user: RequestUser, type: ResourceType, id: number, action: PolicyAction): Promise<boolean> {
+  if (isAdmin(user)) return true;
   return decide(await listPolicies(), subjectOf(user), type, id, action) === 'allow';
 }
 
@@ -91,7 +94,8 @@ export async function authorize(user: RequestUser, type: ResourceType, id: numbe
   if (!(await allowed(user, type, id, action))) throw forbidden('Access denied by policy', 'access_denied', { type, id, action });
 }
 
-/** Row-level security: the filters the policies add to every query this user runs on the data source. */
+/** Row-level security: the filters the policies add to every query this user runs on the data source (none for an administrator). */
 export async function rowFilters(user: RequestUser, datasourceId: number): Promise<Filter[]> {
+  if (isAdmin(user)) return [];
   return rowFiltersFor(await listPolicies(), subjectOf(user), datasourceId);
 }

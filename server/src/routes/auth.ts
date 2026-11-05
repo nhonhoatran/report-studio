@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { query, queryOne, execute } from '../db/metadata.js';
 import { COOKIE_NAME, sessionCookieOptions, signSession } from '../auth/jwt.js';
-import { forgetSubject, requireAuth, requirePermission } from '../auth/middleware.js';
+import { forgetSubject, isAdmin, requireAuth, requirePermission, type RequestUser } from '../auth/middleware.js';
+import { ADMIN_ROLE, permissionsNotHeld } from '../auth/permissions.js';
 import { entraEnabled } from '../auth/entra.js';
 import { findUserById, toPublicUser, toSession, type UserRow } from '../auth/users.js';
 import { getRole, listRoles, permissionsForRole } from '../auth/roles.js';
@@ -82,6 +83,26 @@ async function assertRole(name: string): Promise<void> {
   if (!(await getRole(name))) throw badRequest(`Unknown role "${name}"`, 'invalid_role', { role: name });
 }
 
+/** A non-admin with users.manage may hand out only what they hold themselves, and never the admin role. */
+async function assertMayAssign(caller: RequestUser, role: string): Promise<void> {
+  if (isAdmin(caller)) return;
+  if (role === ADMIN_ROLE) throw forbidden('Only an administrator may grant the admin role', 'permission_denied', { permission: 'users.manage' });
+  const missing = permissionsNotHeld(caller.permissions, await permissionsForRole(role));
+  if (missing.length) throw forbidden(`You cannot grant permissions you do not hold: ${missing.join(', ')}`, 'permission_denied', { permission: missing[0] });
+}
+
+/** Administrators are edited and deleted by administrators only; nobody changes their own role or attributes. */
+function assertMayTouch(caller: RequestUser, target: UserRow, changesOwnAccess: boolean): void {
+  if (isAdmin(caller)) return;
+  if (target.role === ADMIN_ROLE) throw forbidden('Only an administrator may change an administrator', 'permission_denied', { permission: 'users.manage' });
+  if (Number(target.id) === caller.id && changesOwnAccess) throw forbidden('You cannot change your own role or attributes', 'permission_denied', { permission: 'users.manage' });
+}
+
+async function adminCount(): Promise<number> {
+  const row = await queryOne<UserRow & { c: number }>('SELECT COUNT(*) AS c FROM users WHERE role = ?', [ADMIN_ROLE]);
+  return Number(row?.c ?? 0);
+}
+
 authRouter.get('/users', requirePermission('users.manage'), async (_req, res) => {
   const rows = await query<UserRow>('SELECT id, username, display_name, role, auth_provider, email, attributes, created_at, password_hash IS NOT NULL AS has_password FROM users ORDER BY username');
   const roles = new Map((await listRoles()).map((r) => [r.name, r.permissions]));
@@ -91,6 +112,7 @@ authRouter.get('/users', requirePermission('users.manage'), async (_req, res) =>
 authRouter.post('/users', requirePermission('users.manage'), async (req, res) => {
   const body = parse(userCreateSchema, req.body);
   await assertRole(body.role);
+  await assertMayAssign(req.user!, body.role);
   if (await queryOne('SELECT id FROM users WHERE username = ?', [body.username])) throw conflict('Username already exists', 'username_exists');
   const result = await execute('INSERT INTO users (username, display_name, password_hash, role, attributes) VALUES (?, ?, ?, ?, ?)', [
     body.username, body.displayName, await bcrypt.hash(body.password, 10), body.role, body.attributes ? JSON.stringify(normalizeAttributes(body.attributes)) : null,
@@ -103,7 +125,10 @@ authRouter.put('/users/:id', requirePermission('users.manage'), async (req, res)
   const body = parse(userUpdateSchema, req.body);
   const user = await findUserById(id);
   if (!user) throw notFound('User not found', 'user_not_found');
-  if (body.role) await assertRole(body.role);
+  assertMayTouch(req.user!, user, body.role !== undefined || body.attributes !== undefined);
+  if (body.role) { await assertRole(body.role); await assertMayAssign(req.user!, body.role); }
+  // the last administrator cannot be demoted, or nobody could manage roles and policies any more
+  if (user.role === ADMIN_ROLE && body.role && body.role !== ADMIN_ROLE && (await adminCount()) <= 1) throw badRequest('The last administrator cannot be demoted', 'last_admin');
   await execute('UPDATE users SET display_name = ?, role = ?, password_hash = ?, attributes = ? WHERE id = ?', [
     body.displayName ?? user.display_name,
     body.role ?? user.role,
@@ -118,6 +143,10 @@ authRouter.put('/users/:id', requirePermission('users.manage'), async (req, res)
 authRouter.delete('/users/:id', requirePermission('users.manage'), async (req, res) => {
   const id = parseId(req.params.id);
   if (id === req.user!.id) throw badRequest('You cannot delete your own account', 'cannot_delete_self');
+  const user = await findUserById(id);
+  if (!user) throw notFound('User not found', 'user_not_found');
+  assertMayTouch(req.user!, user, true);
+  if (user.role === ADMIN_ROLE && (await adminCount()) <= 1) throw badRequest('The last administrator cannot be deleted', 'last_admin');
   await execute('DELETE FROM users WHERE id = ?', [id]);
   forgetSubject(id);
   res.status(204).end();

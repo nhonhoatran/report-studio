@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { execute, queryOne } from '../db/metadata.js';
 import { logger } from '../lib/logger.js';
+import { forgetSubject } from './middleware.js';
 import {
   displayNameFromClaims, domainAllowed, emailFromClaims, roleFromClaims, usernameFromClaims, type EntraClaims,
 } from './entraMapping.js';
@@ -60,6 +61,7 @@ export async function resolveEntraUser(claims: EntraClaims): Promise<EntraResolu
   const nextEmail = email ?? user.email;
   if (role !== user.role || displayName !== user.display_name || nextEmail !== user.email) {
     await execute('UPDATE users SET display_name = ?, role = ?, email = ? WHERE id = ?', [displayName, role, nextEmail, user.id]);
+    forgetSubject(Number(user.id));
     user = { ...user, display_name: displayName, role, email: nextEmail } as UserRow;
   }
   return { kind: 'ok', user };

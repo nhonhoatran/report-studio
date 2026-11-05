@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { execute, query, queryOne, type Row } from '../db/metadata.js';
 import { badRequest, notFound } from '../lib/errors.js';
-import { RESOURCE_ACTIONS, type Policy, type PolicyAction, type PolicySubject, type ResourceType } from './abac.js';
+import { RESOURCE_ACTIONS, type Policy, type PolicyAction, type PolicySubject } from './abac.js';
 
 /*
  * The access_policies table behind ABAC, read through a short cache like the roles: every
@@ -46,15 +46,23 @@ function parseJson<T>(raw: string | null, fallback: T): T {
   try { return JSON.parse(raw) as T; } catch { return fallback; }
 }
 
+const asObject = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+const asList = <T>(v: unknown, keep: (x: unknown) => x is T): T[] => (Array.isArray(v) ? v.filter(keep) : []);
+const isString = (x: unknown): x is string => typeof x === 'string';
+const isAction = (x: unknown): x is PolicyAction => x === 'view' || x === 'edit' || x === 'query' || x === 'manage';
+
+/** A row edited by hand must not take every request down with it: anything unreadable becomes the empty form. */
 function fromRow(r: PolicyRow): Policy {
-  const subject = parseJson<Partial<PolicySubject>>(r.subject, {});
-  const resource = parseJson<{ type?: ResourceType; ids?: number[] }>(r.resource, {});
+  const subject = asObject(parseJson<unknown>(r.subject, {}));
+  const attributes: PolicySubject['attributes'] = {};
+  for (const [k, v] of Object.entries(asObject(subject.attributes))) attributes[k] = asList(v, isString);
+  const resource = asObject(parseJson<unknown>(r.resource, {}));
   return {
     id: Number(r.id), name: r.name, enabled: Boolean(Number(r.enabled)), effect: r.effect === 'deny' ? 'deny' : 'allow',
-    subject: { roles: subject.roles ?? [], attributes: subject.attributes ?? {} },
-    resource: { type: resource.type === 'datasource' ? 'datasource' : 'dashboard', ids: (resource.ids ?? []).map(Number) },
-    actions: parseJson<PolicyAction[]>(r.actions, []),
-    rowFilters: parseJson<Policy['rowFilters']>(r.row_filters, []),
+    subject: { roles: asList(subject.roles, isString), attributes },
+    resource: { type: resource.type === 'datasource' ? 'datasource' : 'dashboard', ids: asList(resource.ids, (x): x is number | string => typeof x === 'number' || typeof x === 'string').map(Number).filter(Number.isFinite) },
+    actions: asList(parseJson<unknown>(r.actions, []), isAction),
+    rowFilters: asList(parseJson<unknown>(r.row_filters, []), (x): x is { field: string; attribute: string } => !!x && typeof x === 'object' && typeof (x as { field?: unknown }).field === 'string' && typeof (x as { attribute?: unknown }).attribute === 'string'),
   };
 }
 

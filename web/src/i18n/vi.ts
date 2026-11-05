@@ -143,7 +143,7 @@ export const vi = {
   errors: {
     permission_denied: 'Bạn không có quyền "{permission}".', access_denied: 'Chính sách truy cập không cho phép thao tác này.',
     invalid_role: 'Vai trò "{role}" không tồn tại.', role_not_found: 'Không tìm thấy vai trò.', role_name_exists: 'Đã có vai trò cùng mã.', role_in_use: 'Vẫn còn người dùng mang vai trò này.', role_builtin: 'Không thể xóa vai trò có sẵn.',
-    policy_not_found: 'Không tìm thấy chính sách.', policy_invalid: 'Chính sách không hợp lệ: hành động phải thuộc loại đối tượng, lọc dòng chỉ dùng cho chính sách cho phép trên nguồn dữ liệu.',
+    policy_not_found: 'Không tìm thấy chính sách.', last_admin: 'Không thể hạ cấp hoặc xóa quản trị viên cuối cùng.', source_not_in_dashboard: 'Nguồn dữ liệu này không thuộc bảng điều khiển nào bạn được xem.', policy_invalid: 'Chính sách không hợp lệ: hành động phải thuộc loại đối tượng, lọc dòng chỉ dùng cho chính sách cho phép trên nguồn dữ liệu.',
     unauthorized: 'Bạn cần đăng nhập.', forbidden: 'Bạn không có quyền thực hiện thao tác này.', not_found: 'Không tìm thấy.', validation_failed: 'Dữ liệu gửi lên không hợp lệ.',
     invalid_id: 'Mã không hợp lệ.', malformed_json: 'Nội dung gửi lên không đúng định dạng JSON.', internal: 'Lỗi máy chủ. Vui lòng thử lại.',
     invalid_credentials: 'Tên đăng nhập hoặc mật khẩu không đúng', password_incorrect: 'Mật khẩu hiện tại không đúng.', username_exists: 'Tên đăng nhập đã tồn tại.',

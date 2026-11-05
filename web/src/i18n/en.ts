@@ -146,7 +146,7 @@ export const en: Dictionary = {
   errors: {
     permission_denied: 'You do not have the "{permission}" permission.', access_denied: 'An access policy does not allow this.',
     invalid_role: 'The role "{role}" does not exist.', role_not_found: 'Role not found.', role_name_exists: 'A role with that id already exists.', role_in_use: 'Users still have this role.', role_builtin: 'Built-in roles cannot be deleted.',
-    policy_not_found: 'Policy not found.', policy_invalid: 'The policy is not valid: actions must belong to the resource type, and row filters only go on allow policies for data sources.',
+    policy_not_found: 'Policy not found.', last_admin: 'The last administrator cannot be demoted or deleted.', source_not_in_dashboard: 'This source is not read by any dashboard you may view.', policy_invalid: 'The policy is not valid: actions must belong to the resource type, and row filters only go on allow policies for data sources.',
     unauthorized: 'Please sign in.', forbidden: 'You are not allowed to do that.', not_found: 'Not found.', validation_failed: 'The submitted data is invalid.',
     invalid_id: 'Invalid id.', malformed_json: 'The request body is not valid JSON.', internal: 'Server error. Please try again.',
     invalid_credentials: 'Invalid username or password', password_incorrect: 'The current password is incorrect.', username_exists: 'That username already exists.',

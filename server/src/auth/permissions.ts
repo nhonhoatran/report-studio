@@ -36,3 +36,8 @@ export const BUILTIN_ROLE_NAMES = BUILTIN_ROLES.map((r) => r.name);
 
 /** Role names are identifiers: short, lower-case, safe in a URL. */
 export const ROLE_NAME_PATTERN = /^[a-z][a-z0-9_-]{1,31}$/;
+
+/** The permissions in `wanted` the caller does not hold: a non-admin may never grant more than they have. */
+export function permissionsNotHeld(held: readonly Permission[], wanted: readonly Permission[]): Permission[] {
+  return wanted.filter((p) => !held.includes(p));
+}

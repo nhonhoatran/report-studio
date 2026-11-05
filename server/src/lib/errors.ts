@@ -8,7 +8,7 @@ export type ErrorCode =
   | 'invalid_credentials' | 'password_incorrect' | 'username_exists' | 'user_not_found' | 'cannot_delete_self'
   | 'local_login_disabled' | 'account_has_no_password' | 'preferences_too_large'
   | 'permission_denied' | 'access_denied' | 'invalid_role' | 'role_not_found' | 'role_name_exists' | 'role_in_use' | 'role_builtin'
-  | 'policy_not_found' | 'policy_invalid'
+  | 'policy_not_found' | 'policy_invalid' | 'last_admin' | 'source_not_in_dashboard'
   | 'dashboard_not_found'
   | 'dataset_not_found' | 'dataset_name_exists' | 'dataset_wrong_datasource' | 'adhoc_sql_forbidden'
   | 'datasource_not_found' | 'datasource_name_exists' | 'table_not_found'

@@ -52,7 +52,12 @@ aiRouter.get('/providers', requirePermission('ai.suggest', 'ai.manage'), async (
 aiRouter.post('/providers/test', requirePermission('ai.manage'), async (req, res) => {
   const body = parse(updateSchema.extend({ id: z.number().int().positive().optional(), kind: z.enum(PROVIDER_KINDS), model: z.string().min(1).max(160) }), req.body);
   let apiKey = body.apiKey ?? '';
-  if (!apiKey && body.id) apiKey = decrypt((await loadProvider(body.id)).api_key_enc);
+  if (!apiKey && body.id) {
+    // the saved key goes only to the saved endpoint, never to a base URL typed into the form
+    const saved = await loadProvider(body.id);
+    if ((body.baseUrl ?? '') !== (saved.base_url ?? '')) throw new HttpError(403, 'The saved key can only be tested against the saved endpoint', 'permission_denied', { permission: 'ai.manage' });
+    apiKey = decrypt(saved.api_key_enc);
+  }
   if (!apiKey) throw new HttpError(400, 'An API key is required', 'validation_failed');
   try {
     const result = await complete(

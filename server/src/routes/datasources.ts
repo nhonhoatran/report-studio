@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { execute, query, queryOne, type Row } from '../db/metadata.js';
 import { allowed, authorize, requireAuth, requirePermission } from '../auth/middleware.js';
 import { decrypt, encrypt } from '../lib/crypto.js';
-import { HttpError, conflict, notFound } from '../lib/errors.js';
+import { HttpError, conflict, forbidden, notFound } from '../lib/errors.js';
 import { parse, parseId } from '../lib/validate.js';
 import { dropPool, poolForDatasource, testConnection, translateDbError } from '../query/executor.js';
 import { listColumns, listTables } from '../query/introspect.js';
@@ -61,8 +61,12 @@ datasourcesRouter.post('/test', requirePermission('datasources.manage'), async (
   const body = parse(connectionSchema.extend({ id: z.number().int().positive().optional() }), req.body);
   let password = body.password;
   if (!password && body.id) {
-    // reuse the saved password when the form leaves it blank
+    // reuse the saved password when the form leaves it blank: only for whoever may manage that source,
+    // and only against the saved host, port, database and user, never to a host the caller typed
     const saved = await loadDatasource(body.id);
+    await authorize(req.user!, 'datasource', body.id, 'manage');
+    const same = saved.host === body.host && Number(saved.port) === body.port && saved.database_name === body.database && saved.username === body.username;
+    if (!same) throw forbidden('The saved password can only be tested against the saved connection', 'permission_denied', { permission: 'datasources.manage' });
     password = decrypt(saved.password_enc);
   }
   try {
@@ -89,6 +93,7 @@ datasourcesRouter.put('/:id', requirePermission('datasources.manage'), async (re
   const id = parseId(req.params.id);
   const body = parse(updateSchema, req.body);
   const current = await loadDatasource(id);
+  await authorize(req.user!, 'datasource', id, 'query');
   await authorize(req.user!, 'datasource', id, 'manage');
   if (body.name && body.name !== current.name) {
     if (await queryOne('SELECT id FROM datasources WHERE name = ? AND id <> ?', [body.name, id])) throw conflict('A data source with this name already exists', 'datasource_name_exists');
@@ -109,6 +114,7 @@ datasourcesRouter.put('/:id', requirePermission('datasources.manage'), async (re
 datasourcesRouter.delete('/:id', requirePermission('datasources.manage'), async (req, res) => {
   const id = parseId(req.params.id);
   await loadDatasource(id);
+  await authorize(req.user!, 'datasource', id, 'query');
   await authorize(req.user!, 'datasource', id, 'manage');
   await execute('DELETE FROM datasources WHERE id = ?', [id]);
   dropPool(id);

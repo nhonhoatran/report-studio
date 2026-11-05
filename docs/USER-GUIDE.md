@@ -94,6 +94,13 @@ Quy tắc quyết định: (1) từ chối luôn thắng; (2) khi một chính s
 
 **Lọc dòng (row-level security)**: một chính sách cho phép trên nguồn dữ liệu có thể kèm điều kiện *cột = thuộc tính của người dùng* (vd. `region` = thuộc tính `region`). Mọi truy vấn của người đó trên nguồn ấy được thêm `WHERE region IN (…giá trị thuộc tính…)`; người không có thuộc tính sẽ không thấy dòng nào.
 
+Giới hạn cần biết:
+- **Quản trị viên đứng ngoài chính sách**: không chính sách nào chặn hay lọc dòng với admin, nên không ai tự khóa mình ra ngoài.
+- Lọc dòng bảo vệ **người xem**. Ai có quyền *Quản lý bộ dữ liệu SQL* (và được *quản lý* nguồn đó) viết được SQL tùy ý trên nguồn, tức là đọc được toàn bộ; một bộ dữ liệu do họ viết cũng có thể "qua mặt" điều kiện dòng cho người xem (vd. gán cột `region` bằng hằng số). Chỉ trao quyền này cho người được phép thấy toàn bộ nguồn.
+- Người **chỉ xem** bảng điều khiển chỉ truy vấn được các bảng / bộ dữ liệu mà một bảng điều khiển họ được xem đang dùng.
+- Ai có *users.manage* / *roles.manage* nhưng không phải admin chỉ trao được những quyền chính họ đang có, không sửa được vai trò của mình hay của quản trị viên; quản trị viên cuối cùng không thể bị hạ cấp hay xóa.
+- Nhân bản một bảng điều khiển tạo ra bản sao **không** nằm trong chính sách nêu đích danh bản gốc; hãy thêm bản sao vào chính sách nếu cần.
+
 Admin tạo tài khoản ở **Cài đặt → Người dùng**. Mỗi người tự đổi mật khẩu ở **Cài đặt → Tài khoản**.
 
 ### Đăng nhập bằng Microsoft (Entra ID)
