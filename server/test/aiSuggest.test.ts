@@ -121,7 +121,7 @@ describe('sanitizeSuggestions', () => {
   });
   it('tells the model every type and the wells each one reads', () => {
     const { system } = buildPrompt({ sourceLabel: 'v_sales', fields });
-    expect(system).toContain('type: one of column, bar, line, area, combo, scatter, waterfall, funnel, pie, donut, treemap, heatmap, radar, gauge, kpi, trend, multirow, table, matrix.');
+    expect(system).toContain('type: one of column, bar, line, area, combo, scatter, waterfall, funnel, pie, donut, treemap, heatmap, radar, map, gauge, kpi, trend, multirow, table, matrix.');
     expect(system).toContain('heatmap: exactly 2 dimensions');
   });
   it('invents a title when the model left it blank and keeps only known filters', () => {

@@ -63,6 +63,9 @@ export const vi = {
     exportCsv: 'Tải CSV', exportExcel: 'Tải Excel', exportPrint: 'In / lưu PDF cả trang',
     crossFilter: 'Lọc chéo: bấm vào biểu đồ này lọc các biểu đồ khác, và ngược lại', crossFiltering: 'Đang lọc', clearCrossFilter: 'Bỏ lọc chéo',
     drill: 'Xem dòng gốc', drillTitle: 'Dòng gốc: {title} {value}',
+    wellRegion: 'Vùng (tỉnh / thành)', mapSection: 'Bản đồ', mapName: 'Bản đồ nền', mapNameProperty: 'Thuộc tính tên vùng trong bản đồ', mapAliases: 'Ghép tên',
+    mapAliasesHelp: 'Mỗi dòng: tên trong dữ liệu = tên trên bản đồ (vd "HCM = Hồ Chí Minh"). Hoa / thường, dấu và tiền tố "Tỉnh", "Thành phố" tự khớp.',
+    mapUnmatched: '{count} giá trị không khớp vùng nào: {names}', mapMissing: 'Không tải được bản đồ "{name}"',
     pageSize: 'Số dòng mỗi trang', pageSizeNone: 'Không phân trang', pager: 'Phân trang', pagePrev: 'Trang trước', pageNext: 'Trang sau', pageLabel: 'Trang {n}',
     // conditional formatting
     conditional: 'Định dạng có điều kiện', cfAddRule: 'Thêm quy tắc', cfThreshold: 'Ngưỡng', cfThresholdTo: 'Đến', cfColor: 'Màu', cfIcon: 'Biểu tượng', cfIconNone: 'Không biểu tượng', cfIconUp: '▲ tăng / đạt', cfIconDown: '▼ giảm / chưa đạt',
@@ -108,7 +111,7 @@ export const vi = {
   chart: {
     column: 'Cột', bar: 'Thanh ngang', line: 'Đường', area: 'Vùng', combo: 'Cột & đường', scatter: 'Phân tán', waterfall: 'Thác nước', funnel: 'Phễu',
     pie: 'Tròn', donut: 'Vành khuyên', treemap: 'Sơ đồ cây', heatmap: 'Bản đồ nhiệt', radar: 'Radar',
-    gauge: 'Đồng hồ đo', kpi: 'Thẻ số', trend: 'KPI xu hướng', multirow: 'Thẻ nhiều dòng',
+    gauge: 'Đồng hồ đo', kpi: 'Thẻ số', trend: 'KPI xu hướng', multirow: 'Thẻ nhiều dòng', map: 'Bản đồ theo vùng',
     table: 'Bảng', matrix: 'Ma trận',
   },
   filterOp: {

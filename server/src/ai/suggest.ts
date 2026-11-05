@@ -10,7 +10,7 @@ import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, type Aggregation, type DateBuck
  */
 export const WIDGET_TYPES = [
   'column', 'bar', 'line', 'area', 'combo', 'scatter', 'waterfall', 'funnel',
-  'pie', 'donut', 'treemap', 'heatmap', 'radar',
+  'pie', 'donut', 'treemap', 'heatmap', 'radar', 'map',
   'gauge', 'kpi', 'trend', 'multirow',
   'table', 'matrix',
 ] as const;
@@ -35,6 +35,7 @@ export const SHAPES: Record<WidgetType, { dimensions: [number, number]; measures
   treemap: { dimensions: [1, 2], measures: [1, 1] },
   heatmap: { dimensions: [2, 2], measures: [1, 1] },
   radar: { dimensions: [1, 2], measures: [1, 20] },
+  map: { dimensions: [1, 1], measures: [1, 1] },
   gauge: { dimensions: [0, 0], measures: [1, 2] },
   kpi: { dimensions: [0, 0], measures: [1, 1] },
   trend: { dimensions: [1, 1], measures: [1, 2] },
@@ -133,7 +134,7 @@ export function buildPrompt(input: PromptInput): { system: string; user: string 
     'Shape rules (dimensions, then measures):',
     '- column/bar/line/area: 1-2 dimensions (axis, then legend), 1+ measures. combo: 1 dimension, 1+ measures (columns, the last one drawn as a line).',
     '- scatter: 1-2 dimensions (detail, then legend), 2-3 measures (x, y, optional bubble size).',
-    '- waterfall, funnel, pie, donut: 1 dimension, 1 measure. treemap: 1-2 dimensions (group, then detail), 1 measure. heatmap: exactly 2 dimensions (x, y), 1 measure. radar: 1-2 dimensions (axis, then legend), 1+ measures.',
+    '- waterfall, funnel, pie, donut: 1 dimension, 1 measure. treemap: 1-2 dimensions (group, then detail), 1 measure. heatmap: exactly 2 dimensions (x, y), 1 measure. radar: 1-2 dimensions (axis, then legend), 1+ measures. map: 1 dimension (a province / region name), 1 measure.',
     '- kpi: 0 dimensions, 1 measure. gauge: 0 dimensions, 1-2 measures (value, optional target). trend: 1 date dimension, 1-2 measures (value, optional target): a KPI with its sparkline.',
     '- multirow: 1 dimension, 1+ measures. table: up to 10 dimensions, any measures. matrix: 1+ dimensions (row levels, then one for the columns when there are two or more), 1+ measures.',
     'Use field names exactly as listed; never invent fields. Prefer line/area or trend on a date field for trends, column/bar for comparisons, pie/donut/treemap for shares, scatter for two numeric measures, heatmap for two categories, kpi/gauge for a single headline number, matrix for a cross-tab.',

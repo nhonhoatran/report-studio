@@ -144,12 +144,12 @@ export interface QueryResult {
  */
 export type WidgetType =
   | 'column' | 'bar' | 'line' | 'area' | 'combo' | 'scatter' | 'waterfall' | 'funnel'
-  | 'pie' | 'donut' | 'treemap' | 'heatmap' | 'radar'
+  | 'pie' | 'donut' | 'treemap' | 'heatmap' | 'radar' | 'map'
   | 'gauge' | 'kpi' | 'trend' | 'multirow'
   | 'table' | 'matrix';
 export const WIDGET_TYPES: WidgetType[] = [
   'column', 'bar', 'line', 'area', 'combo', 'scatter', 'waterfall', 'funnel',
-  'pie', 'donut', 'treemap', 'heatmap', 'radar',
+  'pie', 'donut', 'treemap', 'heatmap', 'radar', 'map',
   'gauge', 'kpi', 'trend', 'multirow',
   'table', 'matrix',
 ];
@@ -204,6 +204,8 @@ export interface WidgetOptions {
   pageSize?: number;
   /** a click on a category filters the page's other visuals, and this visual follows the others' clicks (default on) */
   crossFilter?: boolean;
+  /** map: which self-hosted boundary file (web/public/maps), which feature property names a region, and "data name = map name" lines */
+  mapName?: string; mapNameProperty?: string; mapAliases?: string;
 }
 export interface WidgetQuery { dimensions: Dimension[]; measures: Measure[]; filters: Filter[]; orderBy: OrderBy[]; limit?: number }
 export interface Widget {

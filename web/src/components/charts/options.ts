@@ -33,7 +33,11 @@ export function readChartTheme(): ChartTheme {
   };
 }
 
-export interface ChartContext { theme: ChartTheme; lang: Lang; fmt: NumberFormat }
+export interface ChartContext {
+  theme: ChartTheme; lang: Lang; fmt: NumberFormat;
+  /** a map visual: the registered map and the regions matched to the rows */
+  map?: { id: string; nameProperty: string; data: { name: string; value: number | null }[] };
+}
 
 /** The format of one measure's values: its own (a share is a percent), else the widget's. */
 const fmtOf = (widget: Widget, alias: string | undefined, ctx: ChartContext): NumberFormat => (alias ? columnFormat(widget, alias) : ctx.fmt);
@@ -548,6 +552,44 @@ function treemap(widget: Widget, result: QueryResult, ctx: ChartContext): EChart
   };
 }
 
+// --- map: regions coloured by one measure ----------------------------------------------------------
+
+function map(widget: Widget, result: QueryResult, ctx: ChartContext): EChartsOption | null {
+  const { theme: th, lang } = ctx;
+  if (!ctx.map) return null;
+  const [m] = measureAliases(result);
+  const fmt = fmtOf(widget, m, ctx);
+  const values = ctx.map.data.map((d) => d.value).filter((v): v is number => v !== null);
+  const min = Math.min(...values, 0); const max = Math.max(...values, 0);
+  const high = th.colors[0] ?? th.text;
+  const showScale = widget.options.legend !== false;
+  const option = base(widget, ctx, false, 'item');
+  option.tooltip = {
+    ...(option.tooltip as object),
+    formatter: (p: unknown) => { const x = asParams(p)[0]!; return `${x.name}<br/>${measureLabel(widget, m!, lang) ?? m}: ${formatNumber(x.value, fmt, lang)}`; },
+  };
+  return {
+    ...option,
+    visualMap: {
+      show: showScale, min, max, calculable: false, orient: 'horizontal', left: 'center', bottom: 0,
+      text: [markLabel(max, fmt, lang), markLabel(min, fmt, lang)],
+      itemHeight: th.s7 * HEAT_SCALE_LENGTH, itemWidth: th.s3, textStyle: { color: th.text },
+      formatter: (v: unknown) => markLabel(v, fmt, lang),
+      inRange: { color: [mixHex(high, th.surface, HEAT_LOW_MIX), high] },
+    },
+    series: [{
+      type: 'map', map: ctx.map.id, nameProperty: ctx.map.nameProperty, roam: false,
+      top: th.s2, bottom: showScale ? th.s7 + th.s4 : th.s2, left: th.s2, right: th.s2,
+      itemStyle: { areaColor: th.grid, borderColor: th.surface, borderWidth: CELL_BORDER },
+      emphasis: { label: { show: true, color: th.textStrong }, itemStyle: { areaColor: th.colors[1] ?? high } },
+      select: { disabled: true },
+      // a region without data keeps its name alone
+      label: { show: widget.options.showValues === true, color: th.textStrong, fontSize: th.fontSize, formatter: (p) => (typeof p.value === 'number' && Number.isFinite(p.value) ? `${p.name}\n${markLabel(p.value, fmt, lang)}` : String(p.name)) },
+      data: ctx.map.data.map((d) => ({ name: d.name, value: d.value ?? undefined })),
+    }],
+  };
+}
+
 // --- the sparkline inside a KPI card ----------------------------------------------------------------
 
 export function sparklineOption(values: (number | null)[], good: boolean, th: ChartTheme): EChartsOption {
@@ -575,6 +617,7 @@ export function buildOption(widget: Widget, result: QueryResult, ctx: ChartConte
     case 'radar': return radar(widget, result, ctx);
     case 'gauge': return gauge(widget, result, ctx);
     case 'treemap': return treemap(widget, result, ctx);
+    case 'map': return map(widget, result, ctx);
     default: return null;
   }
 }

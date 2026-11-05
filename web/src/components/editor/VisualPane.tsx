@@ -2,7 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import {
   BarChart3, BarChartHorizontal, ChartArea, ChartCandlestick, ChartLine, ChartNoAxesCombined, ChartPie, ChartScatter, CircleDot, Filter, Gauge, Grid3x3,
-  Hash, LayoutDashboard, Plus, Radar, Rows3, Settings2, Sigma, Table2, TableProperties, TrendingUp, X,
+  Hash, LayoutDashboard, Map as MapIcon, Plus, Radar, Rows3, Settings2, Sigma, Table2, TableProperties, TrendingUp, X,
 } from 'lucide-react';
 import type { ConditionalColor, ConditionalFormat, ConditionalOp, Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure, NumberFormat, ShowAs, Stacking, Widget, WidgetType } from '@/api/types';
 import { AGGREGATIONS, COMPARES, CONDITIONAL_COLORS, CONDITIONAL_OPS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STACKINGS, WIDGET_TYPES, isFormula } from '@/api/types';
@@ -13,7 +13,9 @@ import { useEditor, useSelectedWidget } from '@/store/editor';
 import { CHART_SPECS, comboRole, dimensionName, hasFeature, matrixColumnCount, matrixSplit, maxDimensions, maxMeasures, measureAlias, measureName, measureRefs, newFormulaMeasure, stackingOf, topNApplies } from '@/lib/widget';
 import { newId } from '@/lib/id';
 import { Button } from '@/components/ui/Button';
-import { Checkbox, Input, Select } from '@/components/ui/Field';
+import { Checkbox, Input, Select, Textarea } from '@/components/ui/Field';
+import { useQuery } from '@tanstack/react-query';
+import { DEFAULT_MAP, listMaps } from '@/components/charts/maps';
 import { EmptyState } from '@/components/ui/Feedback';
 import { KindIcon } from '@/components/ui/KindBadge';
 
@@ -22,7 +24,7 @@ export const WELL_DROP_PREFIX = 'well:';
 /** One icon per chart type; the AI dialog reuses them so a type looks the same everywhere. */
 export const typeIcons: Record<WidgetType, typeof BarChart3> = {
   column: BarChart3, bar: BarChartHorizontal, line: ChartLine, area: ChartArea, combo: ChartNoAxesCombined, scatter: ChartScatter, waterfall: ChartCandlestick, funnel: Filter,
-  pie: ChartPie, donut: CircleDot, treemap: LayoutDashboard, heatmap: Grid3x3, radar: Radar,
+  pie: ChartPie, donut: CircleDot, treemap: LayoutDashboard, heatmap: Grid3x3, radar: Radar, map: MapIcon,
   gauge: Gauge, kpi: Hash, trend: TrendingUp, multirow: Rows3,
   table: Table2, matrix: TableProperties,
 };
@@ -312,6 +314,7 @@ export function VisualPane() {
   const updateWidget = useEditor((s) => s.updateWidget);
   const setWidgetType = useEditor((s) => s.setWidgetType);
   const activeFields = useEditor((s) => s.activeFields);
+  const maps = useQuery({ queryKey: ['maps'], queryFn: listMaps, enabled: widget?.type === 'map', staleTime: Infinity });
 
   if (!widget) {
     return (
@@ -483,6 +486,16 @@ export function VisualPane() {
           <NumberOption label={t('editor.target')} value={o.target} onChange={(v) => setOptions({ target: v })} />
         )}
 
+        {widget.type === 'map' && (
+          <>
+            <div className="pane__section-title">{t('editor.mapSection')}</div>
+            <Select size="sm" label={t('editor.mapName')} value={o.mapName || DEFAULT_MAP} onChange={(e) => setOptions({ mapName: e.target.value })}>
+              {(maps.data ?? [{ id: DEFAULT_MAP, label: DEFAULT_MAP, nameProperty: 'name', properties: [] }]).map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </Select>
+            <Input size="sm" label={t('editor.mapNameProperty')} value={o.mapNameProperty ?? ''} placeholder={maps.data?.find((m) => m.id === (o.mapName || DEFAULT_MAP))?.nameProperty ?? 'name'} onChange={(e) => setOptions({ mapNameProperty: e.target.value || undefined })} />
+            <Textarea label={t('editor.mapAliases')} rows={3} help={t('editor.mapAliasesHelp')} value={o.mapAliases ?? ''} onChange={(e) => setOptions({ mapAliases: e.target.value || undefined })} />
+          </>
+        )}
         {has('analytics') && (
           <>
             <div className="pane__section-title">{t('editor.analytics')}</div>

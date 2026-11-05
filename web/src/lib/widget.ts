@@ -92,6 +92,10 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
     group: 'relation', minDimensions: 1, maxDimensions: 2, minMeasures: 1, maxMeasures: 20,
     wells: AXIS_LEGEND, dimensionSlots: AXIS_SLOTS, features: ['legend', 'showValues'], limit: 1000,
   },
+  map: {
+    group: 'relation', minDimensions: 1, maxDimensions: 1, minMeasures: 1, maxMeasures: 1,
+    wells: { dimensions: 'editor.wellRegion', measures: 'editor.wellValues' }, features: ['legend', 'showValues'], limit: 1000,
+  },
   gauge: {
     group: 'single', minDimensions: 0, maxDimensions: 0, minMeasures: 1, maxMeasures: 2,
     wells: { dimensions: 'editor.wellCategory', measures: 'editor.wellValueTarget' },
@@ -163,7 +167,7 @@ export const CARTESIAN: WidgetType[] = ['column', 'bar', 'line', 'area', 'combo'
 /** Types drawn as slices of one whole. */
 export const RADIAL: WidgetType[] = ['pie', 'donut', 'funnel'];
 /** Types rendered with ECharts; the rest are HTML (cards, tables). */
-export const ECHARTS_TYPES: WidgetType[] = [...CARTESIAN, ...RADIAL, 'scatter', 'treemap', 'heatmap', 'radar', 'gauge'];
+export const ECHARTS_TYPES: WidgetType[] = [...CARTESIAN, ...RADIAL, 'scatter', 'treemap', 'heatmap', 'radar', 'gauge', 'map'];
 
 export const hasFeature = (type: WidgetType, f: ChartFeature) => CHART_SPECS[type].features.includes(f);
 

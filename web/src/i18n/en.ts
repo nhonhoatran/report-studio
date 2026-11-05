@@ -66,6 +66,9 @@ export const en: Dictionary = {
     exportCsv: 'Download CSV', exportExcel: 'Download Excel', exportPrint: 'Print / save the page as PDF',
     crossFilter: 'Cross-filter: a click on this visual filters the others, and the other way round', crossFiltering: 'Filtering', clearCrossFilter: 'Clear this cross-filter',
     drill: 'See the rows', drillTitle: 'Rows behind: {title} {value}',
+    wellRegion: 'Region (province)', mapSection: 'Map', mapName: 'Base map', mapNameProperty: 'Feature property holding the region name', mapAliases: 'Name aliases',
+    mapAliasesHelp: 'One per line: name in the data = name on the map (e.g. "HCM = Hồ Chí Minh"). Case, accents and "Tỉnh" / "Thành phố" prefixes match on their own.',
+    mapUnmatched: { one: '{count} value matches no region: {names}', other: '{count} values match no region: {names}' }, mapMissing: 'The map "{name}" could not be loaded',
     pageSize: 'Rows per page', pageSizeNone: 'No paging', pager: 'Pages', pagePrev: 'Previous page', pageNext: 'Next page', pageLabel: 'Page {n}',
     // conditional formatting
     conditional: 'Conditional formatting', cfAddRule: 'Add rule', cfThreshold: 'Threshold', cfThresholdTo: 'To', cfColor: 'Colour', cfIcon: 'Icon', cfIconNone: 'No icon', cfIconUp: '▲ up / reached', cfIconDown: '▼ down / short',
@@ -111,7 +114,7 @@ export const en: Dictionary = {
   chart: {
     column: 'Column', bar: 'Bar', line: 'Line', area: 'Area', combo: 'Line & column', scatter: 'Scatter', waterfall: 'Waterfall', funnel: 'Funnel',
     pie: 'Pie', donut: 'Donut', treemap: 'Treemap', heatmap: 'Heat map', radar: 'Radar',
-    gauge: 'Gauge', kpi: 'Card', trend: 'KPI with trend', multirow: 'Multi-row card',
+    gauge: 'Gauge', kpi: 'Card', trend: 'KPI with trend', multirow: 'Multi-row card', map: 'Filled map',
     table: 'Table', matrix: 'Matrix',
   },
   filterOp: {
