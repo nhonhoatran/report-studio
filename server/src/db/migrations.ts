@@ -137,7 +137,7 @@ export const migrations: { version: number; name: string; sql: string[] }[] = [
       // a user's role is now any row of roles; attributes (ABAC) are a JSON object of string lists
       `ALTER TABLE users MODIFY role VARCHAR(32) NOT NULL DEFAULT 'viewer'`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS attributes TEXT NULL AFTER email`,
-      `ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS fk_users_role FOREIGN KEY (role) REFERENCES roles(name) ON UPDATE CASCADE`,
+      `ALTER TABLE users ADD CONSTRAINT fk_users_role FOREIGN KEY IF NOT EXISTS (role) REFERENCES roles(name) ON UPDATE CASCADE`,
       // ABAC: who (subject JSON), what (resource JSON), which actions, allow or deny, optional row filters
       `CREATE TABLE IF NOT EXISTS access_policies (
         id INT AUTO_INCREMENT PRIMARY KEY,
