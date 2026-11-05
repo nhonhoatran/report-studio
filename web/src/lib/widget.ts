@@ -16,7 +16,8 @@ export type ChartFeature =
   | 'gauge'         // min / max, show the target
   | 'target'        // a target number when no second measure carries it
   | 'series'        // each measure drawn as a column or a line (combo)
-  | 'hierarchy';    // row levels that open and close (matrix): how many are open at first
+  | 'hierarchy'     // row levels that open and close (matrix): how many are open at first
+  | 'conditional';  // conditional formatting of the measures' cells (tables, matrices)
 
 export interface ChartSpec {
   /** gallery grouping (Power BI order): compare, trend, part-to-whole, relation, single value, tables */
@@ -109,12 +110,12 @@ export const CHART_SPECS: Record<WidgetType, ChartSpec> = {
   },
   table: {
     group: 'table', minDimensions: 0, maxDimensions: 10, minMeasures: 0, maxMeasures: 20,
-    wells: { dimensions: 'editor.wellColumns', measures: 'editor.wellValues' }, features: ['sort', 'totals', 'dataBars'], limit: 500,
+    wells: { dimensions: 'editor.wellColumns', measures: 'editor.wellValues' }, features: ['sort', 'totals', 'dataBars', 'conditional'], limit: 500,
   },
   matrix: {
     group: 'table', minDimensions: 1, maxDimensions: 10, minMeasures: 1, maxMeasures: 20,
     wells: { dimensions: 'editor.wellRows', measures: 'editor.wellValues' }, columnsWell: 'editor.wellColumns',
-    features: ['sort', 'totals', 'hierarchy'], limit: 2000,
+    features: ['sort', 'totals', 'hierarchy', 'conditional'], limit: 2000,
   },
 };
 

@@ -148,6 +148,23 @@ export const STACKINGS: Stacking[] = ['none', 'stacked', 'percent'];
 export type LegendPosition = 'bottom' | 'top' | 'right';
 export const LEGEND_POSITIONS: LegendPosition[] = ['bottom', 'top', 'right'];
 
+// --- Conditional formatting (tables, matrices) ----------------------------------------------------
+export type ConditionalColor = 'success' | 'danger' | 'warning' | 'primary' | 'muted';
+export const CONDITIONAL_COLORS: ConditionalColor[] = ['success', 'danger', 'warning', 'primary', 'muted'];
+export type ConditionalOp = 'gte' | 'gt' | 'lte' | 'lt' | 'eq' | 'between';
+export const CONDITIONAL_OPS: ConditionalOp[] = ['gte', 'gt', 'lte', 'lt', 'eq', 'between'];
+export interface ConditionalRule { id: string; op: ConditionalOp; value: number; value2?: number; color: ConditionalColor; icon?: 'up' | 'down' }
+export interface ConditionalFormat {
+  /** colour the text or the cell's background */
+  apply: 'text' | 'background';
+  /** the first matching rule wins */
+  rules: ConditionalRule[];
+  /** with no matching rule: a colour between two tokens by the value's place between the column's minimum and maximum */
+  scale?: { from: ConditionalColor; to: ConditionalColor };
+  /** also colour the totals */
+  totals?: boolean;
+}
+
 export interface WidgetOptions {
   legend?: boolean; legendPosition?: LegendPosition;
   /** before 0.2 a boolean; `stacking` supersedes it (the store normalizes old documents) */
@@ -168,6 +185,8 @@ export interface WidgetOptions {
   referenceLine?: number; averageLine?: boolean;
   /** combo: lines share the columns' axis instead of a second one */
   sharedAxis?: boolean;
+  /** table / matrix: conditional formatting by measure alias */
+  conditional?: Record<string, ConditionalFormat>;
 }
 export interface WidgetQuery { dimensions: Dimension[]; measures: Measure[]; filters: Filter[]; orderBy: OrderBy[]; limit?: number }
 export interface Widget {

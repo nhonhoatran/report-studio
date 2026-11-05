@@ -57,6 +57,11 @@ export const en: Dictionary = {
     matrixExpand: 'Levels open at first', expandToLevel: { one: '{count} level', other: '{count} levels' }, expandAllLevels: 'All', expandAll: 'Expand all', collapseAll: 'Collapse all', expandRow: 'Expand {name}', collapseRow: 'Collapse {name}', levelJoin: ' / ',
     analytics: 'Analytics', referenceLine: 'Reference line', averageLine: 'Average line', sharedAxis: 'Lines share the columns\' axis',
     dataAt: 'data as of {time}', fromCache: 'cached',
+    // conditional formatting
+    conditional: 'Conditional formatting', cfAddRule: 'Add rule', cfThreshold: 'Threshold', cfThresholdTo: 'To', cfColor: 'Colour', cfIcon: 'Icon', cfIconNone: 'No icon', cfIconUp: '▲ up / reached', cfIconDown: '▼ down / short',
+    cfScale: 'Scale for the other cells', cfScales: { none: 'None', danger_success: 'Red → green (low → high)', success_danger: 'Green → red (low → high)', muted_primary: 'Light → strong' },
+    cfApply: 'Colour', cfText: 'The text', cfBackground: 'The cell', cfTotals: 'Also the totals',
+    cfColors: { success: 'Green (reached)', danger: 'Red (warning)', warning: 'Amber (attention)', primary: 'Accent', muted: 'Grey' },
     // inside the visuals
     total: 'Total', increase: 'Increase', decrease: 'Decrease', vsPrevious: 'vs previous period', targetLabel: 'Target {value}', sortColumn: 'Sort by this column',
     // field settings on a chip: display name, show as, format; calculated measures

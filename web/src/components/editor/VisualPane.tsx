@@ -4,8 +4,8 @@ import {
   BarChart3, BarChartHorizontal, ChartArea, ChartCandlestick, ChartLine, ChartNoAxesCombined, ChartPie, ChartScatter, CircleDot, Filter, Gauge, Grid3x3,
   Hash, LayoutDashboard, Plus, Radar, Rows3, Settings2, Sigma, Table2, TableProperties, TrendingUp, X,
 } from 'lucide-react';
-import type { Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure, NumberFormat, ShowAs, Stacking, Widget, WidgetType } from '@/api/types';
-import { AGGREGATIONS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STACKINGS, WIDGET_TYPES, isFormula } from '@/api/types';
+import type { ConditionalColor, ConditionalFormat, ConditionalOp, Dimension, Filter as FilterRule, FilterOp, LegendPosition, Measure, NumberFormat, ShowAs, Stacking, Widget, WidgetType } from '@/api/types';
+import { AGGREGATIONS, CONDITIONAL_COLORS, CONDITIONAL_OPS, DATE_BUCKETS, FILTER_OPS, LEGEND_POSITIONS, SHOW_AS, STACKINGS, WIDGET_TYPES, isFormula } from '@/api/types';
 import { useT, type TFn, type TKey } from '@/i18n';
 import { FORMULA_MAX_LENGTH, checkFormula, type FormulaError } from '@shared/formula';
 import { useEditor, useSelectedWidget } from '@/store/editor';
@@ -84,8 +84,76 @@ function DimensionChip({ d, slot, onChange, onRemove }: { d: Dimension; slot?: T
   );
 }
 
+/** A colour choice among the theme's own, by name. */
+function ColorSelect({ label, value, onChange }: { label: string; value: ConditionalColor; onChange: (c: ConditionalColor) => void }) {
+  const t = useT();
+  return (
+    <Select size="sm" aria-label={label} value={value} onChange={(e) => onChange(e.target.value as ConditionalColor)}>
+      {CONDITIONAL_COLORS.map((c) => <option key={c} value={c}>{t(`editor.cfColors.${c}`)}</option>)}
+    </Select>
+  );
+}
+
+const SCALES: { key: 'none' | 'danger_success' | 'success_danger' | 'muted_primary'; from?: ConditionalColor; to?: ConditionalColor }[] = [
+  { key: 'none' }, { key: 'danger_success', from: 'danger', to: 'success' }, { key: 'success_danger', from: 'success', to: 'danger' }, { key: 'muted_primary', from: 'muted', to: 'primary' },
+];
+
+/**
+ * Conditional formatting of one measure's cells: rules (a comparison with a threshold, a colour,
+ * an icon), a scale for the rest, whether the text or the background takes the colour, and whether
+ * the totals do too. Thresholds are the author's; colours are the theme's.
+ */
+function ConditionalEditor({ cf, onChange }: { cf: ConditionalFormat | undefined; onChange: (cf: ConditionalFormat | undefined) => void }) {
+  const t = useT();
+  const current: ConditionalFormat = cf ?? { apply: 'text', rules: [] };
+  const set = (patch: Partial<ConditionalFormat>) => {
+    const next = { ...current, ...patch };
+    onChange(next.rules.length === 0 && !next.scale ? undefined : next);
+  };
+  const scaleKey = SCALES.find((s) => s.from === current.scale?.from && s.to === current.scale?.to)?.key ?? 'none';
+  const setRule = (id: string, patch: Partial<ConditionalFormat['rules'][number]>) => set({ rules: current.rules.map((r) => (r.id === id ? { ...r, ...patch } : r)) });
+  return (
+    <>
+      <div className="row-between">
+        <span className="field__label">{t('editor.conditional')}</span>
+        <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={() => set({ rules: [...current.rules, { id: newId('cf'), op: 'gte', value: 0, color: 'success' }] })}>{t('editor.cfAddRule')}</Button>
+      </div>
+      {current.rules.map((r) => (
+        <div key={r.id} className="filter-row">
+          <div className="filter-row__grid">
+            <Select size="sm" aria-label={t('editor.filterOp')} value={r.op} onChange={(e) => setRule(r.id, { op: e.target.value as ConditionalOp })}>
+              {CONDITIONAL_OPS.map((op) => <option key={op} value={op}>{t(`filterOp.${op}`)}</option>)}
+            </Select>
+            <Input size="sm" type="number" aria-label={t('editor.cfThreshold')} value={Number.isFinite(r.value) ? r.value : ''} onChange={(e) => setRule(r.id, { value: Number(e.target.value) })} />
+            {r.op === 'between' && <Input size="sm" type="number" aria-label={t('editor.cfThresholdTo')} value={r.value2 ?? ''} onChange={(e) => setRule(r.id, { value2: e.target.value === '' ? undefined : Number(e.target.value) })} />}
+            <ColorSelect label={t('editor.cfColor')} value={r.color} onChange={(color) => setRule(r.id, { color })} />
+            <Select size="sm" aria-label={t('editor.cfIcon')} value={r.icon ?? ''} onChange={(e) => setRule(r.id, { icon: (e.target.value || undefined) as 'up' | 'down' | undefined })}>
+              <option value="">{t('editor.cfIconNone')}</option>
+              <option value="up">{t('editor.cfIconUp')}</option>
+              <option value="down">{t('editor.cfIconDown')}</option>
+            </Select>
+          </div>
+          <Button variant="ghost" size="sm" iconOnly icon={<X size={14} />} onClick={() => set({ rules: current.rules.filter((x) => x.id !== r.id) })}>{t('common.delete')}</Button>
+        </div>
+      ))}
+      <div className="option-grid">
+        <Select size="sm" label={t('editor.cfScale')} value={scaleKey} onChange={(e) => { const s = SCALES.find((x) => x.key === e.target.value); set({ scale: s?.from && s.to ? { from: s.from, to: s.to } : undefined }); }}>
+          {SCALES.map((s) => <option key={s.key} value={s.key}>{t(`editor.cfScales.${s.key}`)}</option>)}
+        </Select>
+        <Select size="sm" label={t('editor.cfApply')} value={current.apply} onChange={(e) => set({ apply: e.target.value as 'text' | 'background' })}>
+          <option value="text">{t('editor.cfText')}</option>
+          <option value="background">{t('editor.cfBackground')}</option>
+        </Select>
+      </div>
+      {(current.rules.length > 0 || current.scale) && (
+        <Checkbox label={t('editor.cfTotals')} checked={current.totals === true} onChange={(e) => set({ totals: e.target.checked || undefined })} />
+      )}
+    </>
+  );
+}
+
 /** The settings every measure has: its display name, what it is shown as, and its own number format. */
-function MeasureDetails({ m, auto, onChange, children }: { m: Measure; auto: string; onChange: (m: Measure) => void; children?: ReactNode }) {
+function MeasureDetails({ m, auto, onChange, children, conditional }: { m: Measure; auto: string; onChange: (m: Measure) => void; children?: ReactNode; /** when the chart formats cells: the format of this measure's, and how to change it */ conditional?: { cf: ConditionalFormat | undefined; onChange: (cf: ConditionalFormat | undefined) => void } }) {
   const t = useT();
   return (
     <div className="well-details">
@@ -100,11 +168,14 @@ function MeasureDetails({ m, auto, onChange, children }: { m: Measure; auto: str
           {NUMBER_FORMATS.map((f) => <option key={f} value={f}>{t(formatKey(f))}</option>)}
         </Select>
       </div>
+      {conditional && <ConditionalEditor cf={conditional.cf} onChange={conditional.onChange} />}
     </div>
   );
 }
 
-function MeasureChip({ m, slot, combo, onChange, onRemove }: { m: Measure; slot?: TKey; combo?: 'column' | 'line'; onChange: (m: Measure) => void; onRemove: () => void }) {
+type ConditionalProp = { cf: ConditionalFormat | undefined; onChange: (cf: ConditionalFormat | undefined) => void } | undefined;
+
+function MeasureChip({ m, slot, combo, conditional, onChange, onRemove }: { m: Measure; slot?: TKey; combo?: 'column' | 'line'; conditional?: ConditionalProp; onChange: (m: Measure) => void; onRemove: () => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const auto = measureName({ ...m, label: undefined }, t);
@@ -127,7 +198,7 @@ function MeasureChip({ m, slot, combo, onChange, onRemove }: { m: Measure; slot?
         <DetailsToggle open={open} onToggle={() => setOpen((o) => !o)} />
         <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
       </div>
-      {open && <MeasureDetails m={m} auto={auto} onChange={onChange} />}
+      {open && <MeasureDetails m={m} auto={auto} onChange={onChange} conditional={conditional} />}
     </div>
   );
 }
@@ -139,9 +210,9 @@ function describeFormulaError(err: FormulaError, t: TFn): string {
 }
 
 /** A calculated measure: its expression, the measures it may name, and the settings every measure has. */
-function FormulaChip({ m, slot, others, error, combo, onChange, onRemove }: {
+function FormulaChip({ m, slot, others, error, combo, conditional, onChange, onRemove }: {
   m: Measure; slot?: TKey; /** the widget's other measures, offered for insertion */ others: Measure[]; error: FormulaError | null;
-  combo?: 'column' | 'line'; onChange: (m: Measure) => void; onRemove: () => void;
+  combo?: 'column' | 'line'; conditional?: ConditionalProp; onChange: (m: Measure) => void; onRemove: () => void;
 }) {
   const t = useT();
   // a fresh calculation opens on its expression; afterwards the chip folds like the others
@@ -172,7 +243,7 @@ function FormulaChip({ m, slot, others, error, combo, onChange, onRemove }: {
         <Button variant="ghost" size="sm" iconOnly icon={<X size={12} />} onClick={onRemove}>{t('common.delete')}</Button>
       </div>
       {open && (
-        <MeasureDetails m={m} auto={t('editor.calculation')} onChange={onChange}>
+        <MeasureDetails m={m} auto={t('editor.calculation')} onChange={onChange} conditional={conditional}>
           <Input ref={input} size="sm" className="well-details__formula" label={t('editor.formula')} value={m.formula ?? ''} placeholder={t('editor.formulaPlaceholder')}
             spellCheck={false} autoComplete="off" maxLength={FORMULA_MAX_LENGTH} error={error ? describeFormulaError(error, t) : undefined} help={error ? undefined : t('editor.formulaHelp')}
             onChange={(e) => onChange({ ...m, formula: e.target.value })} />
@@ -312,9 +383,14 @@ export function VisualPane() {
             const onChange = (nm: Measure) => setQuery({ measures: q.measures.map((x, j) => (j === i ? nm : x)) });
             const onRemove = () => setQuery({ measures: q.measures.filter((_, j) => j !== i) });
             const combo = has('series') ? comboRole(q.measures, i) : undefined;
+            const alias = measureAlias(m);
+            const conditional: ConditionalProp = has('conditional') ? {
+              cf: o.conditional?.[alias],
+              onChange: (cf) => { const next = { ...(o.conditional ?? {}) }; if (cf) next[alias] = cf; else delete next[alias]; setOptions({ conditional: Object.keys(next).length ? next : undefined }); },
+            } : undefined;
             return isFormula(m)
-              ? <FormulaChip key={measureAlias(m)} m={m} slot={spec.measureSlots?.[i]} others={q.measures.filter((_, j) => j !== i)} error={formulaError(i)} combo={combo} onChange={onChange} onRemove={onRemove} />
-              : <MeasureChip key={`${m.field}-${i}`} m={m} slot={spec.measureSlots?.[i]} combo={combo} onChange={onChange} onRemove={onRemove} />;
+              ? <FormulaChip key={alias} m={m} slot={spec.measureSlots?.[i]} others={q.measures.filter((_, j) => j !== i)} error={formulaError(i)} combo={combo} conditional={conditional} onChange={onChange} onRemove={onRemove} />
+              : <MeasureChip key={`${m.field}-${i}`} m={m} slot={spec.measureSlots?.[i]} combo={combo} conditional={conditional} onChange={onChange} onRemove={onRemove} />;
           })}
         </Well>
 

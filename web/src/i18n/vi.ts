@@ -54,6 +54,11 @@ export const vi = {
     matrixExpand: 'Số cấp mở sẵn', expandToLevel: '{count} cấp', expandAllLevels: 'Tất cả', expandAll: 'Mở tất cả', collapseAll: 'Thu gọn tất cả', expandRow: 'Mở {name}', collapseRow: 'Thu gọn {name}', levelJoin: ' / ',
     analytics: 'Phân tích', referenceLine: 'Đường tham chiếu', averageLine: 'Đường trung bình', sharedAxis: 'Đường dùng chung trục Y với cột',
     dataAt: 'dữ liệu lúc {time}', fromCache: 'từ cache',
+    // conditional formatting
+    conditional: 'Định dạng có điều kiện', cfAddRule: 'Thêm quy tắc', cfThreshold: 'Ngưỡng', cfThresholdTo: 'Đến', cfColor: 'Màu', cfIcon: 'Biểu tượng', cfIconNone: 'Không biểu tượng', cfIconUp: '▲ tăng / đạt', cfIconDown: '▼ giảm / chưa đạt',
+    cfScale: 'Thang màu cho ô còn lại', cfScales: { none: 'Không', danger_success: 'Đỏ → xanh (thấp → cao)', success_danger: 'Xanh → đỏ (thấp → cao)', muted_primary: 'Nhạt → đậm' },
+    cfApply: 'Tô màu', cfText: 'Chữ', cfBackground: 'Nền ô', cfTotals: 'Áp cho cả dòng tổng',
+    cfColors: { success: 'Xanh (đạt)', danger: 'Đỏ (cảnh báo)', warning: 'Vàng (chú ý)', primary: 'Màu nhấn', muted: 'Xám' },
     // inside the visuals
     total: 'Tổng cộng', increase: 'Tăng', decrease: 'Giảm', vsPrevious: 'so với kỳ trước', targetLabel: 'Mục tiêu {value}', sortColumn: 'Sắp xếp theo cột này',
     // field settings on a chip: display name, show as, format; calculated measures

@@ -36,6 +36,11 @@
 .chart-table .table th.num .chart-table__sort { flex-direction: row-reverse; }
 /* data bars: a tinted bar behind the number, as wide as its share of the column's maximum */
 .chart-table .table td.bar { background-image: linear-gradient(var(--color-primary-soft), var(--color-primary-soft)); background-repeat: no-repeat; background-size: var(--bar, 0%) 100%; }
+/* conditional formatting: the colour is a theme token in --cf; the icon reads without it */
+.chart-table .table td.cf-text { color: var(--cf); font-weight: 600; }
+.chart-table .table td.cf-bg { background-color: color-mix(in srgb, var(--cf) 24%, transparent); }
+.chart-table .table td.cf-scale { background-color: color-mix(in srgb, color-mix(in srgb, var(--cf-to) var(--cf-mix), var(--cf-from)) 28%, transparent); }
+.chart-table__cf-icon { vertical-align: -2px; margin-right: var(--space-1); }
 /* totals: a strong rule above, and heavier than the header on purpose (the one row a reader looks for) */
 .chart-table .table tfoot td, .chart-table .table tfoot th { border-top: 1px solid var(--color-border-strong); border-bottom: 0; font-weight: 600; color: var(--color-text); background: var(--color-side); position: sticky; bottom: 0; }
 /* matrix: row headers stay put while the columns scroll */
